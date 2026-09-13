@@ -1,6 +1,6 @@
 # M2 progress: PFI scalar pixels and RGB preview
 
-- Status: IMPLEMENTATION_COMPLETE; INTEROPERABILITY_ACCEPTANCE_PENDING
+- Status: IMPLEMENTATION_COMPLETE; INDEPENDENT_MATRIX_PARTIAL
 - Started: 2026-09-13
 - Specification baseline: pinned XISF 1.0 sections 8.5, 10.3, 10.4 and 11.5
 - Publication status: private repository; no tag or release
@@ -39,7 +39,7 @@
 ## Evidence available now
 
 - Warning-clean Release build: PASS locally on macOS.
-- Unit suite: 4/4 PASS, including a pure C++ preview test for Planar and Normal
+- Unit suite: 5/5 PASS, including a pure C++ preview test for Planar and Normal
   RGB channel indexing, big-endian UInt32, little-endian Float64, and RGB
   stretch sampling.
 - Hand-derived bitwise scalar oracle: PASS for UInt8, UInt16, UInt32, Float32,
@@ -67,12 +67,20 @@
   keywords with column headers, row count, scrolling, selectable cells, and
   full-value tooltips.
 - Human visibility/readability test of the revised metadata pane: PASS.
+- Five committed files produced through the documented public API of an
+  independent XISF implementation decode byte-for-byte to independently
+  reconstructed source arrays: UInt16 Gray through zlib/LZ4/LZ4HC/Zstandard
+  plus shuffle, and Float32 RGB through Zstandard plus shuffle. Fixture source
+  hashes, generator identity, redistribution basis, and conformance rows are
+  retained under `tests/interop`.
 
 ## Still required to close M2
 
-- Independent or producer-generated fixtures for every claimed scalar,
-  storage, byte-order, and color combination.
-- Full-precision parity evidence against an independent pixel oracle.
-M3 work can proceed while the two independent-producer acceptance items remain
-open. This status does not promote synthetic evidence into interoperability
-evidence.
+- Extend the independent matrix beyond the currently covered UInt16 Gray and
+  Float32 RGB Planar/little-endian profiles to the remaining claimed scalar,
+  storage, byte-order, and color combinations where an external producer can
+  emit them.
+
+The committed matrix is full-precision independent pixel evidence for its five
+declared profiles. Missing combinations remain `NOT_TESTED`; the partial matrix
+is not promoted to complete PFI-profile acceptance.

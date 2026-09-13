@@ -46,6 +46,18 @@ sources.
 These private files are used only as black-box inputs. They are not copied into
 the repository and do not broaden the normative specification baseline.
 
+## Redistributable independent-producer evidence
+
+Five compact fixtures under `tests/interop` were generated from Martian
+Medusa-owned deterministic numeric arrays by invoking only the documented
+public `XISF.write` API of PyPI package `xisf` 0.9.7. The upstream source archive
+SHA-256 is
+`fcc8d33b3c45461abb0d71b3cd1207c08548ee11f51d4aaa5615f19cc54e1724`.
+No implementation source was inspected. The GPLv3 package is not a dependency;
+only our generated, non-astronomy test data is retained under the repository
+license. Exact per-file provenance is recorded in
+`tests/interop/manifest.json`.
+
 ## Ecosystem reconnaissance
 
 An existing GPLv3+ C++ project already uses the `libXISF` name and is packaged

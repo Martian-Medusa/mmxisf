@@ -184,8 +184,8 @@ warning-clean, and ASan/UBSan test builds pass locally.
 
 ## Fourth implementation checkpoint
 
-The pinned specification grammar audit added the mandatory canonical XML 1.0
-UTF-8 declaration, prohibited non-whitespace character data directly in the
+The pinned specification grammar audit added the mandatory XML 1.0 UTF-8
+declaration, prohibited non-whitespace character data directly in the
 `xisf` root, and implemented the common core-element `uid` contract. Identifiers
 are ASCII grammar-checked and unit-unique; `Reference` requires a valid `ref`,
 cannot define `uid`, resolves forward references after parsing, and rejects
@@ -206,3 +206,9 @@ equivalents.
 The milestone satisfies the declared `0.1` inspection deliverable. It does not
 claim codec/checksum support, complete XISF grammar coverage, public ABI
 stability, or a production-ready distributable viewer.
+
+A later independent-producer fixture used equivalent XML syntax with single
+quotes and the `utf8` encoding alias. The reader now accepts this narrow lexical
+compatibility form while still requiring declaration-first XML 1.0 UTF-8 and
+rejecting other versions, encodings, and `standalone` declarations. This is
+recorded as SN-004 rather than reclassifying the pinned grammar.

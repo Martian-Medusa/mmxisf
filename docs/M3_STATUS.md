@@ -1,6 +1,6 @@
 # M3 progress: codecs, shuffle, checksums, and budgets
 
-- Status: IMPLEMENTATION_COMPLETE; INTEROPERABILITY_AND_PERFORMANCE_PENDING
+- Status: IMPLEMENTATION_COMPLETE; CODEC_INTEROPERABILITY_PASS; PERFORMANCE_PENDING
 - Started: 2026-09-13
 - Specification baseline: pinned XISF 1.0 sections 10.5 and 10.6
 - Publication status: private repository; no tag or release
@@ -59,8 +59,8 @@
   checksum-before-decompression invariant.
 - Malformed descriptor, uncompressed-size mismatch, subblock-total mismatch,
   unknown codec, invalid stream, and decompression-ratio rejection: PASS.
-- Warning-clean Release build and 4/4 unit suite: PASS locally on macOS.
-- ASan/UBSan 4/4 unit suite: PASS locally on macOS.
+- Warning-clean Release build and 5/5 unit suite: PASS locally on macOS.
+- ASan/UBSan 5/5 unit suite: PASS locally on macOS.
 - Deterministic ASan/UBSan mutation smoke, 20,000 cases: PASS.
 - Installed-package consumer with Expat, zlib, LZ4, Zstandard, and OpenSSL
   Crypto discovered through the exported CMake package: PASS locally and on
@@ -85,9 +85,12 @@
 - Follow-up CI run `34781659044` at commit `5218074`: PASS for Linux, macOS,
   Windows, installed-package consumers, deterministic 20,000-case sanitizer
   mutation, and coverage-guided 20,000-run libFuzzer gates.
+- A committed independent-producer matrix decodes exact externally serialized
+  zlib+sh, LZ4+sh, LZ4HC+sh, and Zstandard+sh blocks. The test reconstructs the
+  source UInt16 Gray and Float32 RGB arrays without the generator and compares
+  every output byte.
 
 ## Still required to close M3
 
-- Independent-producer zlib/LZ4 fixtures and repeatable current RGB/Zstandard
-  performance measurements. The available local checkpoints are not a
-  cross-platform performance claim or SLA.
+- Repeatable current RGB/Zstandard performance measurements. The available
+  local checkpoints are not a cross-platform performance claim or SLA.

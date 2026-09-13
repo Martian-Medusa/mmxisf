@@ -100,6 +100,9 @@ jobs:
           for seed in tests/fuzz_seed*.xisf.b64; do
             base64 --decode "$seed" > "build-fuzz/corpus/$(basename "$seed" .b64)"
           done
+          for seed in tests/interop/*.xisf.b64; do
+            base64 --decode "$seed" > "build-fuzz/corpus/interop-$(basename "$seed" .b64)"
+          done
       - name: Run 20k coverage-guided mutations
         run: >-
           build-fuzz/mmxisf_fuzz_header

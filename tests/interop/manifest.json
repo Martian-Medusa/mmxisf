@@ -1,0 +1,65 @@
+{
+  "schema": "mmxisf.fixture-manifest/1.0.0",
+  "fixtures": [
+    {
+      "id": "third-party-gray-u16-zlib-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u16-zlib-sh.xisf.b64"},
+      "sha256": "7a5e97af8cb10c57ba787892df9c8050a080a3e4332612937c3f86343501e8f3",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on the Martian Medusa UInt16 Gray array described in README.md with codec=zlib and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zlib-shuffle", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "99202 decoded bytes; SHA-256 6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"
+    },
+    {
+      "id": "third-party-gray-u16-lz4-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u16-lz4-sh.xisf.b64"},
+      "sha256": "0f1e521e612a9574c1761af9fe41b6acc825c837aa6c1162cc8e89e918f344ee",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on the Martian Medusa UInt16 Gray array described in README.md with codec=lz4 and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.lz4-shuffle", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "99202 decoded bytes; SHA-256 6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"
+    },
+    {
+      "id": "third-party-gray-u16-lz4hc-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u16-lz4hc-sh.xisf.b64"},
+      "sha256": "f33b9cc8f397ef4d8b333b9754d72bfa88795052335a23daafc661b113873131",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on the Martian Medusa UInt16 Gray array described in README.md with codec=lz4hc and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.lz4hc-shuffle", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "99202 decoded bytes; SHA-256 6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"
+    },
+    {
+      "id": "third-party-gray-u16-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u16-zstd-sh.xisf.b64"},
+      "sha256": "8c86271006085159be06906ebe05a26cebfc86cc4bc10a54dd669ca96e2afa13",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on the Martian Medusa UInt16 Gray array described in README.md with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "99202 decoded bytes; SHA-256 6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"
+    },
+    {
+      "id": "third-party-rgb-f32-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/rgb-f32-zstd-sh.xisf.b64"},
+      "sha256": "f47f4530345ab1e43e320351458f574a39f283a3211ee597ce062410ab0a66d0",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on the Martian Medusa Float32 RGB array described in README.md with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.float32", "image.rgb", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "595212 decoded bytes; SHA-256 0132a60d85d32dc98a67944988fdf1276d597e52dd3bedfd0e13fb50eb311475"
+    }
+  ]
+}

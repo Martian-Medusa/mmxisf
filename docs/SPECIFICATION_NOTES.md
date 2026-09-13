@@ -52,3 +52,19 @@ The reader requires the property to exist and accepts both the normative
 `TimePoint` declaration and this observed `String` form. It preserves the
 declared type and raw value exactly; no implicit conversion or conformance claim
 is made for the compatibility form.
+
+## SN-004: independent writer uses equivalent XML declaration syntax
+
+- Section: 8.2
+- Status: narrow lexical compatibility exception
+
+The pinned grammar requires the XISF header to begin with an XML 1.0 UTF-8
+declaration. The independent `xisf` 0.9.7 writer emits
+`<?xml version='1.0' encoding='utf8'?>`, using single quotes and the common
+hyphenless UTF-8 alias.
+
+The reader accepts single or double XML attribute quotes and ASCII-case-
+insensitive `UTF-8` or `UTF8`. It still requires the declaration at byte zero,
+version `1.0`, and an explicit UTF-8 encoding; it rejects other versions,
+encodings, and `standalone` declarations. This compatibility choice changes no
+decoded text semantics and has dedicated positive and negative tests.

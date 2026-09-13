@@ -33,8 +33,6 @@ namespace {
 constexpr std::array<unsigned char, 8> kSignature{'X', 'I', 'S', 'F',
                                                   '0', '1', '0', '0'};
 constexpr std::string_view kXisfNamespace = "http://www.pixinsight.com/xisf";
-constexpr std::string_view kXmlDeclaration =
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 Error make_error(ErrorCode code, std::string message) {
   Error error;
@@ -799,6 +797,7 @@ struct XmlBuilder {
   std::size_t nodes{0};
   bool saw_root{false};
   bool root_closed{false};
+  bool saw_xml_declaration{false};
   std::vector<std::size_t> image_stack;
   std::vector<std::string> element_stack;
   std::optional<std::size_t> text_metadata_index;
@@ -837,6 +836,43 @@ struct XmlBuilder {
                                : std::optional<std::size_t>(image_stack.back());
   }
 };
+
+bool ascii_case_equal(std::string_view left, std::string_view right) {
+  if (left.size() != right.size()) {
+    return false;
+  }
+  for (std::size_t index = 0; index < left.size(); ++index) {
+    const auto fold = [](char character) {
+      return character >= 'A' && character <= 'Z'
+                 ? static_cast<char>(character - 'A' + 'a')
+                 : character;
+    };
+    if (fold(left[index]) != fold(right[index])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void XMLCALL xml_declaration(void *user_data, const XML_Char *version,
+                             const XML_Char *encoding, int standalone) {
+  auto &state = *static_cast<XmlBuilder *>(user_data);
+  state.saw_xml_declaration = true;
+  if (version == nullptr || std::string_view(version) != "1.0") {
+    state.fail(ErrorCode::invalid_xisf, "XISF requires an XML 1.0 declaration");
+    return;
+  }
+  if (encoding == nullptr || !(ascii_case_equal(encoding, "UTF-8") ||
+                               ascii_case_equal(encoding, "UTF8"))) {
+    state.fail(ErrorCode::invalid_xisf,
+               "XISF requires a UTF-8 XML declaration");
+    return;
+  }
+  if (standalone != -1) {
+    state.fail(ErrorCode::invalid_xisf,
+               "XISF XML declaration cannot specify standalone");
+  }
+}
 
 std::optional<unsigned char> base64_value(char character) {
   if (character >= 'A' && character <= 'Z') {
@@ -1685,10 +1721,9 @@ Result<ParsedHeader> parse_header(std::string_view xml,
                                   const ReaderOptions &options,
                                   std::uint64_t file_size,
                                   std::uint32_t header_length) {
-  if (!xml.starts_with(kXmlDeclaration)) {
-    return make_error(
-        ErrorCode::invalid_xisf,
-        "XISF header must begin with the XML 1.0 UTF-8 declaration");
+  if (!xml.starts_with("<?xml")) {
+    return make_error(ErrorCode::invalid_xisf,
+                      "XISF header must begin with an XML declaration");
   }
   XmlBuilder state;
   state.options = options;
@@ -1700,6 +1735,7 @@ Result<ParsedHeader> parse_header(std::string_view xml,
   XML_SetElementHandler(state.parser, start_element, end_element);
   XML_SetCharacterDataHandler(state.parser, character_data);
   XML_SetStartDoctypeDeclHandler(state.parser, reject_doctype);
+  XML_SetXmlDeclHandler(state.parser, xml_declaration);
 
   constexpr std::size_t kXmlChunkBytes = 1024U * 1024U;
   std::size_t offset = 0;
@@ -1727,6 +1763,10 @@ Result<ParsedHeader> parse_header(std::string_view xml,
   state.parser = nullptr;
   if (state.error) {
     return std::move(*state.error);
+  }
+  if (!state.saw_xml_declaration) {
+    return make_error(ErrorCode::invalid_xisf,
+                      "XISF header is missing its XML declaration");
   }
   if (!state.saw_root || !state.root_closed) {
     return make_error(ErrorCode::invalid_xisf, "Incomplete XISF root element");

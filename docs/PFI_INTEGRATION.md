@@ -67,16 +67,18 @@ The adapter projects fields as follows:
 | PFI field | mmxisf source | Rule |
 | --- | --- | --- |
 | XISF property id | `MetadataEntry::name` | exact, case-sensitive |
-| XISF property value | `MetadataEntry::value` | only attribute or character-data forms accepted initially |
+| XISF property value | `MetadataEntry::value` or `Reader::read_property_block` | attribute/character data remain exact strings; the PFI adapter decodes only its bounded required WCS matrix/vectors |
 | FITS name | `MetadataEntry::name` | exact validated name |
 | FITS raw value | `MetadataEntry::value` | exact XML-decoded attribute text, including quotes |
-| FITS stripped value | adapter-derived | apply the existing PFI policy; retain raw value beside it |
+| FITS stripped value | consumer-derived | omit when the standalone source cannot reproduce the host field; the existing PFI parser conservatively consumes the retained raw value |
 | comment | `MetadataEntry::comment` | exact; absence is not fabricated |
 | provenance | entry scope plus binding | retain direct/reference and source image index |
 
-Block-backed properties remain explicit but unavailable to the initial PFI
-projection until the library implements their typed decoding. An unsupported
-form must produce a diagnostic/unavailable state, never an empty substitute.
+Block-backed properties remain explicit. The current PFI adapter decodes the
+2x2 native astrometric matrix and two length-2 reference vectors, records every
+other omitted block with a reason, and never substitutes an empty value. Its
+synthetic JSON projection reaches the existing PFI frame/coordinate metadata
+semantics; current-host differential acceptance remains separate.
 
 Before any pixel read, the adapter checks `Document::images().size()`. A count
 other than one returns PFI's existing unsupported-multi-image result while the

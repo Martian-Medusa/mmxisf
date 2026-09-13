@@ -1789,18 +1789,67 @@ int main() {
                                      mmxisf::ErrorCode::invalid_xisf,
          "mandatory XML declaration is enforced");
 
-  const auto noncanonical_declaration_path = write_fixture(
-      "mmxisf-noncanonical-declaration.xisf",
+  const auto compatible_declaration_path = write_fixture(
+      "mmxisf-compatible-declaration.xisf",
       std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                   "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                   "version=\"1.0\">") +
           valid_metadata() + "</xisf>",
       {}, 1024, false);
-  auto noncanonical_declaration =
-      mmxisf::Reader::open_file(noncanonical_declaration_path);
-  expect(!noncanonical_declaration && noncanonical_declaration.error().code ==
-                                          mmxisf::ErrorCode::invalid_xisf,
-         "canonical XML 1.0 UTF-8 declaration is enforced");
+  auto compatible_declaration =
+      mmxisf::Reader::open_file(compatible_declaration_path);
+  expect(compatible_declaration.has_value(),
+         "equivalent XML 1.0 UTF-8 declaration syntax is accepted");
+
+  const auto independent_declaration_path = write_fixture(
+      "mmxisf-independent-declaration.xisf",
+      std::string("<?xml version='1.0' encoding='utf8'?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto independent_declaration =
+      mmxisf::Reader::open_file(independent_declaration_path);
+  expect(independent_declaration.has_value(),
+         "independent-producer XML declaration syntax is accepted");
+
+  const auto wrong_xml_version_path = write_fixture(
+      "mmxisf-xml-version.xisf",
+      std::string("<?xml version=\"1.1\" encoding=\"UTF-8\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto wrong_xml_version = mmxisf::Reader::open_file(wrong_xml_version_path);
+  expect(!wrong_xml_version &&
+             wrong_xml_version.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "non-1.0 XML declaration is rejected");
+
+  const auto wrong_xml_encoding_path = write_fixture(
+      "mmxisf-xml-encoding.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto wrong_xml_encoding = mmxisf::Reader::open_file(wrong_xml_encoding_path);
+  expect(!wrong_xml_encoding &&
+             wrong_xml_encoding.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "non-UTF-8 XML declaration is rejected");
+
+  const auto standalone_declaration_path = write_fixture(
+      "mmxisf-standalone-declaration.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"UTF-8\" "
+                  "standalone=\"yes\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto standalone_declaration =
+      mmxisf::Reader::open_file(standalone_declaration_path);
+  expect(!standalone_declaration && standalone_declaration.error().code ==
+                                        mmxisf::ErrorCode::invalid_xisf,
+         "standalone XML declaration is rejected");
 
   const auto root_text_path = write_fixture(
       "mmxisf-root-text.xisf",

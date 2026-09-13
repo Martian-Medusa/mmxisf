@@ -91,11 +91,23 @@
   The astrometric file includes exact 2x2 linear WCS and two-element reference
   coordinate blocks required by the PFI projection. This is private-producer
   compatibility evidence, not an independent-producer claim.
+- Five committed files written by the documented public API of independent
+  package `xisf` 0.9.7 parse and decode exactly. Its XML serializer exposed a
+  declaration spelling difference (`'` quotes and `utf8`) that is now covered
+  by positive compatibility tests plus negative XML-version/encoding tests.
+- PFI adapter commit `d89aa320c9abd983cdcf2fe06e38e509f8e9724d`
+  projects ordered image metadata into the existing JavaScript frame/WCS
+  contract. Its generated synthetic cross-layer test is PASS. The same path
+  processed the four pinned private files: `ar-src` produced an available
+  native astrometric candidate, `M106_RGB` retained available observation time
+  and exposure, `NGC2244_linear` retained the existing explicit conflict
+  between two FITS WCS candidates, and metadata-free `psf-fit` remained
+  unavailable. These are standalone semantic results, not host parity.
 
 ## Still required for M4
 
-- Project the newly decoded WCS vectors/matrices through the PFI adapter and
-  compare its conservative FITS stripping with the current host result.
+- Compare the implemented PFI WCS/frame-metadata projection and its conservative
+  raw-FITS handling with the current host result.
 - Exercise the metadata parity matrix against independently produced files and
   the local non-redistributed PFI corpus.
 - Record an explicit PFI multi-image accept/reject result for each input while

@@ -84,6 +84,14 @@ if(MMXISF_BUILD_TESTS)
   add_executable(mmxisf_reader_test tests/reader_test.cpp)
   target_link_libraries(mmxisf_reader_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.reader COMMAND mmxisf_reader_test)
+  add_executable(mmxisf_independent_producer_test
+    tests/independent_producer_test.cpp)
+  target_compile_definitions(mmxisf_independent_producer_test
+    PRIVATE MMXISF_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+  target_link_libraries(mmxisf_independent_producer_test
+    PRIVATE mmxisf::mmxisf OpenSSL::Crypto)
+  add_test(NAME mmxisf.independent-producer
+    COMMAND mmxisf_independent_producer_test)
   add_executable(mmxisf_viewer_preview_test tests/viewer_preview_test.cpp)
   target_link_libraries(
     mmxisf_viewer_preview_test PRIVATE mmxisf_viewer_preview

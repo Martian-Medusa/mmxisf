@@ -1,6 +1,6 @@
 # ADR 0003: strict streaming XML boundary
 
-- Status: Proposed; validate with M1 spike
+- Status: Accepted; validated in M1 and independent-producer follow-up
 - Date: 2026-09-13
 
 ## Context
@@ -23,6 +23,9 @@ The adapter must reject DOCTYPE before processing declarations, install no
 external entity resolver, validate UTF-8, reject duplicate attributes and
 multiple roots, and enforce byte/depth/node/attribute/text limits. The domain
 builder, not the XML library, enforces XISF grammar and reference resolution.
+The XML declaration callback validates semantic XML 1.0/UTF-8 requirements
+rather than relying on one literal quote/case spelling; SN-004 records the
+narrow external-writer compatibility form.
 
 ## Consequences
 

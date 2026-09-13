@@ -1,5 +1,6 @@
 "XISF0100"
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+"<?xml version='1.0' encoding='utf8'?>"
 "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
 "</xisf>"
 "<Metadata/>"

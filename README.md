@@ -5,8 +5,9 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete; M2 and M3 implementation are complete with external
-> interoperability acceptance still pending; M4 is in progress and the first
+> Status: M1 is complete; M2 implementation has a first committed independent-
+> producer pixel matrix; M3 codec interoperability is accepted for that matrix
+> with performance acceptance still pending; M4 is in progress and the first
 > M5 integration prerequisites are implemented. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
@@ -139,8 +140,8 @@ build-fuzz-smoke/mmxisf_fuzz_smoke
 On a Clang installation that includes libFuzzer, enable
 `MMXISF_BUILD_FUZZER=ON` as well and run `mmxisf_fuzz_header` with
 `tests/fuzz_header.dict`. CI decodes the committed metadata, zlib, and LZ4 seed
-corpus from `tests/fuzz_seed*.xisf.b64`, performs 20,000 coverage-guided runs,
-and retains a crashing input when the job fails.
+corpus from `tests/fuzz_seed*.xisf.b64` and `tests/interop/*.xisf.b64`, performs
+20,000 coverage-guided runs, and retains a crashing input when the job fails.
 
 ## Build and run the macOS PoC viewer
 
