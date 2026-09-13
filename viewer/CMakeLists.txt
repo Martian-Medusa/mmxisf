@@ -1,4 +1,9 @@
 add_executable(mmxisf_viewer MACOSX_BUNDLE Viewer.mm)
+target_sources(mmxisf_viewer PRIVATE "${PROJECT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md")
+set_source_files_properties(
+  "${PROJECT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md"
+  PROPERTIES MACOSX_PACKAGE_LOCATION Resources
+)
 target_compile_features(mmxisf_viewer PRIVATE cxx_std_20)
 target_compile_options(mmxisf_viewer PRIVATE -fobjc-arc)
 target_link_libraries(
@@ -34,16 +39,15 @@ if(EXPAT_LIBRARY MATCHES "\\.dylib$")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${MMXISF_EXPAT_REAL_PATH}"
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/libexpat.1.dylib"
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Resources"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${PROJECT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md"
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Resources/THIRD_PARTY_NOTICES.md"
     COMMAND install_name_tool -id "@rpath/libexpat.1.dylib"
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/libexpat.1.dylib"
     COMMAND install_name_tool -change "${MMXISF_EXPAT_INSTALL_NAME}"
             "@rpath/libexpat.1.dylib"
             "$<TARGET_FILE:mmxisf_viewer>"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/libexpat.1.dylib"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
