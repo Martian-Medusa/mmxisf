@@ -91,7 +91,7 @@
   The astrometric file includes exact 2x2 linear WCS and two-element reference
   coordinate blocks required by the PFI projection. This is private-producer
   compatibility evidence, not an independent-producer claim.
-- Five committed files written by the documented public API of independent
+- Nine committed files written by the documented public API of independent
   package `xisf` 0.9.7 parse and decode exactly. Its XML serializer exposed a
   declaration spelling difference (`'` quotes and `utf8`) that is now covered
   by positive compatibility tests plus negative XML-version/encoding tests.

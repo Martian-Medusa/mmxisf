@@ -8,8 +8,8 @@ PFI, PixInsight, PCL, or Qt.
 > Status: M1 is complete; M2 implementation has an independent-producer scalar
 > and color matrix, with storage/endian combinations still partial; M3 codec,
 > resource-limit, and local performance prerequisites are complete; M4 is in
-> progress and the first
-> M5 integration prerequisites are implemented. Version
+> progress and the first M5 integration prerequisites are implemented. M6 has
+> a deterministic, uncompressed UInt16 Gray/RGB writer foundation. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
@@ -61,6 +61,7 @@ milestone. They remain candidates for later conformance work.
 - [M2 progress](docs/M2_STATUS.md)
 - [M3 progress](docs/M3_STATUS.md)
 - [M4 progress](docs/M4_STATUS.md)
+- [M6 writer progress](docs/M6_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
@@ -86,6 +87,14 @@ the runner's default Xcode 16.4 are insufficient for this API.
 The CI package gate also configures and runs the independent
 `tests/package_consumer` project against the installed CMake package rather
 than the source tree.
+
+The pre-release `Writer::write_file` foundation emits one attached Planar
+UInt16 Gray or RGB image with explicitly supplied creation time, creator,
+dimensions, byte order, and immutable pixel bytes. Equivalent inputs produce
+byte-identical files. Existing destinations are not overwritten, resource
+limits and arithmetic are checked before file creation, and cancellation
+removes incomplete temporary output. Compression, arbitrary metadata, and
+multiple images are not yet accepted by the writer API.
 
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Decoded attachment bytes can be returned in an

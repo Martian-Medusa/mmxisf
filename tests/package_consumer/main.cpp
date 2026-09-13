@@ -3,6 +3,7 @@
 #include "mmxisf/byte_source.hpp"
 #include "mmxisf/reader.hpp"
 #include "mmxisf/version.hpp"
+#include "mmxisf/writer.hpp"
 
 #include <string_view>
 
@@ -13,6 +14,9 @@ int main() {
   mmxisf::MetadataBinding binding;
   mmxisf::RawImage image;
   mmxisf::RawPropertyBlock property;
+  mmxisf::ImageWriteView write_image;
+  mmxisf::WriterOptions writer_options;
+  mmxisf::WriteSummary write_summary;
   return options.max_header_bytes > 0 && options.max_encoded_block_bytes > 0 &&
                  options.max_serialized_property_bytes > 0 &&
                  options.max_decoded_property_bytes > 0 &&
@@ -31,6 +35,9 @@ int main() {
                      mmxisf::ChecksumVerification::not_declared &&
                  property.checksum_verification ==
                      mmxisf::ChecksumVerification::not_declared &&
+                 write_image.pixel_storage == mmxisf::PixelStorage::planar &&
+                 writer_options.attachment_alignment == 4096 &&
+                 write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
                  std::string_view(mmxisf::version()) == "0.1.0"
              ? 0
              : 1;

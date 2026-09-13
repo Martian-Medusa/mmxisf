@@ -31,7 +31,7 @@ find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(ZLIB REQUIRED)
 find_package(ZSTD REQUIRED)
 
-add_library(mmxisf src/reader.cpp src/version.cpp)
+add_library(mmxisf src/reader.cpp src/version.cpp src/writer.cpp)
 add_library(mmxisf::mmxisf ALIAS mmxisf)
 
 target_compile_features(mmxisf PUBLIC cxx_std_20)
@@ -84,6 +84,9 @@ if(MMXISF_BUILD_TESTS)
   add_executable(mmxisf_reader_test tests/reader_test.cpp)
   target_link_libraries(mmxisf_reader_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.reader COMMAND mmxisf_reader_test)
+  add_executable(mmxisf_writer_test tests/writer_test.cpp)
+  target_link_libraries(mmxisf_writer_test PRIVATE mmxisf::mmxisf)
+  add_test(NAME mmxisf.writer COMMAND mmxisf_writer_test)
   add_executable(mmxisf_independent_producer_test
     tests/independent_producer_test.cpp)
   target_compile_definitions(mmxisf_independent_producer_test

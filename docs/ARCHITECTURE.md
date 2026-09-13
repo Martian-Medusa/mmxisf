@@ -49,11 +49,17 @@ The M1 pre-release API now supports:
   native-endian conversion;
 - bounded chunk reads with cooperative cancellation;
 
+The initial writer foundation now provides:
+
+- `Writer::write_file` for a single attached Planar UInt16 Gray/RGB image with
+  deterministic XML/block planning, explicit volatile provenance, finite
+  budgets, and cooperative cancellation.
+
 Later milestones still need:
 
 - a bounded row/tile callback for low-copy analysis;
-- `Writer::write(document, image_sources, sink, options)` with deterministic
-  options and an explicit provenance policy;
+- expansion from the narrow writer foundation to multiple images, declared
+  metadata, compression, and an explicit provenance policy;
 - injectable byte sinks for files, memory, and tests.
 
 Remote locations must not trigger network access. A future network resolver is

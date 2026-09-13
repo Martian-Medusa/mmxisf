@@ -1,0 +1,438 @@
+// SPDX-License-Identifier: Apache-2.0
+
+#include "mmxisf/writer.hpp"
+
+#include <algorithm>
+#include <array>
+#include <fstream>
+#include <limits>
+#include <string_view>
+#include <system_error>
+
+namespace mmxisf {
+namespace {
+
+Error make_error(ErrorCode code, std::string message) {
+  Error error;
+  error.code = code;
+  error.message = std::move(message);
+  return error;
+}
+
+bool checked_multiply(std::uint64_t left, std::uint64_t right,
+                      std::uint64_t &result) {
+  if (left != 0 && right > std::numeric_limits<std::uint64_t>::max() / left) {
+    return false;
+  }
+  result = left * right;
+  return true;
+}
+
+bool checked_add(std::uint64_t left, std::uint64_t right,
+                 std::uint64_t &result) {
+  if (right > std::numeric_limits<std::uint64_t>::max() - left) {
+    return false;
+  }
+  result = left + right;
+  return true;
+}
+
+bool is_power_of_two(std::uint64_t value) {
+  return value != 0 && (value & (value - 1)) == 0;
+}
+
+Result<std::uint64_t> align_up(std::uint64_t value, std::uint64_t alignment) {
+  const auto remainder = value & (alignment - 1);
+  if (remainder == 0) {
+    return value;
+  }
+  std::uint64_t aligned = 0;
+  if (!checked_add(value, alignment - remainder, aligned)) {
+    return make_error(ErrorCode::overflow,
+                      "Writer attachment alignment overflows");
+  }
+  return aligned;
+}
+
+bool is_leap_year(unsigned year) {
+  return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+}
+
+bool parse_digits(std::string_view text, std::size_t position,
+                  std::size_t count, unsigned &value) {
+  if (position > text.size() || count > text.size() - position) {
+    return false;
+  }
+  value = 0;
+  for (std::size_t index = 0; index < count; ++index) {
+    const auto character = text[position + index];
+    if (character < '0' || character > '9') {
+      return false;
+    }
+    value = value * 10U + static_cast<unsigned>(character - '0');
+  }
+  return true;
+}
+
+bool is_canonical_utc_time(std::string_view text) {
+  if (text.size() != 20 || text[4] != '-' || text[7] != '-' ||
+      text[10] != 'T' || text[13] != ':' || text[16] != ':' ||
+      text[19] != 'Z') {
+    return false;
+  }
+  unsigned year = 0;
+  unsigned month = 0;
+  unsigned day = 0;
+  unsigned hour = 0;
+  unsigned minute = 0;
+  unsigned second = 0;
+  if (!parse_digits(text, 0, 4, year) || !parse_digits(text, 5, 2, month) ||
+      !parse_digits(text, 8, 2, day) || !parse_digits(text, 11, 2, hour) ||
+      !parse_digits(text, 14, 2, minute) ||
+      !parse_digits(text, 17, 2, second)) {
+    return false;
+  }
+  constexpr std::array<unsigned, 12> month_lengths{31, 28, 31, 30, 31, 30,
+                                                   31, 31, 30, 31, 30, 31};
+  if (month == 0 || month > month_lengths.size()) {
+    return false;
+  }
+  auto maximum_day = month_lengths[month - 1];
+  if (month == 2 && is_leap_year(year)) {
+    maximum_day = 29;
+  }
+  return day != 0 && day <= maximum_day && hour <= 23 && minute <= 59 &&
+         second <= 60;
+}
+
+bool is_valid_xml_utf8(std::string_view text) {
+  std::size_t index = 0;
+  while (index < text.size()) {
+    const auto lead = static_cast<unsigned char>(text[index]);
+    std::uint32_t code_point = 0;
+    std::size_t continuation_count = 0;
+    if (lead < 0x80U) {
+      code_point = lead;
+    } else if (lead >= 0xc2U && lead <= 0xdfU) {
+      code_point = lead & 0x1fU;
+      continuation_count = 1;
+    } else if (lead >= 0xe0U && lead <= 0xefU) {
+      code_point = lead & 0x0fU;
+      continuation_count = 2;
+    } else if (lead >= 0xf0U && lead <= 0xf4U) {
+      code_point = lead & 0x07U;
+      continuation_count = 3;
+    } else {
+      return false;
+    }
+    if (continuation_count > text.size() - index - 1) {
+      return false;
+    }
+    for (std::size_t continuation = 0; continuation < continuation_count;
+         ++continuation) {
+      const auto byte =
+          static_cast<unsigned char>(text[index + continuation + 1]);
+      if ((byte & 0xc0U) != 0x80U) {
+        return false;
+      }
+      code_point = (code_point << 6U) | (byte & 0x3fU);
+    }
+    if ((continuation_count == 2 && code_point < 0x800U) ||
+        (continuation_count == 3 && code_point < 0x10000U) ||
+        code_point > 0x10ffffU ||
+        (code_point >= 0xd800U && code_point <= 0xdfffU)) {
+      return false;
+    }
+    const bool xml_character =
+        code_point == 0x09U || code_point == 0x0aU || code_point == 0x0dU ||
+        (code_point >= 0x20U && code_point <= 0xd7ffU) ||
+        (code_point >= 0xe000U && code_point <= 0xfffdU) ||
+        (code_point >= 0x10000U && code_point <= 0x10ffffU);
+    if (!xml_character) {
+      return false;
+    }
+    index += continuation_count + 1;
+  }
+  return true;
+}
+
+Result<std::string> escape_xml(std::string_view input, bool attribute) {
+  if (!is_valid_xml_utf8(input)) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer text is not valid XML 1.0 UTF-8");
+  }
+  std::string output;
+  output.reserve(input.size());
+  for (const auto character : input) {
+    switch (character) {
+    case '&':
+      output += "&amp;";
+      break;
+    case '<':
+      output += "&lt;";
+      break;
+    case '>':
+      output += "&gt;";
+      break;
+    case '"':
+      output += attribute ? "&quot;" : "\"";
+      break;
+    default:
+      output.push_back(character);
+      break;
+    }
+  }
+  return output;
+}
+
+Result<std::string> make_header(const ImageWriteView &image,
+                                const WriterOptions &options,
+                                std::uint64_t attachment_offset,
+                                std::uint64_t pixel_bytes) {
+  auto escaped_id = escape_xml(image.id, true);
+  if (!escaped_id) {
+    return escaped_id.error();
+  }
+  auto escaped_creator = escape_xml(options.creator_application, false);
+  if (!escaped_creator) {
+    return escaped_creator.error();
+  }
+
+  const auto byte_order =
+      image.byte_order == ByteOrder::little ? "little" : "big";
+  std::string header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+  header += "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">";
+  header += "<Image";
+  if (!image.id.empty()) {
+    header += " id=\"" + escaped_id.value() + "\"";
+  }
+  header += " geometry=\"" + std::to_string(image.width) + ':' +
+            std::to_string(image.height) + ':' +
+            std::to_string(image.channels) + "\"";
+  header += " sampleFormat=\"UInt16\" colorSpace=\"" + image.color_space +
+            "\" pixelStorage=\"Planar\" byteOrder=\"" + byte_order + "\"";
+  header += " location=\"attachment:" + std::to_string(attachment_offset) +
+            ':' + std::to_string(pixel_bytes) + "\"/>";
+  header += "<Metadata><Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
+            "value=\"" +
+            options.creation_time + "\"/>";
+  header += "<Property id=\"XISF:CreatorApplication\" type=\"String\">" +
+            escaped_creator.value() + "</Property></Metadata></xisf>";
+  return header;
+}
+
+Result<std::size_t> write_all(std::ofstream &output,
+                              std::span<const std::byte> bytes,
+                              std::stop_token stop_token) {
+  constexpr std::size_t kChunkBytes = 8U * 1024U * 1024U;
+  std::size_t written = 0;
+  while (written < bytes.size()) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+    }
+    const auto count = std::min(kChunkBytes, bytes.size() - written);
+    output.write(reinterpret_cast<const char *>(bytes.data() + written),
+                 static_cast<std::streamsize>(count));
+    if (!output) {
+      return make_error(ErrorCode::io_error, "Unable to write XISF bytes");
+    }
+    written += count;
+  }
+  return written;
+}
+
+class TemporaryFileCleanup {
+public:
+  explicit TemporaryFileCleanup(std::filesystem::path path)
+      : path_(std::move(path)) {}
+  ~TemporaryFileCleanup() {
+    std::error_code ignored;
+    std::filesystem::remove(path_, ignored);
+  }
+
+private:
+  std::filesystem::path path_;
+};
+
+} // namespace
+
+Result<WriteSummary>
+Writer::write_file(const std::filesystem::path &destination,
+                   const ImageWriteView &image, const WriterOptions &options,
+                   std::stop_token stop_token) {
+  if (stop_token.stop_requested()) {
+    return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+  }
+  if (destination.empty()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer destination cannot be empty");
+  }
+  if (image.sample_format != SampleFormat::uint16 ||
+      image.pixel_storage != PixelStorage::planar ||
+      (image.color_space != "Gray" && image.color_space != "RGB")) {
+    return make_error(
+        ErrorCode::unsupported_feature,
+        "Writer foundation supports Planar UInt16 Gray or RGB images");
+  }
+  if (image.width == 0 || image.height == 0 ||
+      (image.color_space == "Gray" ? image.channels != 1
+                                   : image.channels != 3)) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer image geometry does not match its color space");
+  }
+  if (!is_power_of_two(options.attachment_alignment) ||
+      options.attachment_alignment < 16 ||
+      options.attachment_alignment > 1024U * 1024U) {
+    return make_error(
+        ErrorCode::invalid_argument,
+        "Writer alignment must be a power of two from 16 to 1 MiB");
+  }
+  if (!is_canonical_utc_time(options.creation_time)) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer creation time must be YYYY-MM-DDTHH:MM:SSZ");
+  }
+  if (options.creator_application.empty()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer creator application cannot be empty");
+  }
+
+  std::uint64_t sample_count = 0;
+  std::uint64_t pixel_bytes = 0;
+  if (!checked_multiply(image.width, image.height, sample_count) ||
+      !checked_multiply(sample_count, image.channels, sample_count) ||
+      !checked_multiply(sample_count, 2, pixel_bytes)) {
+    return make_error(ErrorCode::overflow, "Writer image byte count overflows");
+  }
+  if (pixel_bytes > options.max_image_bytes) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer image exceeds its byte budget");
+  }
+  if (pixel_bytes != image.pixels.size()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer pixel span size does not match image geometry");
+  }
+
+  std::uint64_t attachment_offset = options.attachment_alignment;
+  std::string header;
+  bool layout_stable = false;
+  for (unsigned iteration = 0; iteration < 4; ++iteration) {
+    auto candidate =
+        make_header(image, options, attachment_offset, pixel_bytes);
+    if (!candidate) {
+      return candidate.error();
+    }
+    header = std::move(candidate).value();
+    std::uint64_t header_end = 0;
+    if (!checked_add(16, header.size(), header_end)) {
+      return make_error(ErrorCode::overflow, "Writer header size overflows");
+    }
+    auto aligned = align_up(header_end, options.attachment_alignment);
+    if (!aligned) {
+      return aligned.error();
+    }
+    if (aligned.value() == attachment_offset) {
+      layout_stable = true;
+      break;
+    }
+    attachment_offset = aligned.value();
+  }
+  if (!layout_stable) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer could not stabilize its attachment layout");
+  }
+  if (header.size() > options.max_header_bytes ||
+      header.size() > std::numeric_limits<std::uint32_t>::max()) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer header exceeds its byte budget");
+  }
+  std::uint64_t header_end = 0;
+  std::uint64_t file_size = 0;
+  if (!checked_add(16, header.size(), header_end) ||
+      attachment_offset < header_end ||
+      !checked_add(attachment_offset, pixel_bytes, file_size)) {
+    return make_error(ErrorCode::overflow, "Writer file layout overflows");
+  }
+
+  const auto path_is_available = [](const std::filesystem::path &path) {
+    std::error_code error;
+    const auto status = std::filesystem::symlink_status(path, error);
+    return (!error && status.type() == std::filesystem::file_type::not_found) ||
+           error == std::errc::no_such_file_or_directory;
+  };
+  if (!path_is_available(destination)) {
+    return make_error(ErrorCode::io_error,
+                      "Writer destination already exists or cannot be checked");
+  }
+  auto temporary = destination;
+  temporary += ".mmxisf-tmp";
+  if (!path_is_available(temporary)) {
+    return make_error(
+        ErrorCode::io_error,
+        "Writer temporary path already exists or cannot be checked");
+  }
+  TemporaryFileCleanup cleanup(temporary);
+  std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
+  if (!output) {
+    return make_error(ErrorCode::io_error,
+                      "Unable to create temporary XISF file");
+  }
+
+  std::array<std::byte, 16> preamble{
+      std::byte{'X'}, std::byte{'I'}, std::byte{'S'}, std::byte{'F'},
+      std::byte{'0'}, std::byte{'1'}, std::byte{'0'}, std::byte{'0'}};
+  const auto header_length = static_cast<std::uint32_t>(header.size());
+  preamble[8] = static_cast<std::byte>(header_length & 0xffU);
+  preamble[9] = static_cast<std::byte>((header_length >> 8U) & 0xffU);
+  preamble[10] = static_cast<std::byte>((header_length >> 16U) & 0xffU);
+  preamble[11] = static_cast<std::byte>((header_length >> 24U) & 0xffU);
+  auto preamble_written = write_all(output, preamble, stop_token);
+  if (!preamble_written) {
+    return preamble_written.error();
+  }
+  const auto header_bytes = std::as_bytes(std::span(header));
+  auto header_written = write_all(output, header_bytes, stop_token);
+  if (!header_written) {
+    return header_written.error();
+  }
+  std::array<std::byte, 4096> zeros{};
+  auto padding = attachment_offset - header_end;
+  while (padding != 0) {
+    const auto count = static_cast<std::size_t>(
+        std::min<std::uint64_t>(padding, zeros.size()));
+    auto padding_written =
+        write_all(output, std::span(zeros).first(count), stop_token);
+    if (!padding_written) {
+      return padding_written.error();
+    }
+    padding -= count;
+  }
+  auto pixels_written = write_all(output, image.pixels, stop_token);
+  if (!pixels_written) {
+    return pixels_written.error();
+  }
+  output.flush();
+  if (!output) {
+    return make_error(ErrorCode::io_error, "Unable to flush XISF file");
+  }
+  output.close();
+  if (!output) {
+    return make_error(ErrorCode::io_error, "Unable to close XISF file");
+  }
+  std::error_code filesystem_error;
+  std::filesystem::create_hard_link(temporary, destination, filesystem_error);
+  if (filesystem_error) {
+    return make_error(ErrorCode::io_error,
+                      "Unable to commit temporary XISF file");
+  }
+  WriteSummary summary;
+  summary.file_size = file_size;
+  summary.header_length = header_length;
+  summary.image_block.kind = BlockKind::attachment;
+  summary.image_block.offset = attachment_offset;
+  summary.image_block.size = pixel_bytes;
+  summary.image_block.raw = "attachment:" + std::to_string(attachment_offset) +
+                            ':' + std::to_string(pixel_bytes);
+  return summary;
+}
+
+} // namespace mmxisf
