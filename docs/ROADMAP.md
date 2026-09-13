@@ -86,7 +86,9 @@ The third checkpoint established a complete Linux, Windows, and macOS CI PASS,
 including the installed-package consumer and the AppKit viewer build. The
 coverage-guided harness is now wired to Linux Clang CI with a minimal valid
 seed, a format dictionary, a bounded 20,000-run campaign, and failure-artifact
-retention. Its result is recorded separately after that CI run completes.
+retention. Its first run passed under ASan/UBSan with 3,035 coverage points,
+6,330 features, and a generated 72-unit corpus. Longer continuous campaigns
+remain a pre-publication hardening gate.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external

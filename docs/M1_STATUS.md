@@ -61,8 +61,10 @@
 - M2 entry API review: PASS for a pre-release spike. Image descriptors retain
   geometry/channel semantics, numeric bounds, raw block/compression/checksum
   declarations, and exact byte delivery without UI or Expat types.
-- Full coverage-guided libFuzzer harness: IMPLEMENTED, but NOT_TESTED locally;
-  Apple Command Line Tools on this host lacks `libclang_rt.fuzzer_osx.a`.
+- Full coverage-guided libFuzzer harness: PASS in Linux CI for 20,000 runs under
+  ASan/UBSan, reaching 3,035 coverage points and 6,330 features with a 72-unit
+  generated corpus. It remains NOT_TESTED locally because Apple Command Line
+  Tools on this host lacks `libclang_rt.fuzzer_osx.a`.
 - Linux/macOS/Windows dependency-aware CI and Linux sanitizer-smoke jobs:
   ACTIVE in the private GitHub repository.
 
@@ -111,6 +113,20 @@ cross-platform PASS:
 This closes the cross-platform build/package gate. M1 remains in progress for
 the deeper grammar/boundary matrix and coverage-guided fuzz evidence.
 
+### Cross-platform CI attempt 4
+
+GitHub Actions run `34769723575` on commit `2dc08e3` retained the complete
+cross-platform PASS and added the missing coverage-guided fuzz evidence:
+
+- Deterministic ASan/UBSan mutation smoke: 20,000 cases PASS.
+- Clang libFuzzer with ASan/UBSan, a valid XISF seed, and the format dictionary:
+  20,000 runs PASS with no crash, timeout, or sanitizer finding.
+- Final libFuzzer counters: `cov: 3035`, `ft: 6330`, `corp: 72/20Kb`.
+- CI preserves a crashing input for seven days when this gate fails.
+
+The short run is an M1 regression gate, not a substitute for long-running
+continuous fuzzing before a public support claim.
+
 Private astronomy files were read locally and were not copied into this
 repository or its generated bundle.
 
@@ -132,8 +148,8 @@ repository or its generated bundle.
   and checked-arithmetic combinations.
 - Continue XISF grammar validation beyond the implemented root, Metadata,
   Image, Property, and FITSKeyword placement/mandatory-attribute rules.
-- Run the prepared coverage-guided fuzz target on a Clang toolchain that ships
-  libFuzzer and retain a minimized regression corpus for every finding.
+- Retain a minimized regression corpus for every future fuzzing finding and
+  add longer scheduled campaigns before a public support claim.
 - Revisit the source contract after the first codec/checksum implementation;
   do not freeze ABI or 0.1 API names before that evidence.
 
