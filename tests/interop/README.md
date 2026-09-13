@@ -55,9 +55,10 @@ anchors the observed external result without imposing its whole-file hash on
 future writer builds.
 
 A 2026-09-14 black-box consumer check covered the block-Property writer API.
-Package `xisf` 0.9.7 returned the exact 2x2 F64Matrix values, a big-endian
-UI16Vector as `[513, 1027]`, formatting metadata, byte order, and attachment
-locations from the public metadata API. The deterministic 12,292-byte probe had
-SHA-256 `e80a2d0a478cfc8fb8d09595855eb8f21da56f55ee96703551d973f34965626c`.
+Package `xisf` 0.9.7 returned the exact Zstandard+shuffle+SHA-256 2x2 F64Matrix
+values, a big-endian UI16Vector as `[513, 1027]`, formatting metadata, byte
+order, checksum, and attachment locations from the public metadata API. The
+deterministic 12,292-byte probe had SHA-256
+`4da1d1bef566e6cbe626522cf938d738db667e7b2648a26bc1a2c376eb125abb`.
 The compiled writer test regenerates and verifies its stronger self-round-trip
 contract; the external package is not a project dependency.

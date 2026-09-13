@@ -46,11 +46,15 @@ int main() {
                  writer_options.max_cumulative_image_bytes > 0 &&
                  writer_options.max_property_bytes > 0 &&
                  writer_options.max_cumulative_property_bytes > 0 &&
+                 writer_options.max_serialized_property_bytes > 0 &&
+                 writer_options.max_cumulative_serialized_property_bytes > 0 &&
                  writer_options.max_serialized_image_bytes > 0 &&
                  writer_options.max_cumulative_serialized_bytes > 0 &&
                  write_metadata.kind == mmxisf::MetadataWriteKind::property &&
                  write_metadata.value_form ==
                      mmxisf::MetadataWriteValueForm::direct &&
+                 write_metadata.compression == mmxisf::CompressionCodec::none &&
+                 write_metadata.checksum == mmxisf::ChecksumAlgorithm::none &&
                  write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
                  write_summary.image_blocks.empty() &&
                  write_summary.property_blocks.empty() &&

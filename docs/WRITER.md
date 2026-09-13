@@ -20,7 +20,7 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - fixed caller-supplied creation time and creator application.
 
 The current writer rejects big-endian image and Normal/interleaved output,
-compressed Property blocks, references, and raw XML.
+references, and raw XML.
 Reader support for any other feature does not imply writer support.
 
 ## Minimal use
@@ -133,12 +133,17 @@ Set `value_form` to `data_block`, declare either `length` or `rows` and
 `columns`, and provide exact typed bytes through `block_bytes`. The bytes are
 borrowed until `write_file` returns and are never converted. Their size must
 match the declared element type and extent exactly. `byte_order` defaults to
-little endian and `format` is retained as declarative metadata.
+little endian and `format` is retained as declarative metadata. Property blocks
+use the same compression, optional byte shuffle, checksum, bounded-subblock,
+and cleanup-guarded spool behavior as image blocks. Shuffle operates on the
+declared Property element width, including a complete complex element.
 
 Property attachments follow image attachments and preserve metadata encounter
 order. `WriteSummary::property_blocks` reports their locations in block-entry
 encounter order. `max_property_bytes` and `max_cumulative_property_bytes`
 independently bound this data before a destination is created.
+The corresponding serialized limits are `max_serialized_property_bytes` and
+`max_cumulative_serialized_property_bytes`.
 
 ## Failure and filesystem contract
 

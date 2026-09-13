@@ -59,6 +59,9 @@ struct MetadataWriteEntry {
   ByteOrder byte_order{ByteOrder::little};
   std::string format;
   std::span<const std::byte> block_bytes;
+  CompressionCodec compression{CompressionCodec::none};
+  bool byte_shuffle{false};
+  ChecksumAlgorithm checksum{ChecksumAlgorithm::none};
 };
 
 struct WriterOptions {
@@ -73,6 +76,9 @@ struct WriterOptions {
   std::uint64_t max_cumulative_image_bytes{4ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_property_bytes{256ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_property_bytes{512ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_cumulative_serialized_property_bytes{512ULL * 1024ULL *
+                                                         1024ULL};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_serialized_bytes{4ULL * 1024ULL * 1024ULL *
                                                 1024ULL};

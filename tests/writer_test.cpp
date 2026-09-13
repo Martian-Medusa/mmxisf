@@ -452,7 +452,10 @@ void test_block_property_round_trip() {
           .rows = 2,
           .columns = 2,
           .format = "matrix:2x2",
-          .block_bytes = matrix},
+          .block_bytes = matrix,
+          .compression = mmxisf::CompressionCodec::zstd,
+          .byte_shuffle = true,
+          .checksum = mmxisf::ChecksumAlgorithm::sha256},
       mmxisf::MetadataWriteEntry{.name = "XISF:TestWeights",
                                  .type = "UI16Vector",
                                  .value_form =
@@ -469,7 +472,7 @@ void test_block_property_round_trip() {
   expect(first && second && read_file(first_path) == read_file(second_path),
          "block Property writer is not deterministic");
   expect(first.value().property_blocks.size() == 2 &&
-             first.value().property_blocks[0].size == matrix.size() &&
+             first.value().property_blocks[0].size > 0 &&
              first.value().property_blocks[1].size == weights.size() &&
              first.value().property_blocks[0].offset % 4096 == 0 &&
              first.value().property_blocks[1].offset % 4096 == 0,
@@ -485,7 +488,9 @@ void test_block_property_round_trip() {
       matrix_index = index;
       expect(entries[index].image_index == 0 && entries[index].rows == 2 &&
                  entries[index].columns == 2 &&
-                 entries[index].format == "matrix:2x2",
+                 entries[index].format == "matrix:2x2" &&
+                 entries[index].compression == "zstd+sh:32:8" &&
+                 entries[index].checksum.starts_with("sha-256:"),
              "matrix Property descriptor changed");
     } else if (entries[index].name == "XISF:TestWeights") {
       weights_index = index;
@@ -500,12 +505,85 @@ void test_block_property_round_trip() {
   auto weights_block = opened.value().read_property_block(*weights_index);
   expect(matrix_block &&
              matrix_block.value().bytes ==
-                 std::vector<std::byte>(matrix.begin(), matrix.end()),
+                 std::vector<std::byte>(matrix.begin(), matrix.end()) &&
+             matrix_block.value().checksum_verification ==
+                 mmxisf::ChecksumVerification::verified,
          "matrix Property bytes did not round trip exactly");
   expect(weights_block &&
              weights_block.value().bytes ==
                  std::vector<std::byte>(weights.begin(), weights.end()),
          "vector Property source bytes did not round trip exactly");
+}
+
+void test_block_property_subblocks_round_trip() {
+  const std::array<std::byte, 8> pixels{
+      std::byte{1}, std::byte{0}, std::byte{2}, std::byte{0},
+      std::byte{3}, std::byte{0}, std::byte{4}, std::byte{0}};
+  std::array<std::byte, 64> samples{};
+  for (std::size_t index = 0; index < samples.size(); ++index) {
+    samples[index] = static_cast<std::byte>((index * 29U + 7U) & 0xffU);
+  }
+  const auto image = gray_image(pixels);
+  const auto metadata = mmxisf::MetadataWriteEntry{
+      .image_index = 0,
+      .name = "Test:CompressedVector",
+      .type = "UI16Vector",
+      .value_form = mmxisf::MetadataWriteValueForm::data_block,
+      .length = samples.size() / 2,
+      .block_bytes = samples,
+      .compression = mmxisf::CompressionCodec::zstd,
+      .byte_shuffle = true,
+      .checksum = mmxisf::ChecksumAlgorithm::sha512};
+  auto write_options = options();
+  write_options.compression_subblock_bytes = 16;
+  const auto path = output_path("mmxisf-writer-property-subblocks.xisf");
+  auto written = mmxisf::Writer::write_file(
+      path, std::span(&image, 1),
+      std::span<const mmxisf::MetadataWriteEntry>(&metadata, 1), write_options);
+  expect(written && written.value().property_blocks.size() == 1,
+         "compressed Property subblock writer failed");
+  auto spool = path;
+  spool += ".mmxisf-property-block-0-tmp";
+  expect(!std::filesystem::exists(spool),
+         "compressed Property spool survived successful write");
+
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value(), "compressed Property result did not reopen");
+  std::optional<std::size_t> property_index;
+  const auto &entries = opened.value().document().metadata();
+  for (std::size_t index = 0; index < entries.size(); ++index) {
+    if (entries[index].name == "Test:CompressedVector") {
+      property_index = index;
+      expect(entries[index].compression == "zstd+sh:64:2" &&
+                 !entries[index].subblocks.empty() &&
+                 entries[index].checksum.starts_with("sha-512:"),
+             "compressed Property descriptors changed");
+    }
+  }
+  expect(property_index.has_value(), "compressed Property metadata is missing");
+  auto decoded = opened.value().read_property_block(*property_index);
+  expect(decoded &&
+             decoded.value().bytes ==
+                 std::vector<std::byte>(samples.begin(), samples.end()) &&
+             decoded.value().checksum_verification ==
+                 mmxisf::ChecksumVerification::verified,
+         "compressed Property subblocks did not round trip exactly");
+
+  const auto stale_path =
+      output_path("mmxisf-writer-property-subblocks-stale.xisf");
+  auto stale_spool = stale_path;
+  stale_spool += ".mmxisf-property-block-0-tmp";
+  cleanup_paths.push_back(stale_spool);
+  {
+    std::ofstream stale(stale_spool, std::ios::binary);
+    stale << "keep";
+  }
+  auto stale = mmxisf::Writer::write_file(
+      stale_path, std::span(&image, 1),
+      std::span<const mmxisf::MetadataWriteEntry>(&metadata, 1), write_options);
+  expect(!stale && stale.error().code == mmxisf::ErrorCode::io_error &&
+             read_file(stale_spool) == std::vector<char>{'k', 'e', 'e', 'p'},
+         "writer overwrote a stale Property compression spool");
 }
 
 void test_compression_shuffle_checksum_round_trip() {
@@ -881,6 +959,30 @@ void test_rejection_and_cleanup() {
   expect(!metadata_result && metadata_result.error().code ==
                                  mmxisf::ErrorCode::invalid_argument,
          "writer Property block accepted invalid format UTF-8");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Vector",
+                      .type = "UI8Vector",
+                      .value_form = mmxisf::MetadataWriteValueForm::data_block,
+                      .length = pixels.size(),
+                      .block_bytes = pixels,
+                      .byte_shuffle = true};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-shuffle"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "writer Property shuffle without compression was accepted");
+  invalid_metadata.compression = mmxisf::CompressionCodec::zstd;
+  auto serialized_property_options = options();
+  serialized_property_options.max_serialized_property_bytes = 1;
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-serialized-limit"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      serialized_property_options);
+  expect(!metadata_result &&
+             metadata_result.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer serialized Property byte budget was not enforced");
   invalid_metadata = {
       .image_index = 0, .name = "Test:Value", .type = "UInt8", .value = "256"};
   metadata_result = mmxisf::Writer::write_file(
@@ -1079,6 +1181,7 @@ int main() {
     test_declared_metadata_round_trip();
     test_scalar_metadata_round_trip();
     test_block_property_round_trip();
+    test_block_property_subblocks_round_trip();
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();

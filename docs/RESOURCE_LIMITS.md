@@ -25,7 +25,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
 | writer compression subblock bytes | 16 MiB | Bounds codec and byte-shuffle scratch independently of full image size |
-| writer Property bytes | 256 MiB per block / 512 MiB cumulative | Bounds caller-provided typed vector and matrix attachments independently of images |
+| writer Property bytes | 256 MiB per block / 512 MiB cumulative, decoded and serialized independently | Bounds caller-provided and compressed typed vector/matrix attachments independently of images |
 | decompression ratio | 65,536:1 | Measured current-producer sparse embedded RGB requires about 32,506:1; absolute decoded-byte and sample caps remain authoritative |
 | Zstandard window | 256 MiB | Bounds codec history allocation independently of decoded image size; configurable only as a power of two |
 | diagnostic records | 1,000 | Prevent error amplification |
@@ -57,3 +57,6 @@ than one sample and a zero subblock-count budget are invalid arguments. Running
 out of the configured count or serialized-byte budget is a resource-limit
 failure; the writer never silently falls back to a larger scratch allocation or
 uncompressed output.
+For Property blocks the same rule uses the full declared element width,
+including both components of a complex element. Property decoded and serialized
+budgets are independent from image budgets.

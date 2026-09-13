@@ -24,6 +24,9 @@ block-only fields. A `data_block` entry:
 - borrows an immutable byte span only until `write_file` returns;
 - treats those bytes as already encoded in the declared little- or big-endian
   element representation and performs no conversion;
+- can apply zlib, LZ4, LZ4HC, or Zstandard compression, optional element-width
+  byte shuffle, deterministic subblocks, and SHA-1/256/512 integrity using the
+  same bounded block pipeline as images;
 - rejects a direct value, FITS kind, unsupported type, incomplete extent,
   checked-arithmetic overflow, span mismatch, and resource-limit excess before
   creating a destination;
@@ -34,12 +37,9 @@ block-only fields. A `data_block` entry:
 The existing metadata overload remains source-compatible because all new
 fields are trailing and default to the direct form. `WriteSummary` reports
 Property attachment locations in block-entry encounter order. Independent
-per-Property and cumulative decoded-byte budgets are public writer options.
-
-Compression, shuffle, and checksums are deliberately not exposed by this API
-slice. They will reuse the image block pipeline only after raw block layout and
-external consumer behavior are established. Unsupported requests cannot be
-expressed accidentally through raw descriptor strings.
+per-Property and cumulative decoded and serialized byte budgets are public
+writer options. Unsupported requests cannot be expressed accidentally through
+raw descriptor strings.
 
 ## Consequences
 

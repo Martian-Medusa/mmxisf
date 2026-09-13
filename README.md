@@ -102,9 +102,10 @@ and FITS keywords plus the corresponding XISF-unit Properties without accepting
 raw XML. The same ordered metadata records can attach exact typed vector and
 matrix bytes with checked extents, explicit byte order, and independent limits.
 Optional zlib, LZ4, LZ4HC, and Zstandard compression can be combined with byte
-shuffle and SHA-1/256/512 checksums. Large compressed images use bounded,
-sample-aligned subblocks so codec/shuffle scratch does not scale to the complete
-image. Compressed Property blocks and references remain later profiles.
+shuffle and SHA-1/256/512 checksums. Image and Property compression share the
+same bounded pipeline. Large compressed blocks use bounded, item-aligned
+subblocks so codec/shuffle scratch does not scale to the complete block.
+References remain a later profile.
 
 The optional build-tree `mmxisf-writer-benchmark` exercises a deterministic
 73.5 MB RGB compression/checksum profile without committing a large fixture;

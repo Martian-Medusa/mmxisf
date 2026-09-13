@@ -479,6 +479,15 @@ struct PropertyElementLayout {
   bool matrix{false};
 };
 
+struct PreparedBlock {
+  std::vector<std::byte> storage;
+  std::filesystem::path spool_path;
+  std::uint64_t serialized_size{0};
+  std::string compression;
+  std::string subblocks;
+  std::string checksum;
+};
+
 std::optional<PropertyElementLayout>
 property_element_layout(std::string_view type) {
   const bool vector = type.ends_with("Vector") || type == "ByteArray";
@@ -528,7 +537,8 @@ property_element_layout(std::string_view type) {
 
 Result<std::string>
 make_metadata_xml(const MetadataWriteEntry &entry,
-                  const BlockLocation *property_block = nullptr) {
+                  const BlockLocation *property_block = nullptr,
+                  const PreparedBlock *prepared_block = nullptr) {
   auto escaped_name = escape_xml(entry.name, true);
   auto escaped_value = escape_xml(
       entry.value,
@@ -549,7 +559,7 @@ make_metadata_xml(const MetadataWriteEntry &entry,
            "\"/>";
   }
   if (entry.value_form == MetadataWriteValueForm::data_block) {
-    if (property_block == nullptr) {
+    if (property_block == nullptr || prepared_block == nullptr) {
       return make_error(ErrorCode::internal_error,
                         "Writer Property block layout is missing");
     }
@@ -570,6 +580,15 @@ make_metadata_xml(const MetadataWriteEntry &entry,
     }
     if (!entry.format.empty()) {
       result += " format=\"" + escaped_format.value() + "\"";
+    }
+    if (!prepared_block->compression.empty()) {
+      result += " compression=\"" + prepared_block->compression + "\"";
+    }
+    if (!prepared_block->subblocks.empty()) {
+      result += " subblocks=\"" + prepared_block->subblocks + "\"";
+    }
+    if (!prepared_block->checksum.empty()) {
+      result += " checksum=\"" + prepared_block->checksum + "\"";
     }
     result +=
         " location=\"attachment:" + std::to_string(property_block->offset) +
@@ -618,15 +637,6 @@ Result<std::string> format_bound(double value) {
   }
   return std::string(buffer.data(), converted.ptr);
 }
-
-struct PreparedImageBlock {
-  std::vector<std::byte> storage;
-  std::filesystem::path spool_path;
-  std::uint64_t serialized_size{0};
-  std::string compression;
-  std::string subblocks;
-  std::string checksum;
-};
 
 std::string_view compression_name(CompressionCodec codec) {
   switch (codec) {
@@ -908,9 +918,10 @@ Result<std::string>
 make_header(std::span<const ImageWriteView> images,
             std::span<const MetadataWriteEntry> metadata,
             const WriterOptions &options,
-            std::span<const PreparedImageBlock> prepared,
+            std::span<const PreparedBlock> prepared,
             std::span<const BlockLocation> image_blocks,
-            std::span<const BlockLocation> metadata_blocks) {
+            std::span<const BlockLocation> metadata_blocks,
+            std::span<const PreparedBlock> prepared_metadata) {
   auto escaped_creator = escape_xml(options.creator_application, false);
   if (!escaped_creator) {
     return escaped_creator.error();
@@ -973,7 +984,11 @@ make_header(std::span<const ImageWriteView> images,
       const auto *block = entry.value_form == MetadataWriteValueForm::data_block
                               ? &metadata_blocks[metadata_index]
                               : nullptr;
-      auto serialized = make_metadata_xml(entry, block);
+      const auto *prepared_property =
+          entry.value_form == MetadataWriteValueForm::data_block
+              ? &prepared_metadata[metadata_index]
+              : nullptr;
+      auto serialized = make_metadata_xml(entry, block, prepared_property);
       if (!serialized) {
         return serialized.error();
       }
@@ -995,7 +1010,11 @@ make_header(std::span<const ImageWriteView> images,
     const auto *block = entry.value_form == MetadataWriteValueForm::data_block
                             ? &metadata_blocks[metadata_index]
                             : nullptr;
-    auto serialized = make_metadata_xml(entry, block);
+    const auto *prepared_property =
+        entry.value_form == MetadataWriteValueForm::data_block
+            ? &prepared_metadata[metadata_index]
+            : nullptr;
+    auto serialized = make_metadata_xml(entry, block, prepared_property);
     if (!serialized) {
       return serialized.error();
     }
@@ -1103,6 +1122,168 @@ Writer::write_file(const std::filesystem::path &destination,
 
 namespace {
 
+struct BlockPrepareRequest {
+  std::span<const std::byte> bytes;
+  std::size_t item_size{0};
+  CompressionCodec compression{CompressionCodec::none};
+  bool byte_shuffle{false};
+  ChecksumAlgorithm checksum{ChecksumAlgorithm::none};
+  std::uint64_t max_serialized_bytes{0};
+  std::uint64_t max_cumulative_remaining{0};
+  std::string spool_suffix;
+};
+
+Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
+                                    const BlockPrepareRequest &request,
+                                    const WriterOptions &options,
+                                    TemporaryFilesCleanup &cleanup,
+                                    std::stop_token stop_token) {
+  PreparedBlock block;
+  const auto decoded_size = static_cast<std::uint64_t>(request.bytes.size());
+  if (request.compression != CompressionCodec::none) {
+    auto chunk_limit = options.compression_subblock_bytes;
+    if (request.compression == CompressionCodec::lz4 ||
+        request.compression == CompressionCodec::lz4hc) {
+      chunk_limit = std::min<std::uint64_t>(chunk_limit, LZ4_MAX_INPUT_SIZE);
+    } else if (request.compression == CompressionCodec::zlib) {
+      chunk_limit = std::min<std::uint64_t>(chunk_limit,
+                                            std::numeric_limits<uLong>::max());
+    }
+    chunk_limit -= chunk_limit % request.item_size;
+    if (chunk_limit < request.item_size) {
+      return make_error(
+          ErrorCode::invalid_argument,
+          "Writer compression subblock size is smaller than one item");
+    }
+
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
+    const bool use_spool = decoded_size > chunk_limit;
+    std::ofstream spool_output;
+    if (use_spool) {
+      block.spool_path = destination;
+      block.spool_path += request.spool_suffix;
+      if (!path_is_available(block.spool_path)) {
+        return make_error(
+            ErrorCode::io_error,
+            "Writer compression spool already exists or cannot be checked");
+      }
+      cleanup.track(block.spool_path);
+      spool_output.open(block.spool_path, std::ios::binary | std::ios::trunc);
+      if (!spool_output) {
+        return make_error(ErrorCode::io_error,
+                          "Unable to create writer compression spool");
+      }
+    }
+
+    std::uint64_t input_offset = 0;
+    std::uint64_t serialized_so_far = 0;
+    while (input_offset < decoded_size) {
+      if (stop_token.stop_requested()) {
+        return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+      }
+      if (subblocks.size() >= options.max_compression_subblocks) {
+        return make_error(
+            ErrorCode::resource_limit,
+            "Writer compression subblock count exceeds its budget");
+      }
+      const auto uncompressed_size =
+          std::min(chunk_limit, decoded_size - input_offset);
+      const auto input =
+          request.bytes.subspan(static_cast<std::size_t>(input_offset),
+                                static_cast<std::size_t>(uncompressed_size));
+      std::vector<std::byte> shuffled;
+      std::span<const std::byte> compression_input = input;
+      if (request.byte_shuffle) {
+        auto result = shuffle_bytes(input, request.item_size);
+        if (!result) {
+          return result.error();
+        }
+        shuffled = std::move(result).value();
+        compression_input = shuffled;
+      }
+      if (serialized_so_far >= request.max_serialized_bytes ||
+          serialized_so_far >= request.max_cumulative_remaining) {
+        return make_error(
+            ErrorCode::resource_limit,
+            "Writer compressed block has no remaining byte budget");
+      }
+      const auto compression_budget =
+          std::min(request.max_serialized_bytes - serialized_so_far,
+                   request.max_cumulative_remaining - serialized_so_far);
+      auto compressed = compress_bytes(compression_input, request.compression,
+                                       compression_budget, stop_token);
+      if (!compressed) {
+        return compressed.error();
+      }
+      const auto compressed_size =
+          static_cast<std::uint64_t>(compressed.value().size());
+      if (use_spool) {
+        auto spooled = write_all(spool_output, compressed.value(), stop_token);
+        if (!spooled) {
+          return spooled.error();
+        }
+      } else {
+        block.storage = std::move(compressed).value();
+      }
+      subblocks.emplace_back(compressed_size, uncompressed_size);
+      serialized_so_far += compressed_size;
+      input_offset += uncompressed_size;
+    }
+    if (use_spool) {
+      spool_output.flush();
+      if (!spool_output) {
+        return make_error(ErrorCode::io_error,
+                          "Unable to flush writer compression spool");
+      }
+      spool_output.close();
+      if (!spool_output) {
+        return make_error(ErrorCode::io_error,
+                          "Unable to close writer compression spool");
+      }
+    }
+    block.serialized_size = serialized_so_far;
+    block.compression = std::string(compression_name(request.compression));
+    if (request.byte_shuffle) {
+      block.compression += "+sh";
+    }
+    block.compression += ':' + std::to_string(decoded_size);
+    if (request.byte_shuffle) {
+      block.compression += ':' + std::to_string(request.item_size);
+    }
+    if (subblocks.size() > 1) {
+      for (const auto &[compressed_size, uncompressed_size] : subblocks) {
+        if (!block.subblocks.empty()) {
+          block.subblocks += ':';
+        }
+        block.subblocks += std::to_string(compressed_size) + ',' +
+                           std::to_string(uncompressed_size);
+      }
+    }
+  } else {
+    block.serialized_size = decoded_size;
+  }
+  if (block.serialized_size > request.max_serialized_bytes ||
+      block.serialized_size > request.max_cumulative_remaining) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer serialized block exceeds its byte budget");
+  }
+  if (request.checksum != ChecksumAlgorithm::none) {
+    auto checksum =
+        block.spool_path.empty()
+            ? compute_checksum(block.storage.empty()
+                                   ? request.bytes
+                                   : std::span<const std::byte>(block.storage),
+                               request.checksum)
+            : compute_checksum_file(block.spool_path, block.serialized_size,
+                                    request.checksum, stop_token);
+    if (!checksum) {
+      return checksum.error();
+    }
+    block.checksum = std::move(checksum).value();
+  }
+  return block;
+}
+
 Result<WriteSummary>
 write_file_impl(const std::filesystem::path &destination,
                 std::span<const ImageWriteView> images,
@@ -1163,7 +1344,6 @@ write_file_impl(const std::filesystem::path &destination,
                                                     "XISF:CreatorApplication"};
   std::vector<std::unordered_set<std::string>> image_property_ids(
       images.size());
-  std::vector<std::uint64_t> property_sizes(metadata.size(), 0);
   std::uint64_t cumulative_property_bytes = 0;
   for (std::size_t metadata_index = 0; metadata_index < metadata.size();
        ++metadata_index) {
@@ -1186,7 +1366,9 @@ write_file_impl(const std::filesystem::path &destination,
     if (entry.kind == MetadataWriteKind::fits_keyword) {
       if (entry.value_form != MetadataWriteValueForm::direct || entry.length ||
           entry.rows || entry.columns || !entry.format.empty() ||
-          !entry.block_bytes.empty()) {
+          !entry.block_bytes.empty() ||
+          entry.compression != CompressionCodec::none || entry.byte_shuffle ||
+          entry.checksum != ChecksumAlgorithm::none) {
         return make_error(ErrorCode::invalid_argument,
                           "Writer FITS keywords cannot use Property blocks");
       }
@@ -1214,7 +1396,9 @@ write_file_impl(const std::filesystem::path &destination,
       if (entry.value_form == MetadataWriteValueForm::direct) {
         if (entry.length || entry.rows || entry.columns ||
             !entry.format.empty() || !entry.block_bytes.empty() ||
-            entry.byte_order != ByteOrder::little) {
+            entry.byte_order != ByteOrder::little ||
+            entry.compression != CompressionCodec::none || entry.byte_shuffle ||
+            entry.checksum != ChecksumAlgorithm::none) {
           return make_error(
               ErrorCode::invalid_argument,
               "Writer direct Properties cannot declare block fields");
@@ -1294,11 +1478,23 @@ write_file_impl(const std::filesystem::path &destination,
           return make_error(ErrorCode::invalid_argument,
                             "Writer Property byte order is invalid");
         }
+        if (!is_valid_compression_codec(entry.compression)) {
+          return make_error(ErrorCode::invalid_argument,
+                            "Writer Property compression codec is invalid");
+        }
+        if (!is_valid_checksum_algorithm(entry.checksum)) {
+          return make_error(ErrorCode::invalid_argument,
+                            "Writer Property checksum algorithm is invalid");
+        }
+        if (entry.byte_shuffle && entry.compression == CompressionCodec::none) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer Property byte shuffle requires compression");
+        }
         auto escaped_format = escape_xml(entry.format, true);
         if (!escaped_format) {
           return escaped_format.error();
         }
-        property_sizes[metadata_index] = expected_bytes;
       } else {
         return make_error(ErrorCode::invalid_argument,
                           "Writer Property value form is invalid");
@@ -1414,174 +1610,87 @@ write_file_impl(const std::filesystem::path &destination,
   TemporaryFilesCleanup cleanup;
   cleanup.track(temporary);
 
-  std::vector<PreparedImageBlock> prepared(images.size());
+  std::vector<PreparedBlock> prepared(images.size());
   std::uint64_t cumulative_serialized_bytes = 0;
   for (std::size_t index = 0; index < images.size(); ++index) {
     const auto &image = images[index];
-    auto &block = prepared[index];
-    if (image.compression != CompressionCodec::none) {
-      if (cumulative_serialized_bytes >
-          options.max_cumulative_serialized_bytes) {
-        return make_error(
-            ErrorCode::resource_limit,
-            "Writer images exceed their cumulative serialized-byte budget");
-      }
-      const auto sample_size = static_cast<std::size_t>(
-          sample_format_description(image.sample_format).second);
-      auto chunk_limit =
-          static_cast<std::uint64_t>(options.compression_subblock_bytes);
-      if (image.compression == CompressionCodec::lz4 ||
-          image.compression == CompressionCodec::lz4hc) {
-        chunk_limit = std::min<std::uint64_t>(chunk_limit, LZ4_MAX_INPUT_SIZE);
-      } else if (image.compression == CompressionCodec::zlib) {
-        chunk_limit = std::min<std::uint64_t>(
-            chunk_limit, std::numeric_limits<uLong>::max());
-      }
-      chunk_limit -= chunk_limit % sample_size;
-      if (chunk_limit < sample_size) {
-        return make_error(
-            ErrorCode::invalid_argument,
-            "Writer compression subblock size is smaller than one sample");
-      }
-
-      std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
-      const bool use_spool = pixel_sizes[index] > chunk_limit;
-      std::ofstream spool_output;
-      if (use_spool) {
-        block.spool_path = destination;
-        block.spool_path += ".mmxisf-block-" + std::to_string(index) + "-tmp";
-        if (!path_is_available(block.spool_path)) {
-          return make_error(
-              ErrorCode::io_error,
-              "Writer compression spool already exists or cannot be checked");
-        }
-        cleanup.track(block.spool_path);
-        spool_output.open(block.spool_path, std::ios::binary | std::ios::trunc);
-        if (!spool_output) {
-          return make_error(ErrorCode::io_error,
-                            "Unable to create writer compression spool");
-        }
-      }
-      std::uint64_t input_offset = 0;
-      std::uint64_t serialized_so_far = 0;
-      while (input_offset < pixel_sizes[index]) {
-        if (stop_token.stop_requested()) {
-          return make_error(ErrorCode::cancelled, "XISF write was cancelled");
-        }
-        if (subblocks.size() >= options.max_compression_subblocks) {
-          return make_error(
-              ErrorCode::resource_limit,
-              "Writer compression subblock count exceeds its budget");
-        }
-        const auto uncompressed_size =
-            std::min(chunk_limit, pixel_sizes[index] - input_offset);
-        const auto input =
-            image.pixels.subspan(static_cast<std::size_t>(input_offset),
-                                 static_cast<std::size_t>(uncompressed_size));
-        std::vector<std::byte> shuffled;
-        std::span<const std::byte> compression_input = input;
-        if (image.byte_shuffle) {
-          auto result = shuffle_bytes(input, sample_size);
-          if (!result) {
-            return result.error();
-          }
-          shuffled = std::move(result).value();
-          compression_input = shuffled;
-        }
-        if (serialized_so_far >= options.max_serialized_image_bytes ||
-            serialized_so_far > options.max_cumulative_serialized_bytes -
-                                    cumulative_serialized_bytes) {
-          return make_error(
-              ErrorCode::resource_limit,
-              "Writer compressed block has no remaining byte budget");
-        }
-        const auto remaining_image =
-            options.max_serialized_image_bytes - serialized_so_far;
-        const auto remaining_cumulative =
-            options.max_cumulative_serialized_bytes -
-            cumulative_serialized_bytes - serialized_so_far;
-        const auto compression_budget =
-            std::min(remaining_image, remaining_cumulative);
-        auto compressed = compress_bytes(compression_input, image.compression,
-                                         compression_budget, stop_token);
-        if (!compressed) {
-          return compressed.error();
-        }
-        const auto compressed_size =
-            static_cast<std::uint64_t>(compressed.value().size());
-        if (use_spool) {
-          auto spooled =
-              write_all(spool_output, compressed.value(), stop_token);
-          if (!spooled) {
-            return spooled.error();
-          }
-        } else {
-          block.storage = std::move(compressed).value();
-        }
-        subblocks.emplace_back(compressed_size, uncompressed_size);
-        serialized_so_far += compressed_size;
-        input_offset += uncompressed_size;
-      }
-      if (use_spool) {
-        spool_output.flush();
-        if (!spool_output) {
-          return make_error(ErrorCode::io_error,
-                            "Unable to flush writer compression spool");
-        }
-        spool_output.close();
-        if (!spool_output) {
-          return make_error(ErrorCode::io_error,
-                            "Unable to close writer compression spool");
-        }
-      }
-      block.serialized_size = serialized_so_far;
-      block.compression = std::string(compression_name(image.compression));
-      if (image.byte_shuffle) {
-        block.compression += "+sh";
-      }
-      block.compression += ':' + std::to_string(pixel_sizes[index]);
-      if (image.byte_shuffle) {
-        block.compression +=
-            ':' + std::to_string(
-                      sample_format_description(image.sample_format).second);
-      }
-      if (subblocks.size() > 1) {
-        for (const auto &[compressed_size, uncompressed_size] : subblocks) {
-          if (!block.subblocks.empty()) {
-            block.subblocks += ':';
-          }
-          block.subblocks += std::to_string(compressed_size) + ',' +
-                             std::to_string(uncompressed_size);
-        }
-      }
-    } else {
-      block.serialized_size = pixel_sizes[index];
+    if (cumulative_serialized_bytes > options.max_cumulative_serialized_bytes) {
+      return make_error(
+          ErrorCode::resource_limit,
+          "Writer images exceed their cumulative serialized-byte budget");
     }
-    if (block.serialized_size > options.max_serialized_image_bytes) {
-      return make_error(ErrorCode::resource_limit,
-                        "Writer serialized image exceeds its byte budget");
+    const auto sample_size = static_cast<std::size_t>(
+        sample_format_description(image.sample_format).second);
+    BlockPrepareRequest request{
+        .bytes = image.pixels,
+        .item_size = sample_size,
+        .compression = image.compression,
+        .byte_shuffle = image.byte_shuffle,
+        .checksum = image.checksum,
+        .max_serialized_bytes = options.max_serialized_image_bytes,
+        .max_cumulative_remaining = options.max_cumulative_serialized_bytes -
+                                    cumulative_serialized_bytes,
+        .spool_suffix = ".mmxisf-block-" + std::to_string(index) + "-tmp"};
+    auto block =
+        prepare_block(destination, request, options, cleanup, stop_token);
+    if (!block) {
+      return block.error();
     }
-    if (!checked_add(cumulative_serialized_bytes, block.serialized_size,
+    prepared[index] = std::move(block).value();
+    if (!checked_add(cumulative_serialized_bytes,
+                     prepared[index].serialized_size,
                      cumulative_serialized_bytes) ||
         cumulative_serialized_bytes > options.max_cumulative_serialized_bytes) {
       return make_error(
           ErrorCode::resource_limit,
           "Writer images exceed their cumulative serialized-byte budget");
     }
-    if (image.checksum != ChecksumAlgorithm::none) {
-      auto checksum =
-          block.spool_path.empty()
-              ? compute_checksum(
-                    block.storage.empty()
-                        ? image.pixels
-                        : std::span<const std::byte>(block.storage),
-                    image.checksum)
-              : compute_checksum_file(block.spool_path, block.serialized_size,
-                                      image.checksum, stop_token);
-      if (!checksum) {
-        return checksum.error();
-      }
-      block.checksum = std::move(checksum).value();
+  }
+
+  std::vector<PreparedBlock> prepared_metadata(metadata.size());
+  std::uint64_t cumulative_serialized_property_bytes = 0;
+  for (std::size_t index = 0; index < metadata.size(); ++index) {
+    const auto &entry = metadata[index];
+    if (entry.value_form != MetadataWriteValueForm::data_block) {
+      continue;
+    }
+    if (cumulative_serialized_property_bytes >
+        options.max_cumulative_serialized_property_bytes) {
+      return make_error(
+          ErrorCode::resource_limit,
+          "Writer Properties exceed their cumulative serialized-byte budget");
+    }
+    const auto layout = property_element_layout(entry.type);
+    if (!layout) {
+      return make_error(ErrorCode::internal_error,
+                        "Writer Property layout was not retained");
+    }
+    BlockPrepareRequest request{
+        .bytes = entry.block_bytes,
+        .item_size = static_cast<std::size_t>(layout->element_size),
+        .compression = entry.compression,
+        .byte_shuffle = entry.byte_shuffle,
+        .checksum = entry.checksum,
+        .max_serialized_bytes = options.max_serialized_property_bytes,
+        .max_cumulative_remaining =
+            options.max_cumulative_serialized_property_bytes -
+            cumulative_serialized_property_bytes,
+        .spool_suffix =
+            ".mmxisf-property-block-" + std::to_string(index) + "-tmp"};
+    auto block =
+        prepare_block(destination, request, options, cleanup, stop_token);
+    if (!block) {
+      return block.error();
+    }
+    prepared_metadata[index] = std::move(block).value();
+    if (!checked_add(cumulative_serialized_property_bytes,
+                     prepared_metadata[index].serialized_size,
+                     cumulative_serialized_property_bytes) ||
+        cumulative_serialized_property_bytes >
+            options.max_cumulative_serialized_property_bytes) {
+      return make_error(
+          ErrorCode::resource_limit,
+          "Writer Properties exceed their cumulative serialized-byte budget");
     }
   }
 
@@ -1632,7 +1741,8 @@ write_file_impl(const std::filesystem::path &destination,
       if (metadata[index].value_form != MetadataWriteValueForm::data_block) {
         continue;
       }
-      auto result = plan_one(metadata_blocks[index], property_sizes[index]);
+      auto result = plan_one(metadata_blocks[index],
+                             prepared_metadata[index].serialized_size);
       if (!result) {
         return result.error();
       }
@@ -1652,8 +1762,9 @@ write_file_impl(const std::filesystem::path &destination,
   std::string header;
   bool layout_stable = false;
   for (unsigned iteration = 0; iteration < 4; ++iteration) {
-    auto candidate = make_header(images, metadata, options, prepared,
-                                 image_blocks, metadata_blocks);
+    auto candidate =
+        make_header(images, metadata, options, prepared, image_blocks,
+                    metadata_blocks, prepared_metadata);
     if (!candidate) {
       return candidate.error();
     }
@@ -1760,8 +1871,17 @@ write_file_impl(const std::filesystem::path &destination,
       }
       padding -= count;
     }
+    const auto &prepared_block = prepared_metadata[index];
     auto property_written =
-        write_all(output, metadata[index].block_bytes, stop_token);
+        prepared_block.spool_path.empty()
+            ? write_all(
+                  output,
+                  prepared_block.storage.empty()
+                      ? metadata[index].block_bytes
+                      : std::span<const std::byte>(prepared_block.storage),
+                  stop_token)
+            : write_file_contents(output, prepared_block.spool_path,
+                                  prepared_block.serialized_size, stop_token);
     if (!property_written) {
       return property_written.error();
     }
