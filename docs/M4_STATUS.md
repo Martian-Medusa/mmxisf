@@ -28,6 +28,8 @@
 - Malformed numeric property extents and malformed block locations fail closed.
 - Scalar, Boolean, complex, and TimePoint attribute values are validated by
   bounded linear scans without coercing or rewriting their source text.
+- Integer properties additionally enforce exact declared-width ranges through
+  128 bits, including full-width prefixed two's-complement bit patterns.
 
 ## Evidence available now
 
@@ -59,8 +61,6 @@
 
 ## Still required for M4
 
-- Add declared-width numeric range checks separately from the now-complete
-  lexical syntax gate; 128-bit support remains optional in XISF 1.0.
 - Implement the documented PFI-facing projection in the later PFI adapter and
   compare its conservative FITS stripping with the current host result.
 - Exercise the metadata parity matrix against independently produced files and

@@ -47,8 +47,12 @@ integers accept an optional sign and the interoperable zero representation;
 binary, octal, and hexadecimal prefixes follow the XISF grammar. Unsigned
 decimal properties reject a negative sign. Floating-point values accept the
 specified decimal/exponent grammar and the exact `NaN`, `+Inf`, and `-Inf`
-tokens, and complex components use that same grammar. These checks validate
-syntax, not the declared scalar type's numeric range.
+tokens, and complex components use that same grammar. Integer magnitudes are
+also checked against the exact declared 8-, 16-, 32-, 64-, or 128-bit range
+without relying on a platform-specific 128-bit C++ type. Prefixed integer
+serializations are bounded as complete two's-complement bit patterns, matching
+the signed hexadecimal example in XISF 1.0. Floating-point checks remain
+lexical and do not coerce the value to a host floating type.
 
 TimePoint validation accepts the interoperable ISO 8601 extended/RFC 3339
 calendar-date profile with optional fractional seconds and optional `Z` or

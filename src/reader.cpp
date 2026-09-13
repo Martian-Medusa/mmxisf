@@ -150,7 +150,78 @@ bool is_ascii_digit(char character) {
   return character >= '0' && character <= '9';
 }
 
-bool is_valid_integer_value(std::string_view text, bool is_signed) {
+bool decimal_magnitude_fits(std::string_view digits,
+                            std::string_view maximum) {
+  return digits.size() < maximum.size() ||
+         (digits.size() == maximum.size() && digits <= maximum);
+}
+
+std::string_view maximum_decimal_magnitude(unsigned bit_width, bool is_signed,
+                                           bool is_negative) {
+  if (!is_signed) {
+    switch (bit_width) {
+    case 8:
+      return "255";
+    case 16:
+      return "65535";
+    case 32:
+      return "4294967295";
+    case 64:
+      return "18446744073709551615";
+    case 128:
+      return "340282366920938463463374607431768211455";
+    default:
+      return {};
+    }
+  }
+  switch (bit_width) {
+  case 8:
+    return is_negative ? "128" : "127";
+  case 16:
+    return is_negative ? "32768" : "32767";
+  case 32:
+    return is_negative ? "2147483648" : "2147483647";
+  case 64:
+    return is_negative ? "9223372036854775808" : "9223372036854775807";
+  case 128:
+    return is_negative ? "170141183460469231731687303715884105728"
+                       : "170141183460469231731687303715884105727";
+  default:
+    return {};
+  }
+}
+
+bool prefixed_integer_fits(std::string_view digits, unsigned base,
+                           unsigned bit_width) {
+  const auto first_significant = digits.find_first_not_of('0');
+  if (first_significant == std::string_view::npos) {
+    return true;
+  }
+  digits.remove_prefix(first_significant);
+  if (base == 2) {
+    return digits.size() <= bit_width;
+  }
+  if (base == 16) {
+    return digits.size() <= bit_width / 4;
+  }
+  if (base != 8) {
+    return false;
+  }
+  const auto maximum_digits = (bit_width + 2) / 3;
+  if (digits.size() != maximum_digits) {
+    return digits.size() < maximum_digits;
+  }
+  const auto leading_bits = bit_width % 3;
+  if (leading_bits == 0) {
+    return true;
+  }
+  const auto maximum_leading_digit = (1U << leading_bits) - 1U;
+  return static_cast<unsigned>(digits.front() - '0') <=
+         maximum_leading_digit;
+}
+
+bool is_valid_integer_value(std::string_view text, bool is_signed,
+                            unsigned bit_width) {
   text = trim_xml_whitespace(text);
   if (text.empty()) {
     return false;
@@ -171,20 +242,24 @@ bool is_valid_integer_value(std::string_view text, bool is_signed) {
       if (text.empty()) {
         return false;
       }
-      return std::all_of(text.begin(), text.end(), [base](char character) {
-        if (character >= '0' && character <= '9') {
-          return static_cast<unsigned>(character - '0') < base;
-        }
-        if (base == 16 && character >= 'a' && character <= 'f') {
-          return true;
-        }
-        return base == 16 && character >= 'A' && character <= 'F';
-      });
+      const bool valid_digits =
+          std::all_of(text.begin(), text.end(), [base](char character) {
+            if (character >= '0' && character <= '9') {
+              return static_cast<unsigned>(character - '0') < base;
+            }
+            if (base == 16 && character >= 'a' && character <= 'f') {
+              return true;
+            }
+            return base == 16 && character >= 'A' && character <= 'F';
+          });
+      return valid_digits && prefixed_integer_fits(text, base, bit_width);
     }
   }
 
+  bool is_negative = false;
   if (text.front() == '+' || text.front() == '-') {
-    if (!is_signed && text.front() == '-') {
+    is_negative = text.front() == '-';
+    if (!is_signed && is_negative) {
       return false;
     }
     text.remove_prefix(1);
@@ -192,7 +267,12 @@ bool is_valid_integer_value(std::string_view text, bool is_signed) {
   if (text.empty() || (text.size() > 1 && text.front() == '0')) {
     return false;
   }
-  return std::all_of(text.begin(), text.end(), is_ascii_digit);
+  if (!std::all_of(text.begin(), text.end(), is_ascii_digit)) {
+    return false;
+  }
+  const auto maximum =
+      maximum_decimal_magnitude(bit_width, is_signed, is_negative);
+  return !maximum.empty() && decimal_magnitude_fits(text, maximum);
 }
 
 bool is_valid_floating_point_value(std::string_view text) {
@@ -387,6 +467,27 @@ PropertyValueKind classify_property_value_kind(std::string_view type) {
   return PropertyValueKind::other;
 }
 
+unsigned integer_bit_width(std::string_view type) {
+  if (type == "Int8" || type == "UInt8" || type == "Byte") {
+    return 8;
+  }
+  if (type == "Int16" || type == "Short" || type == "UInt16" ||
+      type == "UShort") {
+    return 16;
+  }
+  if (type == "Int32" || type == "Int" || type == "UInt32" ||
+      type == "UInt") {
+    return 32;
+  }
+  if (type == "Int64" || type == "UInt64") {
+    return 64;
+  }
+  if (type == "Int128" || type == "UInt128") {
+    return 128;
+  }
+  return 0;
+}
+
 bool is_valid_scalar_or_complex_value(std::string_view type,
                                       std::string_view value) {
   switch (classify_property_value_kind(type)) {
@@ -396,9 +497,9 @@ bool is_valid_scalar_or_complex_value(std::string_view type,
            trimmed == "1";
   }
   case PropertyValueKind::signed_integer:
-    return is_valid_integer_value(value, true);
+    return is_valid_integer_value(value, true, integer_bit_width(type));
   case PropertyValueKind::unsigned_integer:
-    return is_valid_integer_value(value, false);
+    return is_valid_integer_value(value, false, integer_bit_width(type));
   case PropertyValueKind::floating_point:
     return is_valid_floating_point_value(value);
   case PropertyValueKind::complex:

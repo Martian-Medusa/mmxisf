@@ -129,12 +129,15 @@ consumers, and both 20,000-case fuzz gates. M3 implementation is complete;
 independent compressed producer files and representative performance/memory
 measurements remain acceptance evidence before the support claim is closed.
 
-M4 began in parallel with the final M3 cross-platform gate. Its first bounded
-slice replaces the ambiguous flat metadata tuple with explicit lexical scope,
+M4 began in parallel with the final M3 cross-platform gate. Its implemented
+slices replace the ambiguous flat metadata tuple with explicit lexical scope,
 value serialization form, optional Property formatting and dimensions, raw
-block location, and uid provenance. It deliberately does not interpret FITS
-values or resolve references yet; those remain separate parity increments so a
-fast metadata projection cannot erase source distinctions needed by PFI.
+block location, and uid provenance. Ordered direct and referenced associations
+are resolved without erasing source scope or duplicate FITS occurrences.
+Property structure, identifiers, scalar syntax, integer ranges, and common ISO
+8601 extended TimePoint forms now fail closed while exact source text remains
+available to the documented PFI projection. Independent-producer parity and
+the later PFI adapter remain the milestone's external evidence gates.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
