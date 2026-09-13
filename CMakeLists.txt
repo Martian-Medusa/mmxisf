@@ -85,7 +85,8 @@ if(MMXISF_BUILD_TESTS)
   target_link_libraries(mmxisf_reader_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.reader COMMAND mmxisf_reader_test)
   add_executable(mmxisf_writer_test tests/writer_test.cpp)
-  target_link_libraries(mmxisf_writer_test PRIVATE mmxisf::mmxisf)
+  target_link_libraries(mmxisf_writer_test
+    PRIVATE mmxisf::mmxisf OpenSSL::Crypto)
   add_test(NAME mmxisf.writer COMMAND mmxisf_writer_test)
   add_executable(mmxisf_independent_producer_test
     tests/independent_producer_test.cpp)

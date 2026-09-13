@@ -108,6 +108,18 @@
       "conformanceRows": ["compression.zstd-shuffle", "image.float32", "image.rgb", "image.planar"],
       "expectedOutcome": "ACCEPT",
       "expectedArtifact": "595212 decoded bytes; SHA-256 0132a60d85d32dc98a67944988fdf1276d597e52dd3bedfd0e13fb50eb311475"
+    },
+    {
+      "id": "mmxisf-writer-rgb-u16",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-rgb-u16.xisf.b64"},
+      "sha256": "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0+882adb4e7580dfb5f5d129581ffff9f35e0c6ad0"},
+      "generationProcedure": "Invoke Writer::write_file with the 2x2 little-endian Planar UInt16 RGB array, fixed creation time, creator, and identifiers anchored in tests/writer_test.cpp.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.deterministic", "image.uint16", "image.rgb", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "Independent public-API read: shape 2x2x3, dtype uint16, all 12 samples exact; serialized SHA-256 951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10; pixel SHA-256 9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"
     }
   ]
 }

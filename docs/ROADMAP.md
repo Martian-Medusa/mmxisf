@@ -174,8 +174,8 @@ measurement cleared the host-specific PFI pre-adoption throughput and peak-RSS
 budgets; M3 is complete without making a portable SLA claim.
 
 With M4/M5 awaiting only native-host parity evidence, M6 began on 2026-09-14.
-Its first slice adds a deterministic single-image attached Planar UInt16
-Gray/RGB writer with explicit provenance, checked layout/budgets, cancellation,
+Its first slice adds a deterministic single-image attached little-endian Planar
+UInt16 Gray/RGB writer with explicit provenance, checked layout/budgets, cancellation,
 non-overwrite commit behavior, exact self-round-trips, and an initial
 independent-consumer read. Multiple images, arbitrary metadata, compression,
 and committed external-consumer evidence remain open.

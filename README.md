@@ -88,9 +88,9 @@ The CI package gate also configures and runs the independent
 `tests/package_consumer` project against the installed CMake package rather
 than the source tree.
 
-The pre-release `Writer::write_file` foundation emits one attached Planar
-UInt16 Gray or RGB image with explicitly supplied creation time, creator,
-dimensions, byte order, and immutable pixel bytes. Equivalent inputs produce
+The pre-release `Writer::write_file` foundation emits one attached little-
+endian Planar UInt16 Gray or RGB image with explicitly supplied creation time,
+creator, dimensions, and immutable pixel bytes. Equivalent inputs produce
 byte-identical files. Existing destinations are not overwritten, resource
 limits and arithmetic are checked before file creation, and cancellation
 removes incomplete temporary output. Compression, arbitrary metadata, and

@@ -269,10 +269,11 @@ Writer::write_file(const std::filesystem::path &destination,
   }
   if (image.sample_format != SampleFormat::uint16 ||
       image.pixel_storage != PixelStorage::planar ||
+      image.byte_order != ByteOrder::little ||
       (image.color_space != "Gray" && image.color_space != "RGB")) {
-    return make_error(
-        ErrorCode::unsupported_feature,
-        "Writer foundation supports Planar UInt16 Gray or RGB images");
+    return make_error(ErrorCode::unsupported_feature,
+                      "Writer foundation supports little-endian Planar UInt16 "
+                      "Gray or RGB images");
   }
   if (image.width == 0 || image.height == 0 ||
       (image.color_space == "Gray" ? image.channels != 1

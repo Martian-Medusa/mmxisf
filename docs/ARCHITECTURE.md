@@ -51,9 +51,9 @@ The M1 pre-release API now supports:
 
 The initial writer foundation now provides:
 
-- `Writer::write_file` for a single attached Planar UInt16 Gray/RGB image with
-  deterministic XML/block planning, explicit volatile provenance, finite
-  budgets, and cooperative cancellation.
+- `Writer::write_file` for a single attached little-endian Planar UInt16
+  Gray/RGB image with deterministic XML/block planning, explicit volatile
+  provenance, finite budgets, and cooperative cancellation.
 
 Later milestones still need:
 

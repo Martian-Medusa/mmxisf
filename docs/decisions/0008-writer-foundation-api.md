@@ -25,8 +25,8 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
   creator application, plus finite header/image budgets and attachment
   alignment;
 - `WriteSummary` returns exact file/header/block layout;
-- the foundation accepts exactly one attached Planar UInt16 Gray or RGB image,
-  with source bytes already in the explicitly declared byte order;
+- the foundation accepts exactly one attached little-endian Planar UInt16 Gray
+  or RGB image;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,
   arithmetic, and resource budgets are validated before file creation;
 - output is written to a sibling temporary path and renamed only after all
@@ -43,7 +43,9 @@ release gate is accepted.
 ## Consequences
 
 The first slice establishes deterministic monolithic block planning and exact
-Gray/RGB round trips without claiming a general writer. Compression, checksums,
-multiple images, arbitrary metadata, caller-provided sinks, replacement policy,
-and independent-consumer evidence are follow-up gates. Unsupported requests
-fail explicitly instead of being coerced into the narrow profile.
+Gray/RGB round trips without claiming a general writer. A first independent
+consumer preserved little-endian output but did not honor a big-endian writer
+probe, so big-endian output fails explicitly until broader external evidence is
+available. Compression, checksums, multiple images, arbitrary metadata,
+caller-provided sinks, and replacement policy are follow-up gates. Unsupported
+requests fail explicitly instead of being coerced into the narrow profile.

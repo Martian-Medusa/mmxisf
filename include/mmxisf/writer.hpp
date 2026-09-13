@@ -43,7 +43,7 @@ struct WriteSummary {
 class Writer {
 public:
   // The 0.1 writer foundation accepts exactly one attached Planar UInt16
-  // Gray or RGB image. Input bytes already have the declared byte order.
+  // Gray or RGB image. Input bytes are little-endian.
   // Existing destinations and stale temporary files are never overwritten.
   [[nodiscard]] static Result<WriteSummary>
   write_file(const std::filesystem::path &destination,

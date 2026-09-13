@@ -24,3 +24,9 @@ that transport in memory and compares the SHA-256 identity of every decoded
 byte with the original source array. It also asserts the declared sample type,
 color space, storage, byte order, codec, and shuffle profile. Exact file
 identities are in `manifest.json`.
+
+The additional `mmxisf-writer-rgb-u16` fixture is the exact deterministic
+little-endian Planar UInt16 RGB output anchored by `writer_test.cpp`. It was
+read by the same independent package through its documented public API as a
+channels-last `(2, 2, 3)` `uint16` array, with every sample equal to the writer
+input. Its own writer provenance and hashes are separate in `manifest.json`.

@@ -3,12 +3,16 @@
 #include "mmxisf/reader.hpp"
 #include "mmxisf/writer.hpp"
 
+#include <openssl/evp.h>
+
 #include <array>
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <stdexcept>
 #include <stop_token>
 #include <string>
@@ -52,6 +56,21 @@ std::vector<char> read_file(const std::filesystem::path &path) {
   expect(static_cast<bool>(input), "cannot read writer result");
   return {std::istreambuf_iterator<char>(input),
           std::istreambuf_iterator<char>()};
+}
+
+std::string sha256(std::span<const char> bytes) {
+  std::array<unsigned char, 32> digest{};
+  unsigned int digest_size = 0;
+  expect(EVP_Digest(bytes.data(), bytes.size(), digest.data(), &digest_size,
+                    EVP_sha256(), nullptr) == 1 &&
+             digest_size == digest.size(),
+         "cannot hash writer result");
+  std::ostringstream output;
+  output << std::hex << std::setfill('0');
+  for (const auto byte : digest) {
+    output << std::setw(2) << static_cast<unsigned int>(byte);
+  }
+  return output.str();
 }
 
 mmxisf::WriterOptions options() {
@@ -118,30 +137,37 @@ void test_deterministic_gray_round_trip() {
          "writer required metadata did not round trip exactly");
 }
 
-void test_rgb_big_endian_round_trip() {
-  const std::array<std::byte, 12> pixels{
-      std::byte{0x00}, std::byte{0x01}, std::byte{0x00}, std::byte{0x02},
+void test_rgb_little_endian_round_trip() {
+  const std::array<std::byte, 24> pixels{
       std::byte{0x01}, std::byte{0x00}, std::byte{0x02}, std::byte{0x00},
-      std::byte{0x10}, std::byte{0x00}, std::byte{0x20}, std::byte{0x00}};
+      std::byte{0x03}, std::byte{0x00}, std::byte{0x04}, std::byte{0x00},
+      std::byte{0x11}, std::byte{0x00}, std::byte{0x12}, std::byte{0x00},
+      std::byte{0x13}, std::byte{0x00}, std::byte{0x14}, std::byte{0x00},
+      std::byte{0x21}, std::byte{0x00}, std::byte{0x22}, std::byte{0x00},
+      std::byte{0x23}, std::byte{0x00}, std::byte{0x24}, std::byte{0x00}};
   mmxisf::ImageWriteView image;
   image.id = "rgb";
   image.width = 2;
-  image.height = 1;
+  image.height = 2;
   image.channels = 3;
   image.sample_format = mmxisf::SampleFormat::uint16;
   image.color_space = "RGB";
   image.pixel_storage = mmxisf::PixelStorage::planar;
-  image.byte_order = mmxisf::ByteOrder::big;
+  image.byte_order = mmxisf::ByteOrder::little;
   image.pixels = pixels;
   const auto path = output_path("mmxisf-writer-rgb.xisf");
   auto written = mmxisf::Writer::write_file(path, image, options());
   expect(written.has_value(), "RGB writer failed");
+  const auto serialized = read_file(path);
+  expect(sha256(serialized) ==
+             "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",
+         "writer deterministic external-oracle anchor changed");
   auto opened = mmxisf::Reader::open_file(path);
   expect(opened.has_value(), "RGB writer result did not reopen");
   const auto &descriptor = opened.value().document().images()[0];
-  expect(descriptor.geometry == std::vector<std::uint64_t>{2, 1, 3} &&
+  expect(descriptor.geometry == std::vector<std::uint64_t>{2, 2, 3} &&
              descriptor.color_space == "RGB" &&
-             descriptor.byte_order == mmxisf::ByteOrder::big,
+             descriptor.byte_order == mmxisf::ByteOrder::little,
          "writer RGB descriptor changed");
   auto decoded = opened.value().read_image(0);
   expect(decoded.has_value() &&
@@ -183,6 +209,14 @@ void test_rejection_and_cleanup() {
   expect(!bad_alignment &&
              bad_alignment.error().code == mmxisf::ErrorCode::invalid_argument,
          "invalid writer alignment was accepted");
+
+  image = gray_image(pixels);
+  image.byte_order = mmxisf::ByteOrder::big;
+  auto big_endian = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-big-endian.xisf"), image, options());
+  expect(!big_endian &&
+             big_endian.error().code == mmxisf::ErrorCode::unsupported_feature,
+         "unsupported writer byte order was not explicit");
 
   image = gray_image(pixels);
   image.id = std::string("bad") + static_cast<char>(0xff);
@@ -241,7 +275,7 @@ int main() {
   Cleanup cleanup;
   try {
     test_deterministic_gray_round_trip();
-    test_rgb_big_endian_round_trip();
+    test_rgb_little_endian_round_trip();
     test_rejection_and_cleanup();
     std::cout << "PASS: deterministic monolithic writer foundation\n";
     return 0;
