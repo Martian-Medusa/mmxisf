@@ -1,6 +1,6 @@
 # M2 progress: PFI scalar pixels and RGB preview
 
-- Status: IN_PROGRESS
+- Status: IMPLEMENTATION_COMPLETE; INTEROPERABILITY_ACCEPTANCE_PENDING
 - Started: 2026-09-13
 - Specification baseline: pinned XISF 1.0 sections 8.5, 10.3, 10.4 and 11.5
 - Publication status: private repository; no tag or release
@@ -54,6 +54,9 @@
   `34772859588` on Linux, Windows, and macOS, including the installed consumer,
   20,000 deterministic sanitizer mutations, and 20,000 coverage-guided
   libFuzzer runs.
+- Complete M2 change-set cross-platform CI: PASS in run `34774526481` on
+  Linux, Windows, and macOS, including installed-package consumers, 20,000
+  deterministic sanitizer mutations, and 20,000 coverage-guided mutations.
 - Strict ad-hoc bundle signature validation: PASS.
 - Embedded Expat dependency resolution through `@rpath`: PASS.
 - Human launch/open/render test of a real RGB producer file: PASS. The exact
@@ -70,9 +73,6 @@
 - Independent or producer-generated fixtures for every claimed scalar,
   storage, byte-order, and color combination.
 - Full-precision parity evidence against an independent pixel oracle.
-- Cross-platform CI and coverage-guided fuzz gates for the complete M2 change
-  set.
-
-Compression, byte shuffle, checksum verification, and their resource budgets
-are scheduled as M3. A compressed RGB file is therefore expected to remain
-inspectable but fail closed at pixel decoding in this checkpoint.
+M3 work can proceed while the two independent-producer acceptance items remain
+open. This status does not promote synthetic evidence into interoperability
+evidence.

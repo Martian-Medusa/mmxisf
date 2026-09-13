@@ -275,12 +275,9 @@ int main() {
     std::size_t byte_count;
   };
   const std::array scalar_decode_cases{
-      ScalarDecodeCase{"uint8", "UInt8", "", mmxisf::SampleFormat::uint8,
-                       1},
-      ScalarDecodeCase{"uint16", "UInt16", "",
-                       mmxisf::SampleFormat::uint16, 2},
-      ScalarDecodeCase{"uint32", "UInt32", "",
-                       mmxisf::SampleFormat::uint32, 4},
+      ScalarDecodeCase{"uint8", "UInt8", "", mmxisf::SampleFormat::uint8, 1},
+      ScalarDecodeCase{"uint16", "UInt16", "", mmxisf::SampleFormat::uint16, 2},
+      ScalarDecodeCase{"uint32", "UInt32", "", mmxisf::SampleFormat::uint32, 4},
       ScalarDecodeCase{"float32", "Float32", " bounds=\"0:1\"",
                        mmxisf::SampleFormat::float32, 4},
       ScalarDecodeCase{"float64", "Float64", " bounds=\"-1:1\"",
@@ -297,9 +294,8 @@ int main() {
             "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
             "<Image geometry=\"1:1:1\" sampleFormat=\"") +
             test.sample_format + "\" colorSpace=\"Gray\"" + test.bounds +
-            " location=\"attachment:1024:" +
-            std::to_string(test.byte_count) + "\"/>" + valid_metadata() +
-            "</xisf>",
+            " location=\"attachment:1024:" + std::to_string(test.byte_count) +
+            "\"/>" + valid_metadata() + "</xisf>",
         sample_bytes);
     auto result = mmxisf::Reader::open_file(path);
     expect(result.has_value(), test.name);
@@ -322,29 +318,37 @@ int main() {
     std::vector<std::byte> big_endian_bytes;
   };
   const std::array native_scalar_oracle_cases{
-      NativeScalarOracleCase{"uint8", "UInt8", "", 1,
-                             {std::byte{0x12}, std::byte{0x34}}},
       NativeScalarOracleCase{
-          "uint16", "UInt16", "", 2,
-          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
-           std::byte{0x04}}},
+          "uint8", "UInt8", "", 1, {std::byte{0x12}, std::byte{0x34}}},
       NativeScalarOracleCase{
-          "uint32", "UInt32", "", 4,
-          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
-           std::byte{0x05}, std::byte{0x06}, std::byte{0x07},
-           std::byte{0x08}}},
+          "uint16",
+          "UInt16",
+          "",
+          2,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04}}},
+      NativeScalarOracleCase{"uint32",
+                             "UInt32",
+                             "",
+                             4,
+                             {std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
+                              std::byte{0x04}, std::byte{0x05}, std::byte{0x06},
+                              std::byte{0x07}, std::byte{0x08}}},
+      NativeScalarOracleCase{"float32",
+                             "Float32",
+                             " bounds=\"0:1\"",
+                             4,
+                             {std::byte{0x3f}, std::byte{0x80}, std::byte{0x00},
+                              std::byte{0x00}, std::byte{0x3f}, std::byte{0x00},
+                              std::byte{0x00}, std::byte{0x00}}},
       NativeScalarOracleCase{
-          "float32", "Float32", " bounds=\"0:1\"", 4,
-          {std::byte{0x3f}, std::byte{0x80}, std::byte{0x00}, std::byte{0x00},
-           std::byte{0x3f}, std::byte{0x00}, std::byte{0x00},
-           std::byte{0x00}}},
-      NativeScalarOracleCase{
-          "float64", "Float64", " bounds=\"0:1\"", 8,
+          "float64",
+          "Float64",
+          " bounds=\"0:1\"",
+          8,
           {std::byte{0x3f}, std::byte{0xf0}, std::byte{0x00}, std::byte{0x00},
            std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
            std::byte{0x3f}, std::byte{0xe0}, std::byte{0x00}, std::byte{0x00},
-           std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
-           std::byte{0x00}}},
+           std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}}},
   };
   for (const auto &test : native_scalar_oracle_cases) {
     const auto path = write_fixture(
@@ -382,8 +386,7 @@ int main() {
     mmxisf::SampleFormat expected_format;
   };
   const std::array inspect_only_scalar_cases{
-      InspectOnlyScalarCase{"uint64", "UInt64",
-                            mmxisf::SampleFormat::uint64},
+      InspectOnlyScalarCase{"uint64", "UInt64", mmxisf::SampleFormat::uint64},
       InspectOnlyScalarCase{"complex32", "Complex32",
                             mmxisf::SampleFormat::complex32},
       InspectOnlyScalarCase{"complex64", "Complex64",
@@ -421,9 +424,9 @@ int main() {
       RgbStorageCase{"planar", "Planar", mmxisf::PixelStorage::planar},
       RgbStorageCase{"normal", "Normal", mmxisf::PixelStorage::normal},
   };
-  const std::vector<std::byte> rgb_pixels{
-      std::byte{0x10}, std::byte{0x20}, std::byte{0x30},
-      std::byte{0x40}, std::byte{0x50}, std::byte{0x60}};
+  const std::vector<std::byte> rgb_pixels{std::byte{0x10}, std::byte{0x20},
+                                          std::byte{0x30}, std::byte{0x40},
+                                          std::byte{0x50}, std::byte{0x60}};
   for (const auto &test : rgb_storage_cases) {
     const auto path = write_fixture(
         std::string("mmxisf-m2-rgb-") + test.name + ".xisf",
@@ -431,9 +434,8 @@ int main() {
             "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
             "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
             "colorSpace=\"RGB\" pixelStorage=\"") +
-            test.pixel_storage +
-            "\" location=\"attachment:1024:6\"/>" + valid_metadata() +
-            "</xisf>",
+            test.pixel_storage + "\" location=\"attachment:1024:6\"/>" +
+            valid_metadata() + "</xisf>",
         rgb_pixels);
     auto result = mmxisf::Reader::open_file(path);
     expect(result.has_value(), test.name);
@@ -462,8 +464,7 @@ int main() {
           "location=\"attachment:1024:12\"/>") +
           valid_metadata() + "</xisf>",
       big_endian_planar_rgb);
-  auto transformed_rgb_reader =
-      mmxisf::Reader::open_file(transformed_rgb_path);
+  auto transformed_rgb_reader = mmxisf::Reader::open_file(transformed_rgb_path);
   expect(transformed_rgb_reader.has_value(),
          "transform fixture opens for typed delivery");
   if (transformed_rgb_reader) {
@@ -495,10 +496,9 @@ int main() {
                           ? mmxisf::ByteOrder::little
                           : mmxisf::ByteOrder::big),
              "transformed image describes its output representation");
-      std::vector<std::byte> destination(expected.size() + 2,
-                                         std::byte{0x7f});
-      auto into = transformed_rgb_reader.value().read_image_into(
-          0, destination, options);
+      std::vector<std::byte> destination(expected.size() + 2, std::byte{0x7f});
+      auto into = transformed_rgb_reader.value().read_image_into(0, destination,
+                                                                 options);
       expect(into && into.value() == expected.size() &&
                  std::equal(expected.begin(), expected.end(),
                             destination.begin()) &&
@@ -545,34 +545,216 @@ int main() {
     mmxisf::ImageReadOptions options;
     options.pixel_storage = mmxisf::PixelStorageOutput::planar;
     auto transformed = normal_to_planar.value().read_image(0, options);
-    expect(transformed &&
-               transformed.value().pixels ==
-                   std::vector<std::byte>{
-                       std::byte{10}, std::byte{20}, std::byte{30},
-                       std::byte{40}, std::byte{50}, std::byte{60}},
+    expect(transformed && transformed.value().pixels ==
+                              std::vector<std::byte>{
+                                  std::byte{10}, std::byte{20}, std::byte{30},
+                                  std::byte{40}, std::byte{50}, std::byte{60}},
            "Normal UInt8 RGB transforms to Planar without channel loss");
 
-    options.pixel_storage =
-        static_cast<mmxisf::PixelStorageOutput>(0xffU);
+    options.pixel_storage = static_cast<mmxisf::PixelStorageOutput>(0xffU);
     auto invalid_options = normal_to_planar.value().read_image(0, options);
     expect(!invalid_options && invalid_options.error().code ==
                                    mmxisf::ErrorCode::invalid_argument,
            "invalid pixel-storage output option fails closed");
   }
 
-  const std::array invalid_color_channel_cases{
-      std::pair{"RGB", "2"}, std::pair{"CIELab", "2"}};
-  for (const auto &[color_space, channel_count] :
-       invalid_color_channel_cases) {
+  const std::vector<std::byte> zlib_rgb_compressed{
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
+      std::byte{0x62}, std::byte{0x66}, std::byte{0x61}, std::byte{0x65},
+      std::byte{0x03}, std::byte{0x00}, std::byte{0x00}, std::byte{0x3e},
+      std::byte{0x00}, std::byte{0x16}};
+  const std::vector<std::byte> zlib_rgb_pixels{std::byte{1}, std::byte{2},
+                                               std::byte{3}, std::byte{4},
+                                               std::byte{5}, std::byte{6}};
+  const auto zlib_attachment_path = write_fixture(
+      "mmxisf-m3-zlib-attachment.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" compression=\"zlib:6\" "
+          "location=\"attachment:1024:14\"/>") +
+          valid_metadata() + "</xisf>",
+      zlib_rgb_compressed);
+  auto zlib_attachment = mmxisf::Reader::open_file(zlib_attachment_path);
+  expect(zlib_attachment.has_value(), "zlib attachment fixture opens");
+  if (zlib_attachment) {
+    auto image = zlib_attachment.value().read_image(0);
+    expect(image && image.value().pixels == zlib_rgb_pixels,
+           "zlib attachment decompresses to exact RGB bytes");
+  }
+
+  const auto zlib_embedded_path = write_fixture(
+      "mmxisf-m3-zlib-embedded.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" location=\"embedded\">"
+          "<Data encoding=\"base64\" compression=\"zlib:6\">"
+          "eJxjZGJmYWUDAAA+ABY=</Data></Image>") +
+          valid_metadata() + "</xisf>");
+  auto zlib_embedded = mmxisf::Reader::open_file(zlib_embedded_path);
+  expect(zlib_embedded.has_value(), "zlib embedded fixture opens");
+  if (zlib_embedded) {
+    expect(zlib_embedded.value().document().images()[0].compression == "zlib:6",
+           "embedded Data compression descriptor is preserved");
+    auto image = zlib_embedded.value().read_image(0);
+    expect(image && image.value().pixels == zlib_rgb_pixels,
+           "zlib embedded block decompresses after Base64 decoding");
+  }
+
+  const std::vector<std::byte> shuffled_zlib_compressed{
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
+      std::byte{0x66}, std::byte{0x65}, std::byte{0xe7}, std::byte{0xe4},
+      std::byte{0x66}, std::byte{0x62}, std::byte{0x61}, std::byte{0xe3},
+      std::byte{0xe0}, std::byte{0xe2}, std::byte{0x01}, std::byte{0x00},
+      std::byte{0x01}, std::byte{0xaf}, std::byte{0x00}, std::byte{0x4f}};
+  const auto shuffled_zlib_path = write_fixture(
+      "mmxisf-m3-zlib-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"RGB\" pixelStorage=\"Planar\" byteOrder=\"big\" "
+          "compression=\"zlib+sh:12:2\" "
+          "location=\"attachment:1024:20\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_zlib_compressed);
+  auto shuffled_zlib = mmxisf::Reader::open_file(shuffled_zlib_path);
+  expect(shuffled_zlib.has_value(), "zlib+sh fixture opens");
+  if (shuffled_zlib) {
+    const std::vector<std::byte> source_order{
+        std::byte{1}, std::byte{2},  std::byte{3},  std::byte{4},
+        std::byte{5}, std::byte{6},  std::byte{7},  std::byte{8},
+        std::byte{9}, std::byte{10}, std::byte{11}, std::byte{12}};
+    auto source_image = shuffled_zlib.value().read_image(0);
+    expect(source_image && source_image.value().pixels == source_order,
+           "zlib+sh reverses byte shuffle exactly");
+
+    mmxisf::ImageReadOptions options;
+    options.pixel_storage = mmxisf::PixelStorageOutput::normal;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto transformed = shuffled_zlib.value().read_image(0, options);
+    std::vector<std::byte> expected;
+    const std::array<std::uint16_t, 6> values{0x0102, 0x0506, 0x090a,
+                                              0x0304, 0x0708, 0x0b0c};
+    for (const auto value : values) {
+      if constexpr (std::endian::native == std::endian::little) {
+        expected.push_back(static_cast<std::byte>(value & 0xffU));
+        expected.push_back(static_cast<std::byte>(value >> 8U));
+      } else {
+        expected.push_back(static_cast<std::byte>(value >> 8U));
+        expected.push_back(static_cast<std::byte>(value & 0xffU));
+      }
+    }
+    expect(transformed && transformed.value().pixels == expected,
+           "compressed RGB supports layout and endian output transforms");
+  }
+
+  const std::vector<std::byte> zlib_subblocks{
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
+      std::byte{0x62}, std::byte{0x66}, std::byte{0x01}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x18}, std::byte{0x00}, std::byte{0x0b},
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x65},
+      std::byte{0x63}, std::byte{0xe7}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x40}, std::byte{0x00}, std::byte{0x1b}};
+  const auto zlib_subblocks_path = write_fixture(
+      "mmxisf-m3-zlib-subblocks.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"8:1:1\" sampleFormat=\"UInt8\" "
+          "compression=\"zlib:8\" subblocks=\"12,4:12,4\" "
+          "location=\"attachment:1024:24\"/>") +
+          valid_metadata() + "</xisf>",
+      zlib_subblocks);
+  auto zlib_subblock_reader = mmxisf::Reader::open_file(zlib_subblocks_path);
+  expect(zlib_subblock_reader.has_value(), "zlib subblock fixture opens");
+  if (zlib_subblock_reader) {
+    auto image = zlib_subblock_reader.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{std::byte{1}, std::byte{2},
+                                               std::byte{3}, std::byte{4},
+                                               std::byte{5}, std::byte{6},
+                                               std::byte{7}, std::byte{8}},
+           "zlib subblocks concatenate exact decoded bytes");
+  }
+
+  const auto embedded_wrong_level_path = write_fixture(
+      "mmxisf-m3-embedded-wrong-level.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\" compression=\"zlib:1\">"
+          "<Data encoding=\"base64\">eJxjBAAAAgAC</Data></Image>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_wrong_level =
+      mmxisf::Reader::open_file(embedded_wrong_level_path);
+  expect(!embedded_wrong_level && embedded_wrong_level.error().code ==
+                                      mmxisf::ErrorCode::invalid_xisf,
+         "embedded compression attributes on Image are rejected");
+
+  struct InvalidCompressionCase {
+    const char *name;
+    const char *compression;
+    const char *subblocks;
+    mmxisf::ErrorCode expected_error;
+  };
+  const std::array invalid_compression_cases{
+      InvalidCompressionCase{"extra-component", "zlib:6:1", "",
+                             mmxisf::ErrorCode::invalid_block},
+      InvalidCompressionCase{"size-mismatch", "zlib:7", "",
+                             mmxisf::ErrorCode::invalid_block},
+      InvalidCompressionCase{"subblock-totals", "zlib:6", "13,6",
+                             mmxisf::ErrorCode::invalid_block},
+      InvalidCompressionCase{"unknown", "brotli:6", "",
+                             mmxisf::ErrorCode::unsupported_feature}};
+  for (const auto &test : invalid_compression_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m3-invalid-compression-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"RGB\" compression=\"") +
+            test.compression + "\"" +
+            (std::string_view(test.subblocks).empty()
+                 ? ""
+                 : std::string(" subblocks=\"") + test.subblocks + "\"") +
+            " location=\"attachment:1024:14\"/>" + valid_metadata() + "</xisf>",
+        zlib_rgb_compressed);
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), test.name);
+    if (reader) {
+      auto image = reader.value().read_image(0);
+      expect(!image && image.error().code == test.expected_error, test.name);
+    }
+  }
+
+  const auto ratio_limit_path = write_fixture(
+      "mmxisf-m3-ratio-limit.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"8193:1:1\" sampleFormat=\"UInt8\" "
+          "compression=\"zlib:8193\" "
+          "location=\"attachment:1024:1\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0}});
+  auto ratio_limit = mmxisf::Reader::open_file(ratio_limit_path);
+  expect(ratio_limit.has_value(), "decompression ratio fixture opens");
+  if (ratio_limit) {
+    auto image = ratio_limit.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::resource_limit,
+           "decompression ratio is rejected before codec invocation");
+  }
+
+  const std::array invalid_color_channel_cases{std::pair{"RGB", "2"},
+                                               std::pair{"CIELab", "2"}};
+  for (const auto &[color_space, channel_count] : invalid_color_channel_cases) {
     const auto path = write_fixture(
         std::string("mmxisf-m2-invalid-") + color_space + ".xisf",
         std::string(
             "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
             "<Image geometry=\"1:1:") +
             channel_count + "\" sampleFormat=\"UInt8\" colorSpace=\"" +
-            color_space +
-            "\" location=\"attachment:1024:2\"/>" + valid_metadata() +
-            "</xisf>",
+            color_space + "\" location=\"attachment:1024:2\"/>" +
+            valid_metadata() + "</xisf>",
         {std::byte{0}, std::byte{0}});
     auto result = mmxisf::Reader::open_file(path);
     expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
@@ -588,16 +770,26 @@ int main() {
     std::vector<std::byte> expected;
   };
   const std::array embedded_decode_cases{
-      EmbeddedDecodeCase{
-          "base64-rgb", "base64", " AAEC\nAwQF ", "2:1:3", "UInt8",
-          {std::byte{0x00}, std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
-           std::byte{0x04}, std::byte{0x05}}},
-      EmbeddedDecodeCase{"base64-padding", "base64", "EjQ=", "1:1:1",
-                         "UInt16", {std::byte{0x12}, std::byte{0x34}}},
-      EmbeddedDecodeCase{
-          "hex-rgb", "hex", " 0011\n22334455 ", "2:1:3", "UInt8",
-          {std::byte{0x00}, std::byte{0x11}, std::byte{0x22}, std::byte{0x33},
-           std::byte{0x44}, std::byte{0x55}}},
+      EmbeddedDecodeCase{"base64-rgb",
+                         "base64",
+                         " AAEC\nAwQF ",
+                         "2:1:3",
+                         "UInt8",
+                         {std::byte{0x00}, std::byte{0x01}, std::byte{0x02},
+                          std::byte{0x03}, std::byte{0x04}, std::byte{0x05}}},
+      EmbeddedDecodeCase{"base64-padding",
+                         "base64",
+                         "EjQ=",
+                         "1:1:1",
+                         "UInt16",
+                         {std::byte{0x12}, std::byte{0x34}}},
+      EmbeddedDecodeCase{"hex-rgb",
+                         "hex",
+                         " 0011\n22334455 ",
+                         "2:1:3",
+                         "UInt8",
+                         {std::byte{0x00}, std::byte{0x11}, std::byte{0x22},
+                          std::byte{0x33}, std::byte{0x44}, std::byte{0x55}}},
   };
   for (const auto &test : embedded_decode_cases) {
     const auto path = write_fixture(
@@ -607,8 +799,7 @@ int main() {
             "<Image geometry=\"") +
             test.geometry + "\" sampleFormat=\"" + test.sample_format +
             "\" colorSpace=\"" +
-            (std::string_view(test.geometry).ends_with(":3") ? "RGB" :
-                                                               "Gray") +
+            (std::string_view(test.geometry).ends_with(":3") ? "RGB" : "Gray") +
             "\" location=\"embedded\"><Data encoding=\"" + test.encoding +
             "\">" + test.encoded + "</Data></Image>" + valid_metadata() +
             "</xisf>");
@@ -631,9 +822,9 @@ int main() {
         auto transformed = result.value().read_image(0, options);
         expect(transformed &&
                    transformed.value().pixels ==
-                       std::vector<std::byte>{
-                           std::byte{0x00}, std::byte{0x02}, std::byte{0x04},
-                           std::byte{0x01}, std::byte{0x03}, std::byte{0x05}},
+                       std::vector<std::byte>{std::byte{0x00}, std::byte{0x02},
+                                              std::byte{0x04}, std::byte{0x01},
+                                              std::byte{0x03}, std::byte{0x05}},
                "embedded Planar RGB transforms to Normal order");
       }
     }
@@ -649,11 +840,9 @@ int main() {
       InvalidEmbeddedCase{"invalid-encoding",
                           "<Data encoding=\"Base64\">AA==</Data>",
                           mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{"uppercase-hex",
-                          "<Data encoding=\"hex\">0A</Data>",
+      InvalidEmbeddedCase{"uppercase-hex", "<Data encoding=\"hex\">0A</Data>",
                           mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{"odd-hex",
-                          "<Data encoding=\"hex\">0</Data>",
+      InvalidEmbeddedCase{"odd-hex", "<Data encoding=\"hex\">0</Data>",
                           mmxisf::ErrorCode::invalid_xisf},
       InvalidEmbeddedCase{"base64-character",
                           "<Data encoding=\"base64\">A?==</Data>",
@@ -664,23 +853,20 @@ int main() {
       InvalidEmbeddedCase{"base64-pad-bits",
                           "<Data encoding=\"base64\">AB==</Data>",
                           mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{
-          "base64-after-padding",
-          "<Data encoding=\"base64\">AA==AA==</Data>",
-          mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{
-          "duplicate-data",
-          "<Data encoding=\"base64\">AA==</Data>"
-          "<Data encoding=\"base64\">AA==</Data>",
-          mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{
-          "data-child",
-          "<Data encoding=\"base64\"><Property id=\"p\" "
-          "type=\"String\" value=\"x\"/></Data>",
-          mmxisf::ErrorCode::invalid_xisf},
-      InvalidEmbeddedCase{
-          "text-outside-data", "x<Data encoding=\"base64\">AA==</Data>",
-          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"base64-after-padding",
+                          "<Data encoding=\"base64\">AA==AA==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"duplicate-data",
+                          "<Data encoding=\"base64\">AA==</Data>"
+                          "<Data encoding=\"base64\">AA==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"data-child",
+                          "<Data encoding=\"base64\"><Property id=\"p\" "
+                          "type=\"String\" value=\"x\"/></Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"text-outside-data",
+                          "x<Data encoding=\"base64\">AA==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
   };
   for (const auto &test : invalid_embedded_cases) {
     const auto path = write_fixture(
@@ -705,8 +891,7 @@ int main() {
       {std::byte{0}});
   auto data_on_attachment = mmxisf::Reader::open_file(data_on_attachment_path);
   expect(!data_on_attachment &&
-             data_on_attachment.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+             data_on_attachment.error().code == mmxisf::ErrorCode::invalid_xisf,
          "Data child on attachment Image is rejected");
 
   const auto embedded_size_mismatch_path = write_fixture(
@@ -753,8 +938,8 @@ int main() {
           "location=\"embedded\"><Data encoding=\"base64\">EjQ=</Data>"
           "</Image>") +
           valid_metadata() + "</xisf>");
-  auto decoded_limit = mmxisf::Reader::open_file(
-      decoded_limit_path, tiny_embedded_decoded_limit);
+  auto decoded_limit = mmxisf::Reader::open_file(decoded_limit_path,
+                                                 tiny_embedded_decoded_limit);
   expect(!decoded_limit &&
              decoded_limit.error().code == mmxisf::ErrorCode::resource_limit,
          "embedded decoded-byte budget is enforced while parsing");
@@ -776,17 +961,16 @@ int main() {
   if (embedded_memory_reader) {
     const auto calls_after_open = embedded_memory_source->read_calls;
     auto image = embedded_memory_reader.value().read_image(0);
-    expect(image && image.value().pixels ==
-                        std::vector<std::byte>{std::byte{0x2a}},
+    expect(image &&
+               image.value().pixels == std::vector<std::byte>{std::byte{0x2a}},
            "embedded image bytes are retained exactly");
     expect(embedded_memory_source->read_calls == calls_after_open,
            "embedded image read performs no post-header source I/O");
     std::stop_source embedded_stop;
     embedded_stop.request_stop();
-    auto cancelled = embedded_memory_reader.value().read_image(
-        0, embedded_stop.get_token());
-    expect(!cancelled &&
-               cancelled.error().code == mmxisf::ErrorCode::cancelled,
+    auto cancelled =
+        embedded_memory_reader.value().read_image(0, embedded_stop.get_token());
+    expect(!cancelled && cancelled.error().code == mmxisf::ErrorCode::cancelled,
            "embedded image read observes pre-cancellation");
   }
 
@@ -903,8 +1087,7 @@ int main() {
           "<Reference ref=\"later\"/>"
           "<Property uid=\"later\" id=\"p\" type=\"String\" value=\"x\"/>") +
           valid_metadata() + "</xisf>");
-  auto forward_reference =
-      mmxisf::Reader::open_file(forward_reference_path);
+  auto forward_reference = mmxisf::Reader::open_file(forward_reference_path);
   expect(forward_reference.has_value(),
          "forward Reference to a core uid is accepted");
 
@@ -913,7 +1096,8 @@ int main() {
     const char *uid;
   };
   const std::array invalid_uid_cases{
-      InvalidUidCase{"empty", ""}, InvalidUidCase{"leading-digit", "1bad"},
+      InvalidUidCase{"empty", ""},
+      InvalidUidCase{"leading-digit", "1bad"},
       InvalidUidCase{"hyphen", "bad-id"},
       InvalidUidCase{"non-ascii", "zażółć"},
   };
@@ -953,7 +1137,8 @@ int main() {
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
           "<Property uid=\"duplicate\" id=\"p1\" type=\"String\" value=\"x\"/>"
-          "<Property uid=\"duplicate\" id=\"p2\" type=\"String\" value=\"y\"/>") +
+          "<Property uid=\"duplicate\" id=\"p2\" type=\"String\" "
+          "value=\"y\"/>") +
           valid_metadata() + "</xisf>");
   auto duplicate_uid = mmxisf::Reader::open_file(duplicate_uid_path);
   expect(!duplicate_uid &&
@@ -1040,8 +1225,7 @@ int main() {
                         false},
       MetadataValueCase{
           "fits-attribute-over-limit",
-          "<FITSKeyword name=\"TEST\" value=\"abcde\" comment=\"\"/>",
-          false},
+          "<FITSKeyword name=\"TEST\" value=\"abcde\" comment=\"\"/>", false},
   };
   for (const auto &test : metadata_value_cases) {
     const auto path = write_fixture(
@@ -1223,19 +1407,17 @@ int main() {
       {std::byte{0}, std::byte{0}, std::byte{0}});
   auto overlapping_attachments =
       mmxisf::Reader::open_file(overlapping_attachments_path);
-  expect(!overlapping_attachments &&
-             overlapping_attachments.error().code ==
-                 mmxisf::ErrorCode::invalid_block,
+  expect(!overlapping_attachments && overlapping_attachments.error().code ==
+                                         mmxisf::ErrorCode::invalid_block,
          "overlapping attached blocks are rejected");
 
   const auto extension_attachment_path = write_fixture(
       "mmxisf-extension-attachment.xisf",
-      std::string(
-          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
-          "xmlns:ext=\"urn:mmxisf:test\" version=\"1.0\">"
-          "<ext:Block location=\"attachment:1024:2\"/>"
-          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
-          "location=\"attachment:1026:1\"/>") +
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "xmlns:ext=\"urn:mmxisf:test\" version=\"1.0\">"
+                  "<ext:Block location=\"attachment:1024:2\"/>"
+                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                  "location=\"attachment:1026:1\"/>") +
           valid_metadata() + "</xisf>",
       {std::byte{0xaa}, std::byte{0xbb}, std::byte{0xcc}});
   auto extension_attachment =
@@ -1245,8 +1427,7 @@ int main() {
   if (extension_attachment) {
     auto image = extension_attachment.value().read_image(0);
     expect(image &&
-               image.value().pixels ==
-                   std::vector<std::byte>{std::byte{0xcc}},
+               image.value().pixels == std::vector<std::byte>{std::byte{0xcc}},
            "image following an extension attachment is read exactly");
   }
 
@@ -1295,8 +1476,8 @@ int main() {
     const char *sample_format;
   };
   const std::array geometry_overflow_cases{
-      GeometryOverflowCase{"width-times-height",
-                           "18446744073709551615:2:1", "UInt8"},
+      GeometryOverflowCase{"width-times-height", "18446744073709551615:2:1",
+                           "UInt8"},
       GeometryOverflowCase{"two-large-axes", "4294967296:4294967296:1",
                            "UInt8"},
       GeometryOverflowCase{"sample-byte-count", "9223372036854775808:1:1",
@@ -1426,9 +1607,8 @@ int main() {
   expect(compressed.has_value(), "compressed image remains inspectable");
   if (compressed) {
     auto image = compressed.value().read_image(0);
-    expect(!image &&
-               image.error().code == mmxisf::ErrorCode::unsupported_feature,
-           "compressed image decode fails closed in M1");
+    expect(!image && image.error().code == mmxisf::ErrorCode::invalid_block,
+           "invalid zlib payload fails closed");
   }
 
   return failures == 0 ? 0 : 1;

@@ -66,6 +66,13 @@ uses checked multiplication/addition before conversions to `size_t` or stream
 offset types. Attachment layout transforms use at most an 8 MiB staging buffer;
 they do not allocate a second full decoded frame.
 
+Compressed input is staged once so its checksum can be verified before any
+codec call. Unshuffled zlib output is written directly to the caller's buffer.
+For shuffled data, scratch memory is limited to one declared compression
+subblock. A requested storage-layout transformation of compressed data still
+requires one decoded source-representation buffer in the current M3 slice;
+streaming that transform is a later optimization, not a hidden low-memory claim.
+
 ## Concurrency
 
 Parsed documents are immutable. Reader operations use per-call state and may run

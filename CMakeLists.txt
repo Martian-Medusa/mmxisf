@@ -24,6 +24,7 @@ set(
 )
 
 find_package(EXPAT 2.2 REQUIRED)
+find_package(ZLIB REQUIRED)
 
 add_library(mmxisf src/reader.cpp src/version.cpp)
 add_library(mmxisf::mmxisf ALIAS mmxisf)
@@ -35,7 +36,7 @@ target_include_directories(
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
-target_link_libraries(mmxisf PRIVATE EXPAT::EXPAT)
+target_link_libraries(mmxisf PRIVATE EXPAT::EXPAT ZLIB::ZLIB)
 
 if(MMXISF_BUILD_TESTS OR MMXISF_BUILD_VIEWER)
   add_library(mmxisf_viewer_preview STATIC viewer/Preview.cpp)

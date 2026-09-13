@@ -5,11 +5,13 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete and M2 is in progress. Version `0.1.0` parses bounded
+> Status: M1 is complete, the M2 implementation is complete with independent
+> interoperability acceptance still pending, and M3 is in progress. Version
+> `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
-> FITS keywords. The current M2 slice reads the PFI scalar profile from exact,
-> uncompressed attachment or embedded blocks and powers Gray/RGB preview in the
-> macOS viewer.
+> FITS keywords. The reader handles the PFI scalar profile from uncompressed or
+> zlib-compressed attachment and embedded blocks, including zlib byte shuffle
+> and compression subblocks, and powers Gray/RGB preview in the macOS viewer.
 > This is still a pre-release profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
@@ -50,6 +52,7 @@ milestone. They remain candidates for later conformance work.
 - [Accelerated M0 status](docs/M0_STATUS.md)
 - [M1 parser/viewer checkpoint](docs/M1_STATUS.md)
 - [M2 progress](docs/M2_STATUS.md)
+- [M3 progress](docs/M3_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
@@ -62,8 +65,8 @@ build/mmxisf-inspect path/to/image.xisf
 build/mmxisf-inspect --decode path/to/image.xisf
 ```
 
-Normal configuration requires an installed Expat development package. No
-dependency is downloaded implicitly.
+Normal configuration requires installed Expat and zlib development packages.
+No dependency is downloaded implicitly.
 
 The public API requires C++20 library support for `std::span` and
 `std::stop_token`. The macOS CI baseline therefore uses macOS 15 with Xcode
@@ -75,10 +78,12 @@ The CI package gate also configures and runs the independent
 than the source tree.
 
 The pre-release reader can also consume a caller-provided seekable
-`mmxisf::ByteSource`. Exact uncompressed attachment bytes can be returned in an
+`mmxisf::ByteSource`. Decoded attachment bytes can be returned in an
 owning `RawImage` or written into a caller-owned span with cooperative
 `std::stop_token` cancellation. Embedded image blocks support whitespace-tolerant
-Base64 and the specification's lowercase hexadecimal encoding.
+Base64 and the specification's lowercase hexadecimal encoding. The current M3
+slice supports zlib and zlib+sh with validated compression subblocks; LZ4 and
+checksums remain fail-closed until the next slice.
 
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
@@ -119,11 +124,11 @@ open "artifacts/mmXISF Viewer PoC.app"
 ```
 
 The optional AppKit target is macOS-only and does not enter the standalone
-library. The generated local bundle embeds Expat. Its current preview scope is
-the first uncompressed local or embedded Gray/RGB block in Planar or Normal
-layout, with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata
-inspector can still open a broader set of headers, while unsupported image
-decoding fails closed.
+library. The generated local bundle embeds Expat and non-system zlib. Its
+current preview scope is the first supported uncompressed or zlib-compressed
+local/embedded Gray/RGB block in Planar or Normal layout, with UInt8, UInt16,
+UInt32, Float32, or Float64 samples. The metadata inspector can still open a
+broader set of headers, while unsupported image decoding fails closed.
 
 ## License
 

@@ -17,6 +17,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | channels | 64 inspect / 16 decode | Covers expected mono/RGB/alpha use without unbounded planes |
 | samples per image | 536,870,912 | Geometry cap independent of sample size |
 | decoded bytes per image | 2 GiB | Covers representative desktop astronomy images |
+| serialized bytes per image | 2 GiB | Bounds compressed-input staging and address-space conversion |
 | cumulative decoded bytes | 4 GiB | Bounds multi-image and metadata blocks |
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |

@@ -56,6 +56,7 @@ struct ImageInfo {
   ByteOrder byte_order{ByteOrder::little};
   BlockLocation block;
   std::string compression;
+  std::string subblocks;
   std::string checksum;
 };
 

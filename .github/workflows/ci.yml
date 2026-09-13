@@ -27,7 +27,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
       - name: Install Expat (Ubuntu)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
+        run: sudo apt-get update && sudo apt-get install -y libexpat1-dev zlib1g-dev
       - name: Install Expat (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -35,7 +35,7 @@ jobs:
           echo "CMAKE_PREFIX_PATH=$(brew --prefix expat)" >> "$GITHUB_ENV"
       - name: Install Expat (Windows)
         if: runner.os == 'Windows'
-        run: vcpkg install expat:x64-windows
+        run: vcpkg install expat:x64-windows zlib:x64-windows
       - name: Configure (Unix)
         if: runner.os != 'Windows'
         run: >-
@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Install toolchain
-        run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev
+        run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev zlib1g-dev
       - name: Configure
         env:
           CC: clang

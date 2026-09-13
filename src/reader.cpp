@@ -3,6 +3,7 @@
 #include "mmxisf/reader.hpp"
 
 #include <expat.h>
+#include <zlib.h>
 
 #include <algorithm>
 #include <array>
@@ -63,10 +64,10 @@ std::optional<std::string_view> attribute(const XML_Char **attributes,
 
 bool is_core_element(std::string_view name) {
   constexpr std::array<std::string_view, 13> kCoreElements{
-      "Property",         "Structure",  "Table",      "Metadata",
-      "Image",            "FITSKeyword", "ICCProfile", "RGBWorkingSpace",
-      "DisplayFunction",  "ColorFilterArray",          "Resolution",
-      "Thumbnail",        "Reference"};
+      "Property",        "Structure",        "Table",      "Metadata",
+      "Image",           "FITSKeyword",      "ICCProfile", "RGBWorkingSpace",
+      "DisplayFunction", "ColorFilterArray", "Resolution", "Thumbnail",
+      "Reference"};
   return std::find(kCoreElements.begin(), kCoreElements.end(), name) !=
          kCoreElements.end();
 }
@@ -76,7 +77,8 @@ bool is_valid_unique_id(std::string_view value) {
     return (character >= 'A' && character <= 'Z') ||
            (character >= 'a' && character <= 'z');
   };
-  if (value.empty() || (value.front() != '_' && !is_ascii_letter(value.front()))) {
+  if (value.empty() ||
+      (value.front() != '_' && !is_ascii_letter(value.front()))) {
     return false;
   }
   return std::all_of(value.begin() + 1, value.end(), [&](char character) {
@@ -153,6 +155,15 @@ bool checked_multiply(std::uint64_t left, std::uint64_t right,
     return false;
   }
   result = left * right;
+  return true;
+}
+
+bool checked_add(std::uint64_t left, std::uint64_t right,
+                 std::uint64_t &result) {
+  if (right > std::numeric_limits<std::uint64_t>::max() - left) {
+    return false;
+  }
+  result = left + right;
   return true;
 }
 
@@ -424,8 +435,8 @@ bool decode_base64_quartet(XmlBuilder &state) {
     state.base64_complete = true;
     return true;
   }
-  return append_embedded_byte(
-      state, static_cast<unsigned char>((q[2] << 6U) | q[3]));
+  return append_embedded_byte(state,
+                              static_cast<unsigned char>((q[2] << 6U) | q[3]));
 }
 
 void decode_embedded_text(XmlBuilder &state, std::string_view text) {
@@ -456,9 +467,8 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
         state.hex_high_nibble = nibble;
       } else {
         if (!append_embedded_byte(
-                state, static_cast<unsigned char>((*state.hex_high_nibble <<
-                                                   4U) |
-                                                  nibble))) {
+                state, static_cast<unsigned char>(
+                           (*state.hex_high_nibble << 4U) | nibble))) {
           return;
         }
         state.hex_high_nibble.reset();
@@ -466,8 +476,8 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
       continue;
     }
     if (state.base64_complete) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Base64 data continues after padding", "Data");
+      state.fail(ErrorCode::invalid_xisf, "Base64 data continues after padding",
+                 "Data");
       return;
     }
     if (character == '=') {
@@ -562,8 +572,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       const auto reference = attribute(attributes, "ref");
       if (uid || !reference || !is_valid_unique_id(*reference)) {
         state.fail(ErrorCode::invalid_xisf,
-                   "Reference requires a valid ref and cannot define uid",
-                   name, uid ? "uid" : "ref");
+                   "Reference requires a valid ref and cannot define uid", name,
+                   uid ? "uid" : "ref");
         return;
       }
       state.references.emplace_back(*reference);
@@ -601,6 +611,19 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                  "Data requires a base64 or hex encoding", name, "encoding");
       return;
     }
+    auto &image = state.images[*image_index];
+    if (!image.compression.empty() || !image.subblocks.empty() ||
+        !image.checksum.empty()) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded block attributes must be defined on Data", name);
+      return;
+    }
+    image.compression =
+        std::string(attribute(attributes, "compression").value_or(""));
+    image.subblocks =
+        std::string(attribute(attributes, "subblocks").value_or(""));
+    image.checksum =
+        std::string(attribute(attributes, "checksum").value_or(""));
     state.embedded_data_seen[*image_index] = true;
     state.embedded_image_index = *image_index;
     state.embedded_encoding = *encoding == "base64"
@@ -744,6 +767,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     image.compression =
         std::string(attribute(attributes, "compression").value_or(""));
+    image.subblocks =
+        std::string(attribute(attributes, "subblocks").value_or(""));
     image.checksum =
         std::string(attribute(attributes, "checksum").value_or(""));
     state.images.push_back(std::move(image));
@@ -793,8 +818,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     if (value && value->size() > state.options.max_metadata_value_bytes) {
       state.fail(ErrorCode::resource_limit,
-                 "Metadata value exceeds the inspection limit", name,
-                 "value");
+                 "Metadata value exceeds the inspection limit", name, "value");
       return;
     }
     if (name == "Property" && parent == "Metadata") {
@@ -847,8 +871,8 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
   const bool is_xisf_element = namespace_name(qualified_name) == kXisfNamespace;
   if (is_xisf_element && name == "Data") {
     if (!state.embedded_image_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Unexpected closing Data element", name);
+      state.fail(ErrorCode::invalid_xisf, "Unexpected closing Data element",
+                 name);
       return;
     }
     if ((state.embedded_encoding == XmlBuilder::EmbeddedEncoding::base64 &&
@@ -1056,6 +1080,179 @@ std::optional<std::uint64_t> bytes_per_sample(SampleFormat format) {
   return std::nullopt;
 }
 
+enum class CompressionCodec { none, zlib, lz4, lz4hc };
+
+struct CompressionSubblock {
+  std::uint64_t compressed_size{0};
+  std::uint64_t uncompressed_size{0};
+};
+
+struct CompressionPlan {
+  CompressionCodec codec{CompressionCodec::none};
+  bool byte_shuffled{false};
+  std::uint64_t uncompressed_size{0};
+  std::uint64_t item_size{1};
+  std::vector<CompressionSubblock> subblocks;
+};
+
+Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
+                                               std::uint64_t serialized_bytes,
+                                               std::uint64_t expected_bytes,
+                                               const ReaderOptions &options,
+                                               std::uint64_t sample_size) {
+  if (serialized_bytes > options.max_serialized_image_bytes) {
+    return make_error(ErrorCode::resource_limit,
+                      "Serialized image block exceeds the configured limit");
+  }
+  if (serialized_bytes > std::numeric_limits<std::size_t>::max()) {
+    return make_error(ErrorCode::resource_limit,
+                      "Serialized image block cannot fit in addressable memory");
+  }
+  if (image.compression.empty()) {
+    if (!image.subblocks.empty()) {
+      return make_error(ErrorCode::invalid_block,
+                        "Compression subblocks require a compression codec");
+    }
+    if (serialized_bytes != expected_bytes) {
+      return make_error(
+          ErrorCode::invalid_block,
+          "Image block size does not match geometry and sample format");
+    }
+    CompressionPlan plan;
+    plan.uncompressed_size = expected_bytes;
+    return plan;
+  }
+
+  std::array<std::string_view, 3> tokens{};
+  std::size_t token_count = 0;
+  std::size_t start = 0;
+  while (start <= image.compression.size()) {
+    if (token_count == tokens.size()) {
+      return make_error(ErrorCode::invalid_block,
+                        "Compression descriptor has too many components");
+    }
+    const auto end = image.compression.find(':', start);
+    tokens[token_count++] =
+        std::string_view(image.compression)
+            .substr(start, end == std::string::npos
+                               ? image.compression.size() - start
+                               : end - start);
+    if (end == std::string::npos) {
+      break;
+    }
+    start = end + 1;
+  }
+
+  CompressionPlan plan;
+  if (tokens[0] == "zlib") {
+    plan.codec = CompressionCodec::zlib;
+  } else if (tokens[0] == "zlib+sh") {
+    plan.codec = CompressionCodec::zlib;
+    plan.byte_shuffled = true;
+  } else if (tokens[0] == "lz4") {
+    plan.codec = CompressionCodec::lz4;
+  } else if (tokens[0] == "lz4+sh") {
+    plan.codec = CompressionCodec::lz4;
+    plan.byte_shuffled = true;
+  } else if (tokens[0] == "lz4hc") {
+    plan.codec = CompressionCodec::lz4hc;
+  } else if (tokens[0] == "lz4hc+sh") {
+    plan.codec = CompressionCodec::lz4hc;
+    plan.byte_shuffled = true;
+  } else {
+    return make_error(ErrorCode::unsupported_feature,
+                      "Unsupported image compression codec");
+  }
+  const std::size_t expected_tokens = plan.byte_shuffled ? 3 : 2;
+  if (token_count != expected_tokens ||
+      !parse_unsigned(tokens[1], plan.uncompressed_size) ||
+      plan.uncompressed_size == 0) {
+    return make_error(ErrorCode::invalid_block,
+                      "Invalid compression descriptor");
+  }
+  if (plan.uncompressed_size != expected_bytes) {
+    return make_error(
+        ErrorCode::invalid_block,
+        "Declared uncompressed size does not match image geometry");
+  }
+  if (plan.byte_shuffled &&
+      (!parse_unsigned(tokens[2], plan.item_size) || plan.item_size == 0 ||
+       plan.item_size != sample_size)) {
+    return make_error(
+        ErrorCode::invalid_block,
+        "Byte-shuffle item size must match the image sample size");
+  }
+  if (serialized_bytes == 0) {
+    return make_error(ErrorCode::invalid_block,
+                      "Compressed image block cannot be empty");
+  }
+  std::uint64_t maximum_output = 0;
+  if (!checked_multiply(serialized_bytes, options.max_decompression_ratio,
+                        maximum_output)) {
+    maximum_output = std::numeric_limits<std::uint64_t>::max();
+  }
+  if (expected_bytes > maximum_output) {
+    return make_error(ErrorCode::resource_limit,
+                      "Image exceeds the configured decompression ratio");
+  }
+
+  if (image.subblocks.empty()) {
+    plan.subblocks.push_back(
+        CompressionSubblock{serialized_bytes, expected_bytes});
+    return plan;
+  }
+
+  std::uint64_t total_compressed = 0;
+  std::uint64_t total_uncompressed = 0;
+  start = 0;
+  while (start <= image.subblocks.size()) {
+    if (plan.subblocks.size() >= options.max_compressed_subblocks) {
+      return make_error(
+          ErrorCode::resource_limit,
+          "Compressed subblock count exceeds the configured limit");
+    }
+    const auto end = image.subblocks.find(':', start);
+    const auto pair = std::string_view(image.subblocks)
+                          .substr(start, end == std::string::npos
+                                             ? image.subblocks.size() - start
+                                             : end - start);
+    const auto comma = pair.find(',');
+    CompressionSubblock subblock;
+    if (comma == std::string_view::npos ||
+        pair.find(',', comma + 1) != std::string_view::npos ||
+        !parse_unsigned(pair.substr(0, comma), subblock.compressed_size) ||
+        !parse_unsigned(pair.substr(comma + 1), subblock.uncompressed_size) ||
+        subblock.compressed_size == 0 || subblock.uncompressed_size == 0 ||
+        (plan.byte_shuffled &&
+         subblock.uncompressed_size % plan.item_size != 0)) {
+      return make_error(ErrorCode::invalid_block,
+                        "Invalid compression subblock descriptor");
+    }
+    std::uint64_t next_compressed = 0;
+    std::uint64_t next_uncompressed = 0;
+    if (!checked_add(total_compressed, subblock.compressed_size,
+                     next_compressed) ||
+        !checked_add(total_uncompressed, subblock.uncompressed_size,
+                     next_uncompressed)) {
+      return make_error(ErrorCode::overflow,
+                        "Compression subblock sizes overflow");
+    }
+    total_compressed = next_compressed;
+    total_uncompressed = next_uncompressed;
+    plan.subblocks.push_back(subblock);
+    if (end == std::string::npos) {
+      break;
+    }
+    start = end + 1;
+  }
+  if (total_compressed != serialized_bytes ||
+      total_uncompressed != expected_bytes) {
+    return make_error(ErrorCode::invalid_block,
+                      "Compression subblock totals do not match the block");
+  }
+  return plan;
+}
+
 struct ImageReadPlan {
   const ImageInfo *image{nullptr};
   const std::vector<std::byte> *embedded_block{nullptr};
@@ -1063,13 +1260,14 @@ struct ImageReadPlan {
   std::uint64_t sample_count{0};
   std::uint64_t sample_size{0};
   std::uint64_t expected_bytes{0};
+  std::uint64_t serialized_bytes{0};
+  CompressionPlan compression;
 };
 
-Result<ImageReadPlan> plan_image_read(const Document &document,
-                                      const ReaderOptions &options,
-                                      const std::vector<std::vector<std::byte>>
-                                          &embedded_blocks,
-                                      std::size_t image_index) {
+Result<ImageReadPlan>
+plan_image_read(const Document &document, const ReaderOptions &options,
+                const std::vector<std::vector<std::byte>> &embedded_blocks,
+                std::size_t image_index) {
   if (image_index >= document.images().size()) {
     Error error = make_error(ErrorCode::invalid_argument,
                              "Image index is outside the document");
@@ -1082,10 +1280,6 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
     return make_error(ErrorCode::unsupported_feature,
                       "The M2 reader only reads attachment and embedded image "
                       "blocks");
-  }
-  if (!image.compression.empty()) {
-    return make_error(ErrorCode::unsupported_feature,
-                      "Compressed image blocks are scheduled for M3");
   }
   if (!image.checksum.empty()) {
     return make_error(ErrorCode::unsupported_feature,
@@ -1132,10 +1326,10 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
       image.block.kind == BlockKind::attachment
           ? image.block.size
           : static_cast<std::uint64_t>(embedded_blocks[image_index].size());
-  if (serialized_bytes != expected_bytes) {
-    return make_error(
-        ErrorCode::invalid_block,
-        "Image block size does not match geometry and sample format");
+  auto compression = parse_compression_plan(
+      image, serialized_bytes, expected_bytes, options, *sample_size);
+  if (!compression) {
+    return compression.error();
   }
   if (image.block.kind == BlockKind::attachment &&
       (image.block.offset > document.file_size() ||
@@ -1146,8 +1340,10 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
   if (image.block.kind == BlockKind::embedded) {
     embedded_block = &embedded_blocks[image_index];
   }
-  return ImageReadPlan{&image, embedded_block, channels, sample_count,
-                       *sample_size, expected_bytes};
+  return ImageReadPlan{&image,           embedded_block,
+                       channels,         sample_count,
+                       *sample_size,     expected_bytes,
+                       serialized_bytes, std::move(compression).value()};
 }
 
 Result<PixelStorage>
@@ -1184,11 +1380,12 @@ Result<ByteOrder> resolve_byte_order(const ImageReadPlan &plan,
                     "Invalid output byte-order option");
 }
 
-Result<std::size_t>
-read_serialized_chunk(const ByteSource &source, const ImageReadPlan &plan,
-                      std::size_t block_offset,
-                      std::span<std::byte> destination,
-                      std::stop_token stop_token, std::size_t image_index) {
+Result<std::size_t> read_serialized_chunk(const ByteSource &source,
+                                          const ImageReadPlan &plan,
+                                          std::size_t block_offset,
+                                          std::span<std::byte> destination,
+                                          std::stop_token stop_token,
+                                          std::size_t image_index) {
   if (plan.embedded_block != nullptr) {
     if (stop_token.stop_requested()) {
       return make_error(ErrorCode::cancelled, "Image read was cancelled");
@@ -1203,8 +1400,8 @@ read_serialized_chunk(const ByteSource &source, const ImageReadPlan &plan,
       return make_error(ErrorCode::cancelled, "Image read was cancelled");
     }
     const auto output = destination.subspan(total);
-    auto read = source.read_at(plan.image->block.offset + block_offset + total,
-                               output);
+    auto read =
+        source.read_at(plan.image->block.offset + block_offset + total, output);
     if (!read) {
       auto error = read.error();
       if (!error.image_index) {
@@ -1223,12 +1420,13 @@ read_serialized_chunk(const ByteSource &source, const ImageReadPlan &plan,
   return total;
 }
 
-Result<std::size_t>
-copy_serialized_image(const ByteSource &source, const ImageReadPlan &plan,
-                      std::span<std::byte> destination,
-                      std::stop_token stop_token, std::size_t image_index) {
+Result<std::size_t> copy_serialized_image(const ByteSource &source,
+                                          const ImageReadPlan &plan,
+                                          std::span<std::byte> destination,
+                                          std::stop_token stop_token,
+                                          std::size_t image_index) {
   constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
-  const auto expected = static_cast<std::size_t>(plan.expected_bytes);
+  const auto expected = static_cast<std::size_t>(plan.serialized_bytes);
   std::size_t total = 0;
   while (total < expected) {
     const auto chunk = std::min(kReadChunkBytes, expected - total);
@@ -1243,13 +1441,158 @@ copy_serialized_image(const ByteSource &source, const ImageReadPlan &plan,
   return total;
 }
 
-Result<std::size_t>
-transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
-                        std::span<std::byte> destination,
-                        PixelStorage output_storage,
-                        ByteOrder output_byte_order,
-                        std::stop_token stop_token,
-                        std::size_t image_index) {
+Result<std::size_t> decompress_zlib(std::span<const std::byte> input,
+                                    std::span<std::byte> output) {
+  if (input.size() > std::numeric_limits<uInt>::max() ||
+      output.size() > std::numeric_limits<uInt>::max()) {
+    return make_error(ErrorCode::resource_limit,
+                      "Zlib subblock exceeds the codec size limit");
+  }
+  z_stream stream{};
+  if (inflateInit(&stream) != Z_OK) {
+    return make_error(ErrorCode::internal_error,
+                      "Unable to initialize the zlib decoder");
+  }
+  stream.next_in =
+      reinterpret_cast<Bytef *>(const_cast<std::byte *>(input.data()));
+  stream.avail_in = static_cast<uInt>(input.size());
+  stream.next_out = reinterpret_cast<Bytef *>(output.data());
+  stream.avail_out = static_cast<uInt>(output.size());
+  const auto status = inflate(&stream, Z_FINISH);
+  const auto consumed = static_cast<std::size_t>(stream.total_in);
+  const auto produced = static_cast<std::size_t>(stream.total_out);
+  inflateEnd(&stream);
+  if (status != Z_STREAM_END || consumed != input.size() ||
+      produced != output.size()) {
+    return make_error(ErrorCode::invalid_block,
+                      "Invalid zlib stream or decompressed size mismatch");
+  }
+  return produced;
+}
+
+Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
+                                    std::span<std::byte> output,
+                                    std::size_t item_size,
+                                    std::stop_token stop_token) {
+  if (item_size == 0 || shuffled.size() != output.size() ||
+      shuffled.size() % item_size != 0) {
+    return make_error(ErrorCode::invalid_block,
+                      "Invalid byte-shuffled block geometry");
+  }
+  const auto item_count = shuffled.size() / item_size;
+  constexpr std::size_t kCancellationInterval = 1U << 20U;
+  for (std::size_t item = 0; item < item_count; ++item) {
+    if (item % kCancellationInterval == 0 && stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    for (std::size_t byte = 0; byte < item_size; ++byte) {
+      output[item * item_size + byte] = shuffled[byte * item_count + item];
+    }
+  }
+  return output.size();
+}
+
+Result<std::size_t> decode_compressed_image(const ByteSource &source,
+                                            const ImageReadPlan &plan,
+                                            std::span<std::byte> destination,
+                                            std::stop_token stop_token,
+                                            std::size_t image_index) {
+  if (plan.compression.codec != CompressionCodec::zlib) {
+    return make_error(ErrorCode::unsupported_feature,
+                      "LZ4 image decoding is not enabled in this M3 slice");
+  }
+  if (stop_token.stop_requested()) {
+    return make_error(ErrorCode::cancelled, "Image read was cancelled");
+  }
+  std::vector<std::byte> serialized(
+      static_cast<std::size_t>(plan.serialized_bytes));
+  auto copied =
+      copy_serialized_image(source, plan, serialized, stop_token, image_index);
+  if (!copied) {
+    return copied.error();
+  }
+
+  std::size_t input_offset = 0;
+  std::size_t output_offset = 0;
+  std::vector<std::byte> shuffled;
+  for (const auto &subblock : plan.compression.subblocks) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto compressed_size =
+        static_cast<std::size_t>(subblock.compressed_size);
+    const auto uncompressed_size =
+        static_cast<std::size_t>(subblock.uncompressed_size);
+    const auto input = std::span<const std::byte>(serialized)
+                           .subspan(input_offset, compressed_size);
+    auto output = destination.subspan(output_offset, uncompressed_size);
+    if (plan.compression.byte_shuffled) {
+      shuffled.resize(uncompressed_size);
+      auto decoded = decompress_zlib(input, shuffled);
+      if (!decoded) {
+        return decoded.error();
+      }
+      auto unshuffled = unshuffle_bytes(
+          shuffled, output,
+          static_cast<std::size_t>(plan.compression.item_size), stop_token);
+      if (!unshuffled) {
+        return unshuffled.error();
+      }
+    } else {
+      auto decoded = decompress_zlib(input, output);
+      if (!decoded) {
+        return decoded.error();
+      }
+    }
+    input_offset += compressed_size;
+    output_offset += uncompressed_size;
+  }
+  return output_offset;
+}
+
+Result<std::size_t> transform_pixel_storage_from_buffer(
+    const ImageReadPlan &plan, std::span<const std::byte> source,
+    std::span<std::byte> destination, PixelStorage output_storage,
+    ByteOrder output_byte_order, std::stop_token stop_token) {
+  const auto sample_size = static_cast<std::size_t>(plan.sample_size);
+  const auto pixel_count = plan.sample_count / plan.channels;
+  constexpr std::uint64_t kCancellationInterval = 1U << 20U;
+  for (std::uint64_t source_index = 0; source_index < plan.sample_count;
+       ++source_index) {
+    if (source_index % kCancellationInterval == 0 &&
+        stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto channel = plan.image->pixel_storage == PixelStorage::planar
+                             ? source_index / pixel_count
+                             : source_index % plan.channels;
+    const auto pixel = plan.image->pixel_storage == PixelStorage::planar
+                           ? source_index % pixel_count
+                           : source_index / plan.channels;
+    const auto output_index = output_storage == PixelStorage::planar
+                                  ? channel * pixel_count + pixel
+                                  : pixel * plan.channels + channel;
+    const auto input_offset =
+        static_cast<std::size_t>(source_index) * sample_size;
+    const auto output_offset =
+        static_cast<std::size_t>(output_index) * sample_size;
+    for (std::size_t byte = 0; byte < sample_size; ++byte) {
+      const auto input_byte = plan.image->byte_order == output_byte_order
+                                  ? byte
+                                  : sample_size - byte - 1;
+      destination[output_offset + byte] = source[input_offset + input_byte];
+    }
+  }
+  return destination.size();
+}
+
+Result<std::size_t> transform_pixel_storage(const ByteSource &source,
+                                            const ImageReadPlan &plan,
+                                            std::span<std::byte> destination,
+                                            PixelStorage output_storage,
+                                            ByteOrder output_byte_order,
+                                            std::stop_token stop_token,
+                                            std::size_t image_index) {
   constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
   const auto sample_size = static_cast<std::size_t>(plan.sample_size);
   const auto maximum_chunk_samples = kReadChunkBytes / sample_size;
@@ -1267,7 +1610,8 @@ transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
     const auto chunk_bytes =
         static_cast<std::size_t>(chunk_samples * plan.sample_size);
     auto read = read_serialized_chunk(
-        source, plan, static_cast<std::size_t>(source_sample * plan.sample_size),
+        source, plan,
+        static_cast<std::size_t>(source_sample * plan.sample_size),
         std::span(staging).first(chunk_bytes), stop_token, image_index);
     if (!read) {
       return read.error();
@@ -1275,10 +1619,9 @@ transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
     for (std::uint64_t local_sample = 0; local_sample < chunk_samples;
          ++local_sample) {
       const auto source_index = source_sample + local_sample;
-      const auto channel =
-          plan.image->pixel_storage == PixelStorage::planar
-              ? source_index / pixel_count
-              : source_index % plan.channels;
+      const auto channel = plan.image->pixel_storage == PixelStorage::planar
+                               ? source_index / pixel_count
+                               : source_index % plan.channels;
       const auto pixel = plan.image->pixel_storage == PixelStorage::planar
                              ? source_index % pixel_count
                              : source_index / plan.channels;
@@ -1290,10 +1633,9 @@ transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
       const auto output_offset =
           static_cast<std::size_t>(output_index * plan.sample_size);
       for (std::size_t byte = 0; byte < sample_size; ++byte) {
-        const auto input_byte =
-            plan.image->byte_order == output_byte_order
-                ? byte
-                : sample_size - byte - 1;
+        const auto input_byte = plan.image->byte_order == output_byte_order
+                                    ? byte
+                                    : sample_size - byte - 1;
         destination[output_offset + byte] = staging[input_offset + input_byte];
       }
     }
@@ -1302,10 +1644,9 @@ transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
   return static_cast<std::size_t>(plan.expected_bytes);
 }
 
-Result<std::size_t>
-swap_byte_order_in_place(std::span<std::byte> destination,
-                         std::size_t sample_size,
-                         std::stop_token stop_token) {
+Result<std::size_t> swap_byte_order_in_place(std::span<std::byte> destination,
+                                             std::size_t sample_size,
+                                             std::stop_token stop_token) {
   constexpr std::size_t kSamplesPerCancellationCheck = 1U << 20U;
   const auto sample_count = destination.size() / sample_size;
   for (std::size_t sample = 0; sample < sample_count; ++sample) {
@@ -1319,27 +1660,28 @@ swap_byte_order_in_place(std::span<std::byte> destination,
   return destination.size();
 }
 
-Result<bool> validate_unused_spaces(
-    const ByteSource &source, std::uint64_t header_end, std::uint64_t file_size,
-    const std::vector<AttachedRange> &attached_ranges,
-    const ReaderOptions &options) {
+Result<bool>
+validate_unused_spaces(const ByteSource &source, std::uint64_t header_end,
+                       std::uint64_t file_size,
+                       const std::vector<AttachedRange> &attached_ranges,
+                       const ReaderOptions &options) {
   std::array<std::byte, 64U * 1024U> buffer{};
   std::uint64_t validated_unused_bytes = 0;
   const auto validate_gap = [&](std::uint64_t offset,
                                 std::uint64_t size) -> Result<bool> {
-    if (size > options.max_unused_space_bytes -
-                   std::min(validated_unused_bytes,
-                            options.max_unused_space_bytes)) {
+    if (size >
+        options.max_unused_space_bytes -
+            std::min(validated_unused_bytes, options.max_unused_space_bytes)) {
       return make_error(ErrorCode::resource_limit,
                         "Unused-space validation exceeds its byte budget");
     }
     validated_unused_bytes += size;
     std::uint64_t checked = 0;
     while (checked < size) {
-      const auto chunk = static_cast<std::size_t>(std::min<std::uint64_t>(
-          buffer.size(), size - checked));
-      auto read = read_exact(source, offset + checked,
-                             std::span(buffer).first(chunk));
+      const auto chunk = static_cast<std::size_t>(
+          std::min<std::uint64_t>(buffer.size(), size - checked));
+      auto read =
+          read_exact(source, offset + checked, std::span(buffer).first(chunk));
       if (!read) {
         return read.error();
       }
@@ -1546,11 +1888,10 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
                          stop_token);
 }
 
-Result<std::size_t>
-Reader::read_image_into(std::size_t image_index,
-                        std::span<std::byte> destination,
-                        ImageReadOptions read_options,
-                        std::stop_token stop_token) const {
+Result<std::size_t> Reader::read_image_into(std::size_t image_index,
+                                            std::span<std::byte> destination,
+                                            ImageReadOptions read_options,
+                                            std::stop_token stop_token) const {
   try {
     auto plan = plan_image_read(impl_->document, impl_->options,
                                 impl_->embedded_blocks, image_index);
@@ -1573,6 +1914,32 @@ Reader::read_image_into(std::size_t image_index,
       return output_byte_order.error();
     }
     auto output = destination.first(expected);
+    if (plan.value().compression.codec != CompressionCodec::none) {
+      if (output_storage.value() != plan.value().image->pixel_storage) {
+        std::vector<std::byte> source_pixels(expected);
+        auto decoded =
+            decode_compressed_image(*impl_->source, plan.value(), source_pixels,
+                                    stop_token, image_index);
+        if (!decoded) {
+          return decoded.error();
+        }
+        return transform_pixel_storage_from_buffer(
+            plan.value(), source_pixels, output, output_storage.value(),
+            output_byte_order.value(), stop_token);
+      }
+      auto decoded = decode_compressed_image(*impl_->source, plan.value(),
+                                             output, stop_token, image_index);
+      if (!decoded) {
+        return decoded.error();
+      }
+      if (plan.value().sample_size > 1 &&
+          output_byte_order.value() != plan.value().image->byte_order) {
+        return swap_byte_order_in_place(
+            output, static_cast<std::size_t>(plan.value().sample_size),
+            stop_token);
+      }
+      return decoded.value();
+    }
     if (output_storage.value() != plan.value().image->pixel_storage) {
       return transform_pixel_storage(
           *impl_->source, plan.value(), output, output_storage.value(),
