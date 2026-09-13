@@ -36,6 +36,13 @@ if(MMXISF_BUILD_TESTS)
   add_executable(mmxisf_version_test tests/version_test.cpp)
   target_link_libraries(mmxisf_version_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.version COMMAND mmxisf_version_test)
+  add_test(
+    NAME mmxisf.planning
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePlanning.cmake
+  )
 endif()
 
 configure_package_config_file(

@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+
+if(NOT DEFINED MMXISF_SOURCE_DIR)
+  message(FATAL_ERROR "MMXISF_SOURCE_DIR is required")
+endif()
+
+function(read_json output relative_path)
+  file(READ "${MMXISF_SOURCE_DIR}/${relative_path}" contents)
+  string(JSON parsed ERROR_VARIABLE error GET "${contents}")
+  if(NOT error STREQUAL "NOTFOUND")
+    message(FATAL_ERROR "Invalid JSON in ${relative_path}: ${error}")
+  endif()
+  set(${output} "${contents}" PARENT_SCOPE)
+endfunction()
+
+read_json(specification "docs/specification-baseline.json")
+read_json(matrix "docs/conformance/xisf-1.0-matrix.json")
+read_json(fixture_schema "docs/fixtures/manifest.schema.json")
+
+string(JSON specification_schema GET "${specification}" schema)
+if(NOT specification_schema STREQUAL "mmxisf.specification-baseline/1.0.0")
+  message(FATAL_ERROR "Unexpected specification-baseline schema")
+endif()
+
+string(JSON source_commit GET "${specification}" specification sourceCommit)
+if(NOT source_commit MATCHES "^[0-9a-f][0-9a-f]+$")
+  message(FATAL_ERROR "Invalid specification source commit")
+endif()
+string(LENGTH "${source_commit}" source_commit_length)
+if(NOT source_commit_length EQUAL 40)
+  message(FATAL_ERROR "Specification source commit must have 40 hex digits")
+endif()
+
+string(JSON matrix_schema GET "${matrix}" schema)
+if(NOT matrix_schema STREQUAL "mmxisf.conformance-matrix/1.0.0")
+  message(FATAL_ERROR "Unexpected conformance-matrix schema")
+endif()
+
+string(JSON row_count LENGTH "${matrix}" rows)
+if(row_count LESS 1)
+  message(FATAL_ERROR "Conformance matrix is empty")
+endif()
+
+set(ids)
+math(EXPR last_row "${row_count} - 1")
+foreach(index RANGE ${last_row})
+  string(JSON id GET "${matrix}" rows ${index} id)
+  list(FIND ids "${id}" existing_index)
+  if(NOT existing_index EQUAL -1)
+    message(FATAL_ERROR "Duplicate conformance id: ${id}")
+  endif()
+  list(APPEND ids "${id}")
+
+  foreach(field pfi baselineDecoder)
+    string(JSON status GET "${matrix}" rows ${index} ${field})
+    if(NOT status MATCHES "^(REQUIRED|INSPECT_ONLY|REJECT_EXPLICITLY|DEFERRED)$")
+      message(FATAL_ERROR "Invalid ${field} status for ${id}: ${status}")
+    endif()
+  endforeach()
+
+  string(JSON target GET "${matrix}" rows ${index} target)
+  if(NOT target MATCHES "^(0\.[1-4]|DEFERRED)$")
+    message(FATAL_ERROR "Invalid target for ${id}: ${target}")
+  endif()
+endforeach()
+
+string(JSON fixture_schema_id GET "${fixture_schema}" properties schema const)
+if(NOT fixture_schema_id STREQUAL "mmxisf.fixture-manifest/1.0.0")
+  message(FATAL_ERROR "Unexpected fixture-manifest schema")
+endif()
+
+message(STATUS "Validated ${row_count} XISF planning rows")

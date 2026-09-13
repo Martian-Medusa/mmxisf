@@ -48,6 +48,10 @@ Ecosystem implementations are reconnaissance, not normative sources.
 Exit: reviewed conformance matrix, clean-room log, fixture provenance schema,
 and no unresolved ambiguity on any PFI-required row.
 
+Status: completed in M0 on 2026-09-13. The only recorded cross-section ambiguity
+is resolved conservatively in `SPECIFICATION_NOTES.md`; future first-party
+errata can supersede it.
+
 ### 2. Safe container and XML layer
 
 1. Parse the fixed preamble and bounded UTF-8 XML header.

@@ -38,6 +38,32 @@ PFI-ready reader and 6-9 months to a defensible 1.0. Two engineers can reduce th
 calendar to roughly 2.5-3.5 and 4-6 months respectively, but conformance, API,
 and final interoperability gates remain serial.
 
+## AI-first rebaseline after M0
+
+The original person-week estimates remain useful as a measure of engineering
+surface and review burden. They are not the active calendar plan. The accelerated
+M0 exercise completed its planned artifacts in one session, with a 33-minute
+42-second repository checkpoint interval after the initial foundation commit.
+This strongly reduces planning overhead, but parser correctness, dependency
+spikes, fuzzing and independent interoperability evidence will not scale at the
+same rate.
+
+Active AI-first calendar targets, assuming sustained autonomous work and prompt
+availability of test fixtures, are:
+
+| Outcome | Revised calendar target | Planning window from 2026-09-13 |
+| --- | ---: | --- |
+| M1 metadata inspector | 2-4 working days | 2026-09-15 to 2026-09-17 |
+| M2/M3 PFI pixel reader with codecs/integrity | 2-3 weeks total | 2026-09-27 to 2026-10-04 |
+| M4/M5 PFI-ready parity path | 3-5 weeks total | 2026-10-04 to 2026-10-18 |
+| Public read/write beta | 7-10 weeks total | 2026-11-01 to 2026-11-22 |
+| Supported monolithic 1.0 | 11-15 weeks total | 2026-11-29 to 2026-12-27 |
+
+These windows are recalibrated after every milestone using actual elapsed time,
+defect/rework rate, conformance rows closed, tests added, and uncovered external
+dependencies. A fast green prototype does not move the production gate unless
+negative, fuzz and interoperability evidence moves with it.
+
 ## Release sequence
 
 ### 0.0.x - foundation

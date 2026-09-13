@@ -4,15 +4,19 @@
 
 - XISF 1.0 specification: <https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html>
 - PixInsight XISF landing page: <https://pixinsight.com/xisf/>
+- Official XISF specification source: <https://gitlab.com/pixinsight/XISF-specification>
 - PixInsight staff clarification of monolithic attached blocks and header-driven
   layout: <https://pixinsight.com/forum/index.php?threads/questions-on-xisf-format.14154/>
 - PixInsight staff clarification of XISF left-to-right, top-to-bottom pixel
   order: <https://pixinsight.com/forum/index.php?threads/astrometric-solution-is-written-flipped-to-fits-and-xisf-file.20446/>
 
-The official specification page was discoverable but rejected automated fetches
-during repository creation. M0 therefore must obtain and identify the exact
-revision before freezing the conformance matrix. This plan does not claim that
-its provisional feature list is the normative matrix.
+The official document and its source repository were accessed during M0. The
+final XISF 1.0 source is pinned in `docs/specification-baseline.json` to commit
+`7fd38ebc999c0dc18d7cdce3032407b20cada9ea` from 2017-04-17. The source itself
+is not vendored; the repository records derived requirements and hashes.
+
+- pugixml manual used for XML-parser risk evaluation:
+  <https://pugixml.org/docs/manual.html>
 
 ## Local PFI evidence inspected
 

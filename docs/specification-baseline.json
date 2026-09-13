@@ -1,0 +1,29 @@
+{
+  "schema": "mmxisf.specification-baseline/1.0.0",
+  "recordedAt": "2026-09-13T15:12:16Z",
+  "specification": {
+    "name": "XISF Version 1.0 Specification",
+    "status": "FINAL",
+    "version": "1.00",
+    "releaseDate": "2017-04-17",
+    "copyrightHolder": "Pleiades Astrophoto S.L.",
+    "officialDocumentUrl": "https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html",
+    "officialSourceRepository": "https://gitlab.com/pixinsight/XISF-specification.git",
+    "sourceCommit": "7fd38ebc999c0dc18d7cdce3032407b20cada9ea",
+    "sourceCommitDate": "2017-04-17T17:14:08+02:00",
+    "sourceFileCount": 67,
+    "sourceTreeManifestSha256": "57c651e58423a26cd54dfc5e6a66302ddd1f575905ea6aadab4d3df9956e4e9f",
+    "rootPidocSha256": "7769601981f35b9e0329a80ac17cb203be34f04e1bd3473b3d3c3c0a2523b536"
+  },
+  "retrieval": {
+    "method": "shallow Git clone to temporary local storage",
+    "repositoryHeadVerifiedWithLsRemote": true,
+    "onlineDocumentVisuallyVerified": true,
+    "sourceCopiedIntoProductRepository": false
+  },
+  "usePolicy": {
+    "normativeSource": true,
+    "implementationCodeSource": false,
+    "notes": "The specification permits implementations and derivative explanatory documents subject to its copyright and disclaimer terms. mmxisf records derived requirements and does not vendor or modify the specification."
+  }
+}

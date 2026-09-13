@@ -39,6 +39,11 @@ milestone. They remain candidates for later conformance work.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap and estimates](docs/ROADMAP.md)
 - [PFI integration](docs/PFI_INTEGRATION.md)
+- [Conformance matrix](docs/conformance/xisf-1.0-matrix.json)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Resource limits](docs/RESOURCE_LIMITS.md)
+- [Fixture policy](docs/FIXTURE_POLICY.md)
+- [Accelerated M0 status](docs/M0_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the scaffold
