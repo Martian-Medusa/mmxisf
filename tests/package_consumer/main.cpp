@@ -37,7 +37,10 @@ int main() {
                      mmxisf::ChecksumVerification::not_declared &&
                  write_image.pixel_storage == mmxisf::PixelStorage::planar &&
                  writer_options.attachment_alignment == 4096 &&
+                 writer_options.max_images == 64 &&
+                 writer_options.max_cumulative_image_bytes > 0 &&
                  write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
+                 write_summary.image_blocks.empty() &&
                  std::string_view(mmxisf::version()) == "0.1.0"
              ? 0
              : 1;

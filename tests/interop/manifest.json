@@ -110,6 +110,18 @@
       "expectedArtifact": "595212 decoded bytes; SHA-256 0132a60d85d32dc98a67944988fdf1276d597e52dd3bedfd0e13fb50eb311475"
     },
     {
+      "id": "mmxisf-writer-multi-scalars",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-multi-scalars.xisf.b64"},
+      "sha256": "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
+      "generationProcedure": "Invoke the multi-image Writer::write_file overload with the four little-endian Planar UInt8 Gray, UInt32 Gray, Float32 RGB, and Float64 Gray arrays, fixed bounds and provenance anchored in tests/writer_test.cpp.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.deterministic", "image.multiple", "image.uint8", "image.uint32", "image.float32", "image.float64", "image.gray", "image.rgb", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "Independent public-API read: four images with shapes 2x2x1, 1x2x1, 1x1x3, and 1x1x1; dtypes uint8, uint32, float32, and float64; values [0,127,128,255], [1,2309737967], [0.5,1,-1], and [0.5] exact; serialized SHA-256 c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba"
+    },
+    {
       "id": "mmxisf-writer-rgb-u16",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-rgb-u16.xisf.b64"},
       "sha256": "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",

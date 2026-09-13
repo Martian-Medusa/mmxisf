@@ -30,3 +30,11 @@ little-endian Planar UInt16 RGB output anchored by `writer_test.cpp`. It was
 read by the same independent package through its documented public API as a
 channels-last `(2, 2, 3)` `uint16` array, with every sample equal to the writer
 input. Its own writer provenance and hashes are separate in `manifest.json`.
+
+The `mmxisf-writer-multi-scalars` fixture extends the consumer-side oracle to
+four images in one monolithic unit: UInt8 Gray, UInt32 Gray, Float32 RGB, and
+Float64 Gray. Package `xisf` 0.9.7 enumerated all four through its documented
+public API and returned the exact source values, dtypes, geometries, Planar
+storage, little-endian order, and floating-point bounds. The fixture is also a
+fuzz seed and its file and per-image pixel hashes are asserted in compiled
+tests.

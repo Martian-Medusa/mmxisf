@@ -176,6 +176,36 @@ void check_fixture(
          "independent fixture decoded bytes differ from the source array");
 }
 
+void check_multi_writer_fixture(const std::filesystem::path &path) {
+  auto bytes = load_base64(path);
+  expect(sha256_hex(bytes) ==
+             "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+         "multi-image writer fixture identity changed");
+  auto opened = mmxisf::Reader::open_source(
+      std::make_shared<MemorySource>(std::move(bytes)));
+  expect(opened.has_value(), "multi-image writer fixture did not open");
+  const auto &images = opened.value().document().images();
+  expect(images.size() == 4, "multi-image writer fixture count changed");
+  const std::array expected_formats{
+      mmxisf::SampleFormat::uint8, mmxisf::SampleFormat::uint32,
+      mmxisf::SampleFormat::float32, mmxisf::SampleFormat::float64};
+  const std::array<std::string_view, 4> expected_hashes{
+      "89273d2f70b93285bb7ddb4bcee86a5347ca7159352e3cbdd20c23e9d1e507d3",
+      "8534950f56d583bdf50c1fda159d104fcb79d58532a12b16c5a2151abb1d1d8e",
+      "7641eeb488776a3586d213f2bb1dabf0a264526a2089fb5cac2117e194087c28",
+      "4cfa5b42ca669328764e67cd9a34bb8f90b16ed7ca8d85e8443783d7ccce15ed"};
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    expect(images[index].sample_format == expected_formats[index] &&
+               images[index].pixel_storage == mmxisf::PixelStorage::planar &&
+               images[index].byte_order == mmxisf::ByteOrder::little,
+           "multi-image writer descriptor changed");
+    auto decoded = opened.value().read_image(index);
+    expect(decoded.has_value() &&
+               sha256_hex(decoded.value().pixels) == expected_hashes[index],
+           "multi-image writer fixture pixels changed");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -242,6 +272,7 @@ int main() {
                     fixture.channels, fixture.pixel_bytes,
                     fixture.pixel_sha256);
     }
+    check_multi_writer_fixture(root / "mmxisf-writer-multi-scalars.xisf.b64");
     std::cout << "PASS: independent producer and consumer interop matrix\n";
     return 0;
   } catch (const std::exception &exception) {

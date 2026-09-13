@@ -11,9 +11,9 @@ without coupling it to PFI. Deterministic output requires callers to supply
 volatile provenance explicitly, and untrusted dimensions require the same
 checked-arithmetic and resource-limit posture as reading.
 
-The first writer slice must be narrow enough to validate layout and external
-consumer behavior before compression, arbitrary metadata, or multiple images
-expand the serialization surface.
+The first writer slice was deliberately narrow enough to validate layout and
+external consumer behavior before multiple images expanded the serialization
+surface. That evidence now supports the additive second slice below.
 
 ## Decision
 
@@ -25,8 +25,12 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
   creator application, plus finite header/image budgets and attachment
   alignment;
 - `WriteSummary` returns exact file/header/block layout;
-- the foundation accepts exactly one attached little-endian Planar UInt16 Gray
-  or RGB image;
+- the single-image overload remains source-compatible and an additive span
+  overload accepts one or more images;
+- attached output accepts little-endian Planar UInt8, UInt16, UInt32, Float32,
+  or Float64 Gray/RGB images; floats require finite increasing bounds;
+- image count, per-image bytes, and cumulative image bytes have independent
+  caller-configurable limits;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,
   arithmetic, and resource budgets are validated before file creation;
 - output is written to a sibling temporary path and renamed only after all
@@ -42,10 +46,11 @@ release gate is accepted.
 
 ## Consequences
 
-The first slice establishes deterministic monolithic block planning and exact
-Gray/RGB round trips without claiming a general writer. A first independent
-consumer preserved little-endian output but did not honor a big-endian writer
-probe, so big-endian output fails explicitly until broader external evidence is
-available. Compression, checksums, multiple images, arbitrary metadata,
+The first two slices establish deterministic monolithic block planning and exact
+multi-image PFI-scalar Gray/RGB round trips without claiming a general writer.
+The original single-image byte hash remains stable. An independent consumer
+preserved all four types in the multi-image oracle but did not honor a
+big-endian writer probe, so big-endian output fails explicitly until broader
+external evidence is available. Compression, checksums, arbitrary metadata,
 caller-provided sinks, and replacement policy are follow-up gates. Unsupported
 requests fail explicitly instead of being coerced into the narrow profile.

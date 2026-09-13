@@ -7,11 +7,13 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <stop_token>
@@ -26,6 +28,9 @@ std::vector<std::filesystem::path> cleanup_paths;
 class Cleanup {
 public:
   ~Cleanup() {
+    if (std::getenv("MMXISF_KEEP_TEST_OUTPUTS") != nullptr) {
+      return;
+    }
     for (const auto &path : cleanup_paths) {
       std::error_code ignored;
       std::filesystem::remove(path, ignored);
@@ -176,6 +181,109 @@ void test_rgb_little_endian_round_trip() {
          "writer RGB source bytes did not round trip exactly");
 }
 
+void test_multi_image_scalar_round_trip() {
+  const std::array<std::byte, 4> uint8_pixels{std::byte{0x00}, std::byte{0x7f},
+                                              std::byte{0x80}, std::byte{0xff}};
+  const std::array<std::byte, 8> uint32_pixels{
+      std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0xef}, std::byte{0xcd}, std::byte{0xab}, std::byte{0x89}};
+  const std::array<std::byte, 12> float32_pixels{
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x3f},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x80}, std::byte{0x3f},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x80}, std::byte{0xbf}};
+  const std::array<std::byte, 8> float64_pixels{
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0xe0}, std::byte{0x3f}};
+
+  std::vector<mmxisf::ImageWriteView> images(4);
+  images[0] = {.id = "u8",
+               .width = 2,
+               .height = 2,
+               .channels = 1,
+               .sample_format = mmxisf::SampleFormat::uint8,
+               .color_space = "Gray",
+               .pixels = uint8_pixels};
+  images[1] = {.id = "u32",
+               .width = 2,
+               .height = 1,
+               .channels = 1,
+               .sample_format = mmxisf::SampleFormat::uint32,
+               .color_space = "Gray",
+               .pixels = uint32_pixels};
+  images[2] = {.id = "f32-rgb",
+               .width = 1,
+               .height = 1,
+               .channels = 3,
+               .sample_format = mmxisf::SampleFormat::float32,
+               .color_space = "RGB",
+               .lower_bound = -1.0,
+               .upper_bound = 1.0,
+               .pixels = float32_pixels};
+  images[3] = {.id = "f64",
+               .width = 1,
+               .height = 1,
+               .channels = 1,
+               .sample_format = mmxisf::SampleFormat::float64,
+               .color_space = "Gray",
+               .lower_bound = 0.0,
+               .upper_bound = 1.0,
+               .pixels = float64_pixels};
+
+  const auto path = output_path("mmxisf-writer-multi-scalars.xisf");
+  auto written = mmxisf::Writer::write_file(
+      path, std::span<const mmxisf::ImageWriteView>(images), options());
+  expect(written.has_value(), "multi-image scalar writer failed");
+  expect(written.value().image_blocks.size() == images.size() &&
+             written.value().image_block.offset ==
+                 written.value().image_blocks.front().offset,
+         "multi-image writer summary changed");
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    const auto &block = written.value().image_blocks[index];
+    expect(block.kind == mmxisf::BlockKind::attachment &&
+               block.offset % 4096 == 0 &&
+               block.size == images[index].pixels.size(),
+           "multi-image writer block layout changed");
+    if (index != 0) {
+      const auto &previous = written.value().image_blocks[index - 1];
+      expect(block.offset >= previous.offset + previous.size,
+             "multi-image writer blocks overlap");
+    }
+  }
+  expect(written.value().file_size == std::filesystem::file_size(path),
+         "multi-image writer file-size summary changed");
+  const auto serialized = read_file(path);
+  expect(sha256(serialized) ==
+             "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+         "multi-image writer deterministic external-oracle anchor changed");
+
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value() &&
+             opened.value().document().images().size() == images.size(),
+         "multi-image writer result did not reopen");
+  const std::array expected_formats{
+      mmxisf::SampleFormat::uint8, mmxisf::SampleFormat::uint32,
+      mmxisf::SampleFormat::float32, mmxisf::SampleFormat::float64};
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    const auto &descriptor = opened.value().document().images()[index];
+    expect(descriptor.id == images[index].id &&
+               descriptor.sample_format == expected_formats[index] &&
+               descriptor.block.offset ==
+                   written.value().image_blocks[index].offset,
+           "multi-image writer descriptor changed");
+    if (index >= 2) {
+      expect(descriptor.lower_bound == images[index].lower_bound &&
+                 descriptor.upper_bound == images[index].upper_bound,
+             "floating-point writer bounds changed");
+    }
+    auto decoded = opened.value().read_image(index);
+    expect(decoded.has_value() &&
+               decoded.value().pixels ==
+                   std::vector<std::byte>(images[index].pixels.begin(),
+                                          images[index].pixels.end()),
+           "multi-image scalar pixels did not round trip exactly");
+  }
+}
+
 void test_rejection_and_cleanup() {
   const std::array<std::byte, 8> pixels{};
   auto image = gray_image(pixels);
@@ -187,12 +295,63 @@ void test_rejection_and_cleanup() {
              invalid_time.error().code == mmxisf::ErrorCode::invalid_argument,
          "invalid writer creation time was accepted");
 
-  image.sample_format = mmxisf::SampleFormat::float32;
+  image.sample_format = mmxisf::SampleFormat::uint64;
   auto unsupported = mmxisf::Writer::write_file(
       output_path("mmxisf-writer-unsupported.xisf"), image, options());
   expect(!unsupported &&
              unsupported.error().code == mmxisf::ErrorCode::unsupported_feature,
          "unsupported writer profile was not explicit");
+
+  std::array<std::byte, 16> float_pixels{};
+  image = gray_image(float_pixels);
+  image.sample_format = mmxisf::SampleFormat::float32;
+  auto missing_bounds = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-missing-bounds.xisf"), image, options());
+  expect(!missing_bounds &&
+             missing_bounds.error().code == mmxisf::ErrorCode::invalid_argument,
+         "floating-point writer image without bounds was accepted");
+  image.lower_bound = 0.0;
+  image.upper_bound = 0.0;
+  auto invalid_bounds = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-invalid-bounds.xisf"), image, options());
+  expect(!invalid_bounds &&
+             invalid_bounds.error().code == mmxisf::ErrorCode::invalid_argument,
+         "non-increasing writer bounds were accepted");
+  image.upper_bound = std::numeric_limits<double>::infinity();
+  auto nonfinite_bounds = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-nonfinite-bounds.xisf"), image, options());
+  expect(!nonfinite_bounds && nonfinite_bounds.error().code ==
+                                  mmxisf::ErrorCode::invalid_argument,
+         "non-finite writer bounds were accepted");
+  image.upper_bound.reset();
+  auto half_bounds = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-half-bounds.xisf"), image, options());
+  expect(!half_bounds &&
+             half_bounds.error().code == mmxisf::ErrorCode::invalid_argument,
+         "incomplete writer bounds were accepted");
+
+  image = gray_image(pixels);
+  std::array<mmxisf::ImageWriteView, 2> two_images{image, image};
+  auto count_options = options();
+  count_options.max_images = 1;
+  auto image_count = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-image-count.xisf"), two_images, count_options);
+  expect(!image_count &&
+             image_count.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer image-count budget was not enforced");
+  auto cumulative_options = options();
+  cumulative_options.max_cumulative_image_bytes = pixels.size();
+  auto cumulative = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-cumulative-limit.xisf"), two_images,
+      cumulative_options);
+  expect(!cumulative &&
+             cumulative.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer cumulative image-byte budget was not enforced");
+  std::span<const mmxisf::ImageWriteView> no_images;
+  auto empty = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-empty.xisf"), no_images, options());
+  expect(!empty && empty.error().code == mmxisf::ErrorCode::invalid_argument,
+         "writer accepted an empty image sequence");
   image = gray_image(pixels);
   image.pixels = image.pixels.first(6);
   auto wrong_size = mmxisf::Writer::write_file(
@@ -276,8 +435,9 @@ int main() {
   try {
     test_deterministic_gray_round_trip();
     test_rgb_little_endian_round_trip();
+    test_multi_image_scalar_round_trip();
     test_rejection_and_cleanup();
-    std::cout << "PASS: deterministic monolithic writer foundation\n";
+    std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;
   } catch (const std::exception &exception) {
     std::cerr << exception.what() << '\n';

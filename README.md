@@ -9,7 +9,8 @@ PFI, PixInsight, PCL, or Qt.
 > and color matrix, with storage/endian combinations still partial; M3 codec,
 > resource-limit, and local performance prerequisites are complete; M4 is in
 > progress and the first M5 integration prerequisites are implemented. M6 has
-> a deterministic, uncompressed UInt16 Gray/RGB writer foundation. Version
+> a deterministic, uncompressed multi-image Gray/RGB writer for the PFI scalar
+> profile. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
@@ -88,13 +89,14 @@ The CI package gate also configures and runs the independent
 `tests/package_consumer` project against the installed CMake package rather
 than the source tree.
 
-The pre-release `Writer::write_file` foundation emits one attached little-
-endian Planar UInt16 Gray or RGB image with explicitly supplied creation time,
-creator, dimensions, and immutable pixel bytes. Equivalent inputs produce
-byte-identical files. Existing destinations are not overwritten, resource
-limits and arithmetic are checked before file creation, and cancellation
-removes incomplete temporary output. Compression, arbitrary metadata, and
-multiple images are not yet accepted by the writer API.
+The pre-release `Writer::write_file` API emits one or more attached little-
+endian Planar Gray or RGB images using UInt8, UInt16, UInt32, Float32, or
+Float64 samples. Floating-point images require explicit finite bounds; all
+images borrow immutable pixel spans for the duration of the call. Equivalent
+inputs produce byte-identical files. Existing destinations are not overwritten,
+per-image and cumulative resource limits and arithmetic are checked before file
+creation, and cancellation removes incomplete temporary output. Compression
+and arbitrary caller-declared metadata are not yet accepted by the writer API.
 
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Decoded attachment bytes can be returned in an

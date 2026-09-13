@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
+#include <cmath>
 #include <fstream>
 #include <limits>
 #include <string_view>
@@ -185,34 +187,84 @@ Result<std::string> escape_xml(std::string_view input, bool attribute) {
   return output;
 }
 
-Result<std::string> make_header(const ImageWriteView &image,
-                                const WriterOptions &options,
-                                std::uint64_t attachment_offset,
-                                std::uint64_t pixel_bytes) {
-  auto escaped_id = escape_xml(image.id, true);
-  if (!escaped_id) {
-    return escaped_id.error();
+std::pair<std::string_view, std::uint64_t>
+sample_format_description(SampleFormat format) {
+  switch (format) {
+  case SampleFormat::uint8:
+    return {"UInt8", 1};
+  case SampleFormat::uint16:
+    return {"UInt16", 2};
+  case SampleFormat::uint32:
+    return {"UInt32", 4};
+  case SampleFormat::float32:
+    return {"Float32", 4};
+  case SampleFormat::float64:
+    return {"Float64", 8};
+  default:
+    return {{}, 0};
   }
+}
+
+Result<std::string> format_bound(double value) {
+  if (!std::isfinite(value)) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer image bounds must be finite");
+  }
+  std::array<char, 64> buffer{};
+  const auto converted =
+      std::to_chars(buffer.data(), buffer.data() + buffer.size(), value,
+                    std::chars_format::scientific,
+                    std::numeric_limits<double>::max_digits10 - 1);
+  if (converted.ec != std::errc{}) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer could not serialize image bounds");
+  }
+  return std::string(buffer.data(), converted.ptr);
+}
+
+Result<std::string> make_header(std::span<const ImageWriteView> images,
+                                const WriterOptions &options,
+                                std::span<const BlockLocation> image_blocks) {
   auto escaped_creator = escape_xml(options.creator_application, false);
   if (!escaped_creator) {
     return escaped_creator.error();
   }
-
-  const auto byte_order =
-      image.byte_order == ByteOrder::little ? "little" : "big";
   std::string header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
   header += "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">";
-  header += "<Image";
-  if (!image.id.empty()) {
-    header += " id=\"" + escaped_id.value() + "\"";
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    const auto &image = images[index];
+    auto escaped_id = escape_xml(image.id, true);
+    if (!escaped_id) {
+      return escaped_id.error();
+    }
+    const auto [sample_format, unused_sample_size] =
+        sample_format_description(image.sample_format);
+    static_cast<void>(unused_sample_size);
+    header += "<Image";
+    if (!image.id.empty()) {
+      header += " id=\"" + escaped_id.value() + "\"";
+    }
+    header += " geometry=\"" + std::to_string(image.width) + ':' +
+              std::to_string(image.height) + ':' +
+              std::to_string(image.channels) + "\"";
+    header += " sampleFormat=\"" + std::string(sample_format) +
+              "\" colorSpace=\"" + image.color_space +
+              "\" pixelStorage=\"Planar\" byteOrder=\"little\"";
+    if (image.lower_bound && image.upper_bound) {
+      auto lower = format_bound(*image.lower_bound);
+      auto upper = format_bound(*image.upper_bound);
+      if (!lower) {
+        return lower.error();
+      }
+      if (!upper) {
+        return upper.error();
+      }
+      header += " bounds=\"" + lower.value() + ':' + upper.value() + "\"";
+    }
+    header +=
+        " location=\"attachment:" + std::to_string(image_blocks[index].offset) +
+        ':' + std::to_string(image_blocks[index].size) + "\"/>";
   }
-  header += " geometry=\"" + std::to_string(image.width) + ':' +
-            std::to_string(image.height) + ':' +
-            std::to_string(image.channels) + "\"";
-  header += " sampleFormat=\"UInt16\" colorSpace=\"" + image.color_space +
-            "\" pixelStorage=\"Planar\" byteOrder=\"" + byte_order + "\"";
-  header += " location=\"attachment:" + std::to_string(attachment_offset) +
-            ':' + std::to_string(pixel_bytes) + "\"/>";
   header += "<Metadata><Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
             "value=\"" +
             options.creation_time + "\"/>";
@@ -260,6 +312,13 @@ Result<WriteSummary>
 Writer::write_file(const std::filesystem::path &destination,
                    const ImageWriteView &image, const WriterOptions &options,
                    std::stop_token stop_token) {
+  return write_file(destination, std::span(&image, 1), options, stop_token);
+}
+
+Result<WriteSummary>
+Writer::write_file(const std::filesystem::path &destination,
+                   std::span<const ImageWriteView> images,
+                   const WriterOptions &options, std::stop_token stop_token) {
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "XISF write was cancelled");
   }
@@ -267,19 +326,13 @@ Writer::write_file(const std::filesystem::path &destination,
     return make_error(ErrorCode::invalid_argument,
                       "Writer destination cannot be empty");
   }
-  if (image.sample_format != SampleFormat::uint16 ||
-      image.pixel_storage != PixelStorage::planar ||
-      image.byte_order != ByteOrder::little ||
-      (image.color_space != "Gray" && image.color_space != "RGB")) {
-    return make_error(ErrorCode::unsupported_feature,
-                      "Writer foundation supports little-endian Planar UInt16 "
-                      "Gray or RGB images");
-  }
-  if (image.width == 0 || image.height == 0 ||
-      (image.color_space == "Gray" ? image.channels != 1
-                                   : image.channels != 3)) {
+  if (images.empty()) {
     return make_error(ErrorCode::invalid_argument,
-                      "Writer image geometry does not match its color space");
+                      "Writer requires at least one image");
+  }
+  if (images.size() > options.max_images) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer image count exceeds its budget");
   }
   if (!is_power_of_two(options.attachment_alignment) ||
       options.attachment_alignment < 16 ||
@@ -297,28 +350,106 @@ Writer::write_file(const std::filesystem::path &destination,
                       "Writer creator application cannot be empty");
   }
 
-  std::uint64_t sample_count = 0;
-  std::uint64_t pixel_bytes = 0;
-  if (!checked_multiply(image.width, image.height, sample_count) ||
-      !checked_multiply(sample_count, image.channels, sample_count) ||
-      !checked_multiply(sample_count, 2, pixel_bytes)) {
-    return make_error(ErrorCode::overflow, "Writer image byte count overflows");
-  }
-  if (pixel_bytes > options.max_image_bytes) {
-    return make_error(ErrorCode::resource_limit,
-                      "Writer image exceeds its byte budget");
-  }
-  if (pixel_bytes != image.pixels.size()) {
-    return make_error(ErrorCode::invalid_argument,
-                      "Writer pixel span size does not match image geometry");
+  std::vector<std::uint64_t> pixel_sizes;
+  pixel_sizes.reserve(images.size());
+  std::uint64_t cumulative_pixel_bytes = 0;
+  for (const auto &image : images) {
+    const auto [sample_name, sample_size] =
+        sample_format_description(image.sample_format);
+    if (sample_name.empty() || image.pixel_storage != PixelStorage::planar ||
+        image.byte_order != ByteOrder::little ||
+        (image.color_space != "Gray" && image.color_space != "RGB")) {
+      return make_error(
+          ErrorCode::unsupported_feature,
+          "Writer supports little-endian Planar UInt8, UInt16, UInt32, "
+          "Float32, or Float64 Gray and RGB images");
+    }
+    if (image.width == 0 || image.height == 0 ||
+        (image.color_space == "Gray" ? image.channels != 1
+                                     : image.channels != 3)) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer image geometry does not match its color space");
+    }
+    if (image.lower_bound.has_value() != image.upper_bound.has_value()) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer image bounds must be provided as a pair");
+    }
+    const bool floating_point = image.sample_format == SampleFormat::float32 ||
+                                image.sample_format == SampleFormat::float64;
+    if (floating_point && !image.lower_bound) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer floating-point images require bounds");
+    }
+    if (image.lower_bound && (!std::isfinite(*image.lower_bound) ||
+                              !std::isfinite(*image.upper_bound) ||
+                              *image.lower_bound >= *image.upper_bound)) {
+      return make_error(
+          ErrorCode::invalid_argument,
+          "Writer image bounds must be finite and strictly increasing");
+    }
+
+    std::uint64_t sample_count = 0;
+    std::uint64_t pixel_bytes = 0;
+    if (!checked_multiply(image.width, image.height, sample_count) ||
+        !checked_multiply(sample_count, image.channels, sample_count) ||
+        !checked_multiply(sample_count, sample_size, pixel_bytes)) {
+      return make_error(ErrorCode::overflow,
+                        "Writer image byte count overflows");
+    }
+    if (pixel_bytes > options.max_image_bytes) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer image exceeds its byte budget");
+    }
+    if (!checked_add(cumulative_pixel_bytes, pixel_bytes,
+                     cumulative_pixel_bytes) ||
+        cumulative_pixel_bytes > options.max_cumulative_image_bytes) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer images exceed their cumulative byte budget");
+    }
+    if (pixel_bytes != image.pixels.size()) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer pixel span size does not match image geometry");
+    }
+    pixel_sizes.push_back(pixel_bytes);
   }
 
+  std::vector<BlockLocation> image_blocks(images.size());
+  const auto plan_blocks =
+      [&](std::uint64_t first_offset) -> Result<std::uint64_t> {
+    auto offset = first_offset;
+    for (std::size_t index = 0; index < images.size(); ++index) {
+      auto &block = image_blocks[index];
+      block.kind = BlockKind::attachment;
+      block.offset = offset;
+      block.size = pixel_sizes[index];
+      block.raw = "attachment:" + std::to_string(offset) + ':' +
+                  std::to_string(pixel_sizes[index]);
+      std::uint64_t end = 0;
+      if (!checked_add(offset, pixel_sizes[index], end)) {
+        return make_error(ErrorCode::overflow, "Writer file layout overflows");
+      }
+      if (index + 1 == images.size()) {
+        return end;
+      }
+      auto aligned = align_up(end, options.attachment_alignment);
+      if (!aligned) {
+        return aligned.error();
+      }
+      offset = aligned.value();
+    }
+    return make_error(ErrorCode::internal_error,
+                      "Writer block planner received no images");
+  };
+
   std::uint64_t attachment_offset = options.attachment_alignment;
+  auto file_size_result = plan_blocks(attachment_offset);
+  if (!file_size_result) {
+    return file_size_result.error();
+  }
   std::string header;
   bool layout_stable = false;
   for (unsigned iteration = 0; iteration < 4; ++iteration) {
-    auto candidate =
-        make_header(image, options, attachment_offset, pixel_bytes);
+    auto candidate = make_header(images, options, image_blocks);
     if (!candidate) {
       return candidate.error();
     }
@@ -336,6 +467,10 @@ Writer::write_file(const std::filesystem::path &destination,
       break;
     }
     attachment_offset = aligned.value();
+    file_size_result = plan_blocks(attachment_offset);
+    if (!file_size_result) {
+      return file_size_result.error();
+    }
   }
   if (!layout_stable) {
     return make_error(ErrorCode::internal_error,
@@ -347,12 +482,11 @@ Writer::write_file(const std::filesystem::path &destination,
                       "Writer header exceeds its byte budget");
   }
   std::uint64_t header_end = 0;
-  std::uint64_t file_size = 0;
   if (!checked_add(16, header.size(), header_end) ||
-      attachment_offset < header_end ||
-      !checked_add(attachment_offset, pixel_bytes, file_size)) {
+      attachment_offset < header_end) {
     return make_error(ErrorCode::overflow, "Writer file layout overflows");
   }
+  const auto file_size = file_size_result.value();
 
   const auto path_is_available = [](const std::filesystem::path &path) {
     std::error_code error;
@@ -396,20 +530,24 @@ Writer::write_file(const std::filesystem::path &destination,
     return header_written.error();
   }
   std::array<std::byte, 4096> zeros{};
-  auto padding = attachment_offset - header_end;
-  while (padding != 0) {
-    const auto count = static_cast<std::size_t>(
-        std::min<std::uint64_t>(padding, zeros.size()));
-    auto padding_written =
-        write_all(output, std::span(zeros).first(count), stop_token);
-    if (!padding_written) {
-      return padding_written.error();
+  auto output_position = header_end;
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    auto padding = image_blocks[index].offset - output_position;
+    while (padding != 0) {
+      const auto count = static_cast<std::size_t>(
+          std::min<std::uint64_t>(padding, zeros.size()));
+      auto padding_written =
+          write_all(output, std::span(zeros).first(count), stop_token);
+      if (!padding_written) {
+        return padding_written.error();
+      }
+      padding -= count;
     }
-    padding -= count;
-  }
-  auto pixels_written = write_all(output, image.pixels, stop_token);
-  if (!pixels_written) {
-    return pixels_written.error();
+    auto pixels_written = write_all(output, images[index].pixels, stop_token);
+    if (!pixels_written) {
+      return pixels_written.error();
+    }
+    output_position = image_blocks[index].offset + image_blocks[index].size;
   }
   output.flush();
   if (!output) {
@@ -418,6 +556,9 @@ Writer::write_file(const std::filesystem::path &destination,
   output.close();
   if (!output) {
     return make_error(ErrorCode::io_error, "Unable to close XISF file");
+  }
+  if (stop_token.stop_requested()) {
+    return make_error(ErrorCode::cancelled, "XISF write was cancelled");
   }
   std::error_code filesystem_error;
   std::filesystem::create_hard_link(temporary, destination, filesystem_error);
@@ -428,11 +569,8 @@ Writer::write_file(const std::filesystem::path &destination,
   WriteSummary summary;
   summary.file_size = file_size;
   summary.header_length = header_length;
-  summary.image_block.kind = BlockKind::attachment;
-  summary.image_block.offset = attachment_offset;
-  summary.image_block.size = pixel_bytes;
-  summary.image_block.raw = "attachment:" + std::to_string(attachment_offset) +
-                            ':' + std::to_string(pixel_bytes);
+  summary.image_block = image_blocks.front();
+  summary.image_blocks = std::move(image_blocks);
   return summary;
 }
 
