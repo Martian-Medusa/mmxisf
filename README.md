@@ -6,9 +6,9 @@ consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
 > Status: M1 is complete; M2 implementation has an independent-producer scalar
-> and color matrix, with storage/endian combinations still partial; M3 codec
-> interoperability is accepted for that matrix
-> with performance acceptance still pending; M4 is in progress and the first
+> and color matrix, with storage/endian combinations still partial; M3 codec,
+> resource-limit, and local performance prerequisites are complete; M4 is in
+> progress and the first
 > M5 integration prerequisites are implemented. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and

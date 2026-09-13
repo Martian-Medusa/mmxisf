@@ -1,6 +1,6 @@
 # M3 progress: codecs, shuffle, checksums, and budgets
 
-- Status: IMPLEMENTATION_COMPLETE; CODEC_INTEROPERABILITY_PASS; PERFORMANCE_PENDING
+- Status: COMPLETE_FOR_PFI_PREREQUISITES
 - Started: 2026-09-13
 - Specification baseline: pinned XISF 1.0 sections 10.5 and 10.6
 - Publication status: private repository; no tag or release
@@ -88,8 +88,17 @@
 - A committed independent-producer matrix decodes exact externally serialized
   zlib+sh, LZ4+sh, LZ4HC+sh, and Zstandard+sh blocks. It verifies every required
   scalar family and both Gray and RGB through exact decoded-byte identities.
+- Five repeatable Release decodes of the current 6064x4040 UInt8 RGB embedded-
+  Zstandard fixture produced the same 73,495,680-byte pixel SHA-256 in 40 ms
+  each. Peak RSS was 77,807,616-77,856,768 bytes, at most 4,361,088 bytes above
+  the owning decoded buffer.
+- The observed run clears the local pre-adoption gate of at least 250 MiB/s
+  warm-cache throughput and no more than 64 MiB RSS overhead above one decoded
+  buffer. This is a host-specific regression budget, not a portable SLA.
 
-## Still required to close M3
+## M3 acceptance boundary
 
-- Repeatable current RGB/Zstandard performance measurements. The available
-  local checkpoints are not a cross-platform performance claim or SLA.
+The codec, resource-limit, integrity, fuzz, package, interoperability, and local
+performance prerequisites are complete. Dedicated-host or cold-cache public
+performance claims remain deferred until a product SLA requires them; they do
+not block PFI integration validation.

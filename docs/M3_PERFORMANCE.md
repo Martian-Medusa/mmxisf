@@ -50,9 +50,34 @@ or equivalence with PixInsight's decoded sample buffer. The unusually compact
 bounded Zstandard window remain necessary even when a valid input has a high
 decompression ratio.
 
-## Remaining performance evidence
+## Repeatable current RGB/Zstandard gate
 
-- representative zlib and LZ4 inputs from an independent producer;
-- cold-cache I/O separation from decode cost;
-- repeatable current RGB/Zstandard measurements;
-- CI or dedicated-host thresholds before any SLA is stated.
+The 6064x4040 UInt8 RGB embedded-Zstandard fixture above was decoded five times
+from a warm local filesystem cache with the Release inspector on 2026-09-13.
+The measured library code is commit
+`008bd0e064cd1f15b385d2958029f379accf83fd`.
+Every run returned 73,495,680 decoded bytes and pixel SHA-256
+`2e6d466e61a80051be89459e7d84a3eacf0a4a6d504c4d3871ac884be5d39a54`.
+
+| Runs | Median elapsed | Range | Maximum RSS range | Maximum overhead above decoded buffer |
+| ---: | ---: | ---: | ---: | ---: |
+| 5 | 40 ms | 40-40 ms | 77,807,616-77,856,768 bytes | 4,361,088 bytes |
+
+The pre-adoption local PFI gate is at least 250 MiB/s warm-cache throughput and
+no more than 64 MiB peak-RSS overhead above one owning decoded buffer for a
+representative 70 MiB-or-larger mono or RGB image. This fixture clears both by
+a wide margin even though elapsed time includes process startup, parsing,
+decoding, and a full SHA-256 pass. The earlier 100 MiB mono and 518 MiB RGB
+measurements also remain within the memory envelope.
+
+This is a regression and integration budget for the observed Apple M2 host,
+not a portable SLA. Cold-cache storage performance is deliberately excluded
+because the library cannot control the consumer's filesystem or device.
+
+## Deferred public-performance evidence
+
+- dedicated-host thresholds before any public SLA is stated;
+- cold-cache end-to-end measurements when a product requirement defines the
+  storage class;
+- larger independent zlib/LZ4 fixtures if a performance claim is made for
+  those codecs. Exact functional interop for both codecs is already committed.

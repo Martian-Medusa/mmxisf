@@ -168,8 +168,10 @@ inspecting its implementation. Exact-byte tests now cover zlib/LZ4/LZ4HC/
 Zstandard plus shuffle across UInt8, UInt16, UInt32, Float32, Float64, Gray, and
 RGB on every CI platform. This closes M3's external codec-fixture gate and the
 scalar/color families of M2's independent pixel matrix. It also found and fixed
-a narrow XML declaration spelling incompatibility; Normal/interleaved,
-big-endian, and repeatable performance evidence remain open.
+a narrow XML declaration spelling incompatibility; Normal/interleaved and
+big-endian evidence remain open. A following five-run current RGB/Zstandard
+measurement cleared the host-specific PFI pre-adoption throughput and peak-RSS
+budgets; M3 is complete without making a portable SLA claim.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
