@@ -51,7 +51,8 @@
   Objective-C++ targets.
 - AddressSanitizer + UndefinedBehaviorSanitizer unit run: 3/3 PASS.
 - Deterministic ASan/UBSan mutation smoke: 20,000 header cases PASS.
-- Installed-package consumer build using `find_package(mmxisf 0.1)`: PASS.
+- Independent installed-package consumer using `find_package(mmxisf 0.1)`:
+  1/1 PASS locally; the same gate is wired into every CI platform job.
 - M2 entry API review: PASS for a pre-release spike. Image descriptors retain
   geometry/channel semantics, numeric bounds, raw block/compression/checksum
   declarations, and exact byte delivery without UI or Expat types.

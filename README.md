@@ -61,6 +61,10 @@ build/mmxisf-inspect path/to/image.xisf
 Normal configuration requires an installed Expat development package. No
 dependency is downloaded implicitly.
 
+The CI package gate also configures and runs the independent
+`tests/package_consumer` project against the installed CMake package rather
+than the source tree.
+
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Exact uncompressed attachment bytes can be returned in an
 owning `RawImage` or written into a caller-owned span with cooperative

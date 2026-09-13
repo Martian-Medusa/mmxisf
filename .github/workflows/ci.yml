@@ -53,6 +53,22 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Install package
         run: cmake --install build --config Release --prefix install
+      - name: Configure installed-package consumer (Unix)
+        if: runner.os != 'Windows'
+        run: >-
+          cmake -S tests/package_consumer -B build-consumer
+          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Configure installed-package consumer (Windows)
+        if: runner.os == 'Windows'
+        run: >-
+          cmake -S tests/package_consumer -B build-consumer -A x64
+          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+      - name: Build installed-package consumer
+        run: cmake --build build-consumer --config Release
+      - name: Test installed-package consumer
+        run: ctest --test-dir build-consumer -C Release --output-on-failure
 
   fuzz-smoke:
     runs-on: ubuntu-latest
