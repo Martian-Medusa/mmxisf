@@ -299,6 +299,11 @@ BlockLocation parse_location(std::string_view text) {
   return result;
 }
 
+struct AttachedRange {
+  std::uint64_t offset{0};
+  std::uint64_t size{0};
+};
+
 struct XmlBuilder {
   enum class EmbeddedEncoding { none, base64, hex };
 
@@ -306,6 +311,7 @@ struct XmlBuilder {
   std::vector<ImageInfo> images;
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<bool> embedded_data_seen;
+  std::vector<AttachedRange> attached_ranges;
   std::vector<MetadataEntry> metadata;
   ReaderOptions options;
   XML_Parser parser{nullptr};
@@ -513,6 +519,18 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     return;
   }
   state.element_stack.push_back(is_xisf_element ? name : std::string{});
+
+  const auto generic_location = attribute(attributes, "location");
+  if (generic_location && generic_location->starts_with("attachment:")) {
+    const auto block = parse_location(*generic_location);
+    if (block.kind == BlockKind::attachment) {
+      state.attached_ranges.push_back(AttachedRange{block.offset, block.size});
+    } else if (is_xisf_element) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Invalid attached data block location", name, "location");
+      return;
+    }
+  }
 
   if (state.embedded_image_index) {
     state.fail(ErrorCode::invalid_xisf,
@@ -918,6 +936,7 @@ void XMLCALL reject_doctype(void *user_data, const XML_Char *, const XML_Char *,
 struct ParsedHeader {
   Document document;
   std::vector<std::vector<std::byte>> embedded_blocks;
+  std::vector<AttachedRange> attached_ranges;
 };
 
 Result<ParsedHeader> parse_header(std::string_view xml,
@@ -986,23 +1005,27 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     }
   }
   const auto header_end = 16ULL + static_cast<std::uint64_t>(header_length);
-  for (std::size_t index = 0; index < state.images.size(); ++index) {
-    const auto &block = state.images[index].block;
-    if (block.kind != BlockKind::attachment) {
-      continue;
+  std::sort(state.attached_ranges.begin(), state.attached_ranges.end(),
+            [](const AttachedRange &left, const AttachedRange &right) {
+              return left.offset < right.offset;
+            });
+  std::uint64_t previous_end = header_end;
+  for (const auto &range : state.attached_ranges) {
+    if (range.size == 0 || range.offset < header_end ||
+        range.offset > file_size || range.size > file_size - range.offset) {
+      return make_error(ErrorCode::invalid_block,
+                        "Attachment range is outside the file payload");
     }
-    if (block.size == 0 || block.offset < header_end ||
-        block.offset > file_size || block.size > file_size - block.offset) {
-      Error error =
-          make_error(ErrorCode::invalid_block,
-                     "Image attachment range is outside the file payload");
-      error.image_index = index;
-      return error;
+    if (range.offset < previous_end) {
+      return make_error(ErrorCode::invalid_block,
+                        "Attached data blocks overlap");
     }
+    previous_end = range.offset + range.size;
   }
   Document document(std::move(state.version), std::move(state.images),
                     std::move(state.metadata), file_size, header_length);
-  return ParsedHeader{std::move(document), std::move(state.embedded_blocks)};
+  return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
+                      std::move(state.attached_ranges)};
 }
 
 std::uint32_t read_le_u32(const unsigned char *bytes) {
@@ -1296,6 +1319,59 @@ swap_byte_order_in_place(std::span<std::byte> destination,
   return destination.size();
 }
 
+Result<bool> validate_unused_spaces(
+    const ByteSource &source, std::uint64_t header_end, std::uint64_t file_size,
+    const std::vector<AttachedRange> &attached_ranges,
+    const ReaderOptions &options) {
+  std::array<std::byte, 64U * 1024U> buffer{};
+  std::uint64_t validated_unused_bytes = 0;
+  const auto validate_gap = [&](std::uint64_t offset,
+                                std::uint64_t size) -> Result<bool> {
+    if (size > options.max_unused_space_bytes -
+                   std::min(validated_unused_bytes,
+                            options.max_unused_space_bytes)) {
+      return make_error(ErrorCode::resource_limit,
+                        "Unused-space validation exceeds its byte budget");
+    }
+    validated_unused_bytes += size;
+    std::uint64_t checked = 0;
+    while (checked < size) {
+      const auto chunk = static_cast<std::size_t>(std::min<std::uint64_t>(
+          buffer.size(), size - checked));
+      auto read = read_exact(source, offset + checked,
+                             std::span(buffer).first(chunk));
+      if (!read) {
+        return read.error();
+      }
+      if (!std::all_of(buffer.begin(), buffer.begin() + chunk,
+                       [](std::byte value) { return value == std::byte{0}; })) {
+        return make_error(ErrorCode::invalid_block,
+                          "Unused monolithic file space must be zero-filled");
+      }
+      checked += chunk;
+    }
+    return true;
+  };
+
+  std::uint64_t cursor = header_end;
+  for (const auto &range : attached_ranges) {
+    if (range.offset > cursor) {
+      auto valid = validate_gap(cursor, range.offset - cursor);
+      if (!valid) {
+        return valid.error();
+      }
+    }
+    cursor = range.offset + range.size;
+  }
+  if (cursor < file_size) {
+    auto valid = validate_gap(cursor, file_size - cursor);
+    if (!valid) {
+      return valid.error();
+    }
+  }
+  return true;
+}
+
 } // namespace
 
 struct Reader::Impl {
@@ -1385,8 +1461,14 @@ Result<Reader> Reader::open_source(std::shared_ptr<const ByteSource> source,
     if (!parsed) {
       return parsed.error();
     }
-    auto impl = std::make_unique<Impl>();
     auto parsed_header = std::move(parsed).value();
+    auto unused_spaces = validate_unused_spaces(
+        *source, 16ULL + static_cast<std::uint64_t>(header_length), source_size,
+        parsed_header.attached_ranges, options);
+    if (!unused_spaces) {
+      return unused_spaces.error();
+    }
+    auto impl = std::make_unique<Impl>();
     impl->source = std::move(source);
     impl->options = options;
     impl->document = std::move(parsed_header.document);

@@ -25,6 +25,7 @@ struct ReaderOptions {
   std::size_t max_metadata_entries{100'000};
   std::size_t max_metadata_value_bytes{8U * 1024U * 1024U};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
+  std::uint64_t max_unused_space_bytes{64ULL * 1024ULL * 1024ULL};
   std::size_t max_image_dimensions{8};
   std::uint64_t max_inspected_channels{64};
   std::uint64_t max_decoded_channels{16};

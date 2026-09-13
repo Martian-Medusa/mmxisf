@@ -25,6 +25,10 @@
   lowercase hexadecimal `Data` content. Invalid characters, incomplete or
   noncanonical padding, duplicate/missing Data children, nested elements, and
   text outside Data fail closed.
+- All declared attachment ranges are inventoried, sorted, checked for bounds
+  and overlap, and excluded from bounded zero-filled unused-space validation.
+  Standard attachment syntax on extension elements participates in the same
+  inventory.
 - The macOS PoC viewer renders Gray and RGB attachments in both Planar and
   Normal layouts, interprets little- and big-endian scalar samples, and derives
   auto-stretch statistics from all nominal RGB channels.
@@ -60,7 +64,6 @@
 
 ## Still required to close M2
 
-- Zero-filled unused-space validation and remaining raw-block grammar.
 - Independent or producer-generated fixtures for every claimed scalar,
   storage, byte-order, and color combination.
 - Full-precision parity evidence against an independent pixel oracle.

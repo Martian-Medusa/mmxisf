@@ -19,6 +19,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | decoded bytes per image | 2 GiB | Covers representative desktop astronomy images |
 | cumulative decoded bytes | 4 GiB | Bounds multi-image and metadata blocks |
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
+| validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
 | decompression ratio | 8,192:1 | Secondary defense; decoded-byte cap remains authoritative |
 | diagnostic records | 1,000 | Prevent error amplification |
@@ -36,3 +37,9 @@ Decoded embedded bytes are also bounded by `max_decoded_image_bytes`. With the
 default profile, the 16 MiB XML-header limit is reached before the larger
 per-block encoded ceiling; applications must raise both limits deliberately for
 larger embedded payloads.
+
+`max_unused_space_bytes` bounds the cumulative gaps before, between, and after
+inventoried attachment ranges. Every scanned byte must be zero. The attachment
+inventory includes standard elements and extension elements that use the
+standard `attachment:position:size` syntax, preventing legitimate extension
+payloads from being mistaken for unused space.

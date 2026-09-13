@@ -1124,6 +1124,83 @@ int main() {
              bad_attachment.error().code == mmxisf::ErrorCode::invalid_block,
          "attachment overlapping the header is rejected");
 
+  auto nonzero_padding_bytes = read_bytes(valid_path);
+  const auto header_length =
+      static_cast<std::uint32_t>(nonzero_padding_bytes[8]) |
+      (static_cast<std::uint32_t>(nonzero_padding_bytes[9]) << 8U) |
+      (static_cast<std::uint32_t>(nonzero_padding_bytes[10]) << 16U) |
+      (static_cast<std::uint32_t>(nonzero_padding_bytes[11]) << 24U);
+  const auto first_unused_byte = 16U + static_cast<std::size_t>(header_length);
+  expect(first_unused_byte < 1024,
+         "test fixture has unused space before its attachment");
+  nonzero_padding_bytes[first_unused_byte] = std::byte{1};
+  const auto nonzero_padding_path =
+      write_bytes("mmxisf-nonzero-unused-space.xisf", nonzero_padding_bytes);
+  auto nonzero_padding = mmxisf::Reader::open_file(nonzero_padding_path);
+  expect(!nonzero_padding &&
+             nonzero_padding.error().code == mmxisf::ErrorCode::invalid_block,
+         "nonzero byte in unused monolithic space is rejected");
+
+  mmxisf::ReaderOptions zero_unused_space_budget;
+  zero_unused_space_budget.max_unused_space_bytes = 0;
+  auto unused_space_limit =
+      mmxisf::Reader::open_file(valid_path, zero_unused_space_budget);
+  expect(!unused_space_limit && unused_space_limit.error().code ==
+                                    mmxisf::ErrorCode::resource_limit,
+         "unused-space validation byte budget is enforced");
+
+  const auto overlapping_attachments_path = write_fixture(
+      "mmxisf-overlapping-attachments.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt16\" "
+          "location=\"attachment:1024:2\"/>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt16\" "
+          "location=\"attachment:1025:2\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0}, std::byte{0}, std::byte{0}});
+  auto overlapping_attachments =
+      mmxisf::Reader::open_file(overlapping_attachments_path);
+  expect(!overlapping_attachments &&
+             overlapping_attachments.error().code ==
+                 mmxisf::ErrorCode::invalid_block,
+         "overlapping attached blocks are rejected");
+
+  const auto extension_attachment_path = write_fixture(
+      "mmxisf-extension-attachment.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+          "xmlns:ext=\"urn:mmxisf:test\" version=\"1.0\">"
+          "<ext:Block location=\"attachment:1024:2\"/>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"attachment:1026:1\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0xaa}, std::byte{0xbb}, std::byte{0xcc}});
+  auto extension_attachment =
+      mmxisf::Reader::open_file(extension_attachment_path);
+  expect(extension_attachment.has_value(),
+         "extension attachment is inventoried for unused-space validation");
+  if (extension_attachment) {
+    auto image = extension_attachment.value().read_image(0);
+    expect(image &&
+               image.value().pixels ==
+                   std::vector<std::byte>{std::byte{0xcc}},
+           "image following an extension attachment is read exactly");
+  }
+
+  const auto nonzero_trailing_path = write_fixture(
+      "mmxisf-nonzero-trailing-space.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"attachment:1024:1\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x01}, std::byte{0x02}});
+  auto nonzero_trailing = mmxisf::Reader::open_file(nonzero_trailing_path);
+  expect(!nonzero_trailing &&
+             nonzero_trailing.error().code == mmxisf::ErrorCode::invalid_block,
+         "unreferenced nonzero trailing bytes are rejected");
+
   struct AttachmentBoundaryCase {
     const char *name;
     const char *location;
