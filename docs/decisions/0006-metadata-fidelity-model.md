@@ -41,6 +41,21 @@ identifier uniqueness. This structural validation does not normalize the
 stored representation; lexical numeric/time validation is performed as a
 separate check over the same preserved text.
 
+Scalar lexical validation is a bounded linear scan. Boolean values accept the
+alphabetic and numeric XISF forms (`true`, `false`, `0`, and `1`). Decimal
+integers accept an optional sign and the interoperable zero representation;
+binary, octal, and hexadecimal prefixes follow the XISF grammar. Unsigned
+decimal properties reject a negative sign. Floating-point values accept the
+specified decimal/exponent grammar and the exact `NaN`, `+Inf`, and `-Inf`
+tokens, and complex components use that same grammar. These checks validate
+syntax, not the declared scalar type's numeric range.
+
+TimePoint validation accepts the interoperable ISO 8601 extended/RFC 3339
+calendar-date profile with optional fractional seconds and optional `Z` or
+numeric time-zone offset. A missing zone retains the specification's UTC
+default semantics. Calendar dates, clock fields, and offsets are checked while
+the original attribute text remains unchanged.
+
 Reference resolution does not rewrite the entry's lexical scope: a standalone
 metadata element with a `uid` remains standalone while its binding records each
 resolved association. References to non-metadata core elements remain part of

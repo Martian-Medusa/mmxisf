@@ -136,6 +136,279 @@ bool contains_non_xml_whitespace(std::string_view text) {
   });
 }
 
+std::string_view trim_xml_whitespace(std::string_view text) {
+  constexpr std::string_view whitespace = " \t\r\n";
+  const auto first = text.find_first_not_of(whitespace);
+  if (first == std::string_view::npos) {
+    return {};
+  }
+  const auto last = text.find_last_not_of(whitespace);
+  return text.substr(first, last - first + 1);
+}
+
+bool is_ascii_digit(char character) {
+  return character >= '0' && character <= '9';
+}
+
+bool is_valid_integer_value(std::string_view text, bool is_signed) {
+  text = trim_xml_whitespace(text);
+  if (text.empty()) {
+    return false;
+  }
+
+  if (text.size() >= 2 && text.front() == '0') {
+    const char prefix = text[1];
+    unsigned base = 0;
+    if (prefix == 'b' || prefix == 'B') {
+      base = 2;
+    } else if (prefix == 'o' || prefix == 'O') {
+      base = 8;
+    } else if (prefix == 'x' || prefix == 'X') {
+      base = 16;
+    }
+    if (base != 0) {
+      text.remove_prefix(2);
+      if (text.empty()) {
+        return false;
+      }
+      return std::all_of(text.begin(), text.end(), [base](char character) {
+        if (character >= '0' && character <= '9') {
+          return static_cast<unsigned>(character - '0') < base;
+        }
+        if (base == 16 && character >= 'a' && character <= 'f') {
+          return true;
+        }
+        return base == 16 && character >= 'A' && character <= 'F';
+      });
+    }
+  }
+
+  if (text.front() == '+' || text.front() == '-') {
+    if (!is_signed && text.front() == '-') {
+      return false;
+    }
+    text.remove_prefix(1);
+  }
+  if (text.empty() || (text.size() > 1 && text.front() == '0')) {
+    return false;
+  }
+  return std::all_of(text.begin(), text.end(), is_ascii_digit);
+}
+
+bool is_valid_floating_point_value(std::string_view text) {
+  text = trim_xml_whitespace(text);
+  if (text == "NaN" || text == "+Inf" || text == "-Inf") {
+    return true;
+  }
+  if (text.empty()) {
+    return false;
+  }
+  if (text.front() == '+' || text.front() == '-') {
+    text.remove_prefix(1);
+  }
+  if (text.empty()) {
+    return false;
+  }
+
+  std::size_t position = 0;
+  while (position < text.size() && is_ascii_digit(text[position])) {
+    ++position;
+  }
+  const bool has_integer_digits = position != 0;
+  bool has_fraction_digits = false;
+  if (position < text.size() && text[position] == '.') {
+    ++position;
+    const auto fraction_start = position;
+    while (position < text.size() && is_ascii_digit(text[position])) {
+      ++position;
+    }
+    has_fraction_digits = position != fraction_start;
+    if (!has_fraction_digits) {
+      return false;
+    }
+  }
+  if (!has_integer_digits && !has_fraction_digits) {
+    return false;
+  }
+  if (position < text.size() &&
+      (text[position] == 'e' || text[position] == 'E')) {
+    ++position;
+    if (position < text.size() &&
+        (text[position] == '+' || text[position] == '-')) {
+      ++position;
+    }
+    const auto exponent_start = position;
+    while (position < text.size() && is_ascii_digit(text[position])) {
+      ++position;
+    }
+    if (position == exponent_start) {
+      return false;
+    }
+  }
+  return position == text.size();
+}
+
+bool is_valid_complex_value(std::string_view text) {
+  text = trim_xml_whitespace(text);
+  if (text.size() < 5 || text.front() != '(' || text.back() != ')') {
+    return false;
+  }
+  text.remove_prefix(1);
+  text.remove_suffix(1);
+  const auto separator = text.find(',');
+  return separator != std::string_view::npos &&
+         text.find(',', separator + 1) == std::string_view::npos &&
+         is_valid_floating_point_value(text.substr(0, separator)) &&
+         is_valid_floating_point_value(text.substr(separator + 1));
+}
+
+bool is_leap_year(unsigned year) {
+  return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+}
+
+bool parse_fixed_digits(std::string_view text, std::size_t position,
+                        std::size_t count, unsigned &value) {
+  if (position > text.size() || count > text.size() - position) {
+    return false;
+  }
+  value = 0;
+  for (std::size_t index = 0; index < count; ++index) {
+    const char character = text[position + index];
+    if (!is_ascii_digit(character)) {
+      return false;
+    }
+    value = value * 10 + static_cast<unsigned>(character - '0');
+  }
+  return true;
+}
+
+bool is_valid_time_point_value(std::string_view text) {
+  text = trim_xml_whitespace(text);
+  if (text.size() < 19 || text[4] != '-' || text[7] != '-' ||
+      (text[10] != 'T' && text[10] != 't') || text[13] != ':' ||
+      text[16] != ':') {
+    return false;
+  }
+
+  unsigned year = 0;
+  unsigned month = 0;
+  unsigned day = 0;
+  unsigned hour = 0;
+  unsigned minute = 0;
+  unsigned second = 0;
+  if (!parse_fixed_digits(text, 0, 4, year) ||
+      !parse_fixed_digits(text, 5, 2, month) ||
+      !parse_fixed_digits(text, 8, 2, day) ||
+      !parse_fixed_digits(text, 11, 2, hour) ||
+      !parse_fixed_digits(text, 14, 2, minute) ||
+      !parse_fixed_digits(text, 17, 2, second)) {
+    return false;
+  }
+  constexpr std::array<unsigned, 12> month_lengths{
+      31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  if (month == 0 || month > month_lengths.size()) {
+    return false;
+  }
+  unsigned maximum_day = month_lengths[month - 1];
+  if (month == 2 && is_leap_year(year)) {
+    maximum_day = 29;
+  }
+  if (day == 0 || day > maximum_day || hour > 23 || minute > 59 ||
+      second > 60) {
+    return false;
+  }
+
+  std::size_t position = 19;
+  if (position < text.size() && text[position] == '.') {
+    ++position;
+    const auto fraction_start = position;
+    while (position < text.size() && is_ascii_digit(text[position])) {
+      ++position;
+    }
+    if (position == fraction_start) {
+      return false;
+    }
+  }
+  if (position == text.size()) {
+    return true;
+  }
+  if (text[position] == 'Z' || text[position] == 'z') {
+    return position + 1 == text.size();
+  }
+  if ((text[position] != '+' && text[position] != '-') ||
+      text.size() - position != 6 || text[position + 3] != ':') {
+    return false;
+  }
+  unsigned offset_hour = 0;
+  unsigned offset_minute = 0;
+  return parse_fixed_digits(text, position + 1, 2, offset_hour) &&
+         parse_fixed_digits(text, position + 4, 2, offset_minute) &&
+         offset_hour <= 23 && offset_minute <= 59;
+}
+
+enum class PropertyValueKind {
+  boolean,
+  signed_integer,
+  unsigned_integer,
+  floating_point,
+  complex,
+  other
+};
+
+PropertyValueKind classify_property_value_kind(std::string_view type) {
+  if (type == "Boolean") {
+    return PropertyValueKind::boolean;
+  }
+  constexpr std::array<std::string_view, 7> kSignedIntegerTypes{
+      "Int8", "Int16", "Short", "Int32", "Int", "Int64", "Int128"};
+  if (std::find(kSignedIntegerTypes.begin(), kSignedIntegerTypes.end(), type) !=
+      kSignedIntegerTypes.end()) {
+    return PropertyValueKind::signed_integer;
+  }
+  constexpr std::array<std::string_view, 8> kUnsignedIntegerTypes{
+      "UInt8", "Byte", "UInt16", "UShort", "UInt32", "UInt", "UInt64",
+      "UInt128"};
+  if (std::find(kUnsignedIntegerTypes.begin(), kUnsignedIntegerTypes.end(),
+                type) != kUnsignedIntegerTypes.end()) {
+    return PropertyValueKind::unsigned_integer;
+  }
+  constexpr std::array<std::string_view, 6> kFloatingPointTypes{
+      "Float32", "Float", "Float64", "Double", "Float128", "Quad"};
+  if (std::find(kFloatingPointTypes.begin(), kFloatingPointTypes.end(), type) !=
+      kFloatingPointTypes.end()) {
+    return PropertyValueKind::floating_point;
+  }
+  constexpr std::array<std::string_view, 4> kComplexTypes{
+      "Complex32", "Complex64", "Complex", "Complex128"};
+  if (std::find(kComplexTypes.begin(), kComplexTypes.end(), type) !=
+      kComplexTypes.end()) {
+    return PropertyValueKind::complex;
+  }
+  return PropertyValueKind::other;
+}
+
+bool is_valid_scalar_or_complex_value(std::string_view type,
+                                      std::string_view value) {
+  switch (classify_property_value_kind(type)) {
+  case PropertyValueKind::boolean: {
+    const auto trimmed = trim_xml_whitespace(value);
+    return trimmed == "true" || trimmed == "false" || trimmed == "0" ||
+           trimmed == "1";
+  }
+  case PropertyValueKind::signed_integer:
+    return is_valid_integer_value(value, true);
+  case PropertyValueKind::unsigned_integer:
+    return is_valid_integer_value(value, false);
+  case PropertyValueKind::floating_point:
+    return is_valid_floating_point_value(value);
+  case PropertyValueKind::complex:
+    return is_valid_complex_value(value);
+  case PropertyValueKind::other:
+    return false;
+  }
+  return false;
+}
+
 enum class PropertyCategory {
   scalar_or_complex,
   string,
@@ -1040,6 +1313,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                       "value attribute");
           return;
         }
+        if (!is_valid_scalar_or_complex_value(*type, *value)) {
+          reject_form("Scalar or complex Property value has invalid XISF "
+                      "plain-text syntax",
+                      "value");
+          return;
+        }
         break;
       case PropertyCategory::string:
         if (value || has_dimensions) {
@@ -1053,6 +1332,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         if (!value || location || has_dimensions || !entry.format.empty()) {
           reject_form("TimePoint Property values require a value attribute "
                       "and cannot use a format or data block");
+          return;
+        }
+        if (!is_valid_time_point_value(*value)) {
+          reject_form("TimePoint Property value has invalid ISO 8601 "
+                      "extended syntax",
+                      "value");
           return;
         }
         break;

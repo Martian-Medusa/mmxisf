@@ -26,6 +26,8 @@
   respective XISF/FITS ASCII grammars, and Property identifiers must remain
   unique within each resolved unit or image association.
 - Malformed numeric property extents and malformed block locations fail closed.
+- Scalar, Boolean, complex, and TimePoint attribute values are validated by
+  bounded linear scans without coercing or rewriting their source text.
 
 ## Evidence available now
 
@@ -50,11 +52,15 @@
 - Metadata inspection with the new scope/value/binding model: 9/9 private local
   PixInsight corpus files PASS; files remain outside the repository.
 - Release unit suite and macOS viewer build: PASS locally.
+- Positive and negative lexical matrices cover Boolean alphabetic/numeric
+  forms, decimal and prefixed integers, floating special values and exponents,
+  complex components, calendar validity, fractional seconds, and optional time
+  zones: PASS locally.
 
 ## Still required for M4
 
-- Validate scalar, complex, Boolean, and TimePoint lexical value syntax without
-  coercing the preserved source representation.
+- Add declared-width numeric range checks separately from the now-complete
+  lexical syntax gate; 128-bit support remains optional in XISF 1.0.
 - Implement the documented PFI-facing projection in the later PFI adapter and
   compare its conservative FITS stripping with the current host result.
 - Exercise the metadata parity matrix against independently produced files and

@@ -131,7 +131,7 @@ std::string valid_metadata() {
 
 std::string short_metadata() {
   return "<Metadata>"
-         "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" value=\"t\"/>"
+         "<Property id=\"XISF:CreationTime\" type=\"String\">t</Property>"
          "<Property id=\"XISF:CreatorApplication\" type=\"String\">a</Property>"
          "</Metadata>";
 }
@@ -1921,6 +1921,105 @@ int main() {
   if (property_forms) {
     expect(property_forms.value().document().metadata()[2].value == " value ",
            "String Property whitespace remains significant");
+  }
+
+  struct PropertyValueCase {
+    const char *name;
+    const char *type;
+    const char *value;
+  };
+  const std::array valid_property_values{
+      PropertyValueCase{"boolean-alpha-true", "Boolean", " true "},
+      PropertyValueCase{"boolean-alpha-false", "Boolean", "false"},
+      PropertyValueCase{"boolean-numeric-zero", "Boolean", "0"},
+      PropertyValueCase{"boolean-numeric-one", "Boolean", "1"},
+      PropertyValueCase{"integer-zero", "Int32", "0"},
+      PropertyValueCase{"integer-signed", "Int64", " -42 "},
+      PropertyValueCase{"integer-binary", "UInt32", "0b101001"},
+      PropertyValueCase{"integer-octal", "UInt32", "0O570261"},
+      PropertyValueCase{"integer-hex", "Int32", "0x80E950AB"},
+      PropertyValueCase{"float-integer-form", "Float32", "123"},
+      PropertyValueCase{"float-leading-dot", "Float64", "+.123"},
+      PropertyValueCase{"float-exponent", "Double", "-0.123e+02"},
+      PropertyValueCase{"float-nan", "Float64", "NaN"},
+      PropertyValueCase{"float-positive-infinity", "Float64", "+Inf"},
+      PropertyValueCase{"float-negative-infinity", "Float64", "-Inf"},
+      PropertyValueCase{"complex", "Complex64", "( 1.5, -2e0 )"},
+  };
+  for (const auto &test : valid_property_values) {
+    const auto path = write_fixture(
+        std::string("mmxisf-valid-property-value-") + test.name + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\"><Property id=\"Test:Value\" type=\"") +
+            test.type + "\" value=\"" + test.value + "\"/>" +
+            valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      expect(result.value().document().metadata()[0].value == test.value,
+             "validated scalar source representation is preserved");
+    }
+  }
+
+  const std::array valid_time_points{
+      "2024-02-29T23:59:60Z", "2026-09-13T00:00:00.125+02:00",
+      "2026-09-13T00:00:00-07:30", "2026-09-13T00:00:00",
+      " 2026-09-13t00:00:00z "};
+  for (std::size_t index = 0; index < valid_time_points.size(); ++index) {
+    const auto path = write_fixture(
+        "mmxisf-valid-time-point-" + std::to_string(index) + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\"><Property id=\"Test:Time\" "
+                    "type=\"TimePoint\" value=\"") +
+            valid_time_points[index] + "\"/>" + valid_metadata() +
+            "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), "supported ISO 8601 TimePoint form is accepted");
+  }
+
+  const std::array invalid_property_values{
+      PropertyValueCase{"boolean-word", "Boolean", "yes"},
+      PropertyValueCase{"boolean-number", "Boolean", "2"},
+      PropertyValueCase{"integer-leading-zero", "Int32", "00"},
+      PropertyValueCase{"integer-fraction", "Int32", "1.0"},
+      PropertyValueCase{"integer-empty-hex", "UInt32", "0x"},
+      PropertyValueCase{"integer-bad-binary", "UInt32", "0b102"},
+      PropertyValueCase{"unsigned-negative", "UInt32", "-1"},
+      PropertyValueCase{"float-trailing-dot", "Float64", "1."},
+      PropertyValueCase{"float-unsigned-infinity", "Float64", "Inf"},
+      PropertyValueCase{"float-lowercase-nan", "Float64", "nan"},
+      PropertyValueCase{"float-empty-exponent", "Float64", "1e"},
+      PropertyValueCase{"complex-no-parentheses", "Complex64", "1,2"},
+      PropertyValueCase{"complex-no-comma", "Complex64", "(1 2)"},
+      PropertyValueCase{"complex-extra-comma", "Complex64", "(1,2,3)"},
+  };
+  for (const auto &test : invalid_property_values) {
+    const auto path = write_fixture(
+        std::string("mmxisf-invalid-property-value-") + test.name + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\"><Property id=\"Test:Value\" type=\"") +
+            test.type + "\" value=\"" + test.value + "\"/>" +
+            valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           test.name);
+  }
+
+  const std::array invalid_time_points{
+      "2023-02-29T00:00:00Z", "2026-13-01T00:00:00Z",
+      "2026-09-13T24:00:00Z", "2026-09-13T00:00:00.Z",
+      "2026-09-13T00:00:00+24:00", "2026-09-13 00:00:00Z"};
+  for (std::size_t index = 0; index < invalid_time_points.size(); ++index) {
+    const auto path = write_fixture(
+        "mmxisf-invalid-time-point-" + std::to_string(index) + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\"><Property id=\"Test:Time\" "
+                    "type=\"TimePoint\" value=\"") +
+            invalid_time_points[index] + "\"/>" + valid_metadata() +
+            "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           "malformed TimePoint is rejected");
   }
 
   struct InvalidPropertyFormCase {
