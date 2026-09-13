@@ -26,6 +26,9 @@
 - Contributor clean-room/testing requirements, the current untrusted-input
   security boundary, and an exact candidate/publication/rollback checklist are
   documented without claiming an unreleased support policy.
+- A versioned Doxygen target generates the installed public-header API
+  reference with warnings treated as errors. CI verifies its entry point and
+  retains the HTML output as a short-lived, non-published artifact.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
 
@@ -45,8 +48,7 @@
 - Extend the source-dependency SBOM with resolved binary package versions in
   release builds.
 - Run longer continuous fuzz campaigns and preserve any minimized regressions.
-- Complete generated API reference and enable a private vulnerability-reporting
-  channel before publication.
+- Enable a private vulnerability-reporting channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
   profiles; UI automation remains intentionally excluded.
 - Perform a final dependency/license/security audit before any public tag.

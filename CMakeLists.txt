@@ -18,6 +18,7 @@ option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools" ON)
 option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
 option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
 option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)
+option(MMXISF_BUILD_DOCS "Build the generated mmxisf API reference" OFF)
 option(BUILD_SHARED_LIBS "Build mmxisf as a shared library" OFF)
 set(
   MMXISF_VIEWER_OUTPUT_DIR
@@ -31,6 +32,22 @@ find_package(LZ4 REQUIRED)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(ZLIB REQUIRED)
 find_package(ZSTD REQUIRED)
+
+if(MMXISF_BUILD_DOCS)
+  find_package(Doxygen 1.9 REQUIRED)
+  configure_file(
+    docs/Doxyfile.in
+    "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    @ONLY
+  )
+  add_custom_target(
+    mmxisf_docs ALL
+    COMMAND Doxygen::doxygen "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Generating mmxisf API reference"
+    VERBATIM
+  )
+endif()
 
 add_library(mmxisf src/reader.cpp src/version.cpp src/writer.cpp)
 add_library(mmxisf::mmxisf ALIAS mmxisf)
@@ -204,6 +221,12 @@ install(
   FILES sbom/source-dependencies.spdx.json
   DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom"
 )
+if(MMXISF_BUILD_DOCS)
+  install(
+    DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/api/html/"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/mmxisf/api"
+  )
+endif()
 install(
   EXPORT mmxisfTargets
   FILE mmxisfTargets.cmake

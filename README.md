@@ -69,6 +69,7 @@ milestone. They remain candidates for later conformance work.
 - [M4 progress](docs/M4_STATUS.md)
 - [M6 writer progress](docs/M6_STATUS.md)
 - [Writer API](docs/WRITER.md)
+- [Generated API reference overview](docs/API.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
@@ -96,6 +97,20 @@ dependency notices, and the validated SPDX 2.3 source-dependency SBOM under
 Each CI revision also creates the source archive twice, requires byte identity,
 and retains one archive plus its SHA-256 as a short-lived workflow artifact.
 This is release rehearsal only; no tag or public release is created.
+
+Generate the versioned HTML API reference locally with:
+
+```sh
+cmake -S . -B build-docs \
+  -DMMXISF_BUILD_DOCS=ON \
+  -DMMXISF_BUILD_TESTS=OFF \
+  -DMMXISF_BUILD_TOOLS=OFF
+cmake --build build-docs --target mmxisf_docs
+```
+
+The entry point is `build-docs/api/html/index.html`. Documentation warnings
+fail the build, and CI retains the generated reference as a short-lived
+artifact without publishing a website or release.
 
 The public API requires C++20 library support for `std::span` and
 `std::stop_token`. The macOS CI baseline therefore uses macOS 15 with Xcode

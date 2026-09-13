@@ -112,6 +112,31 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  api-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install documentation toolchain
+        run: sudo apt-get update && sudo apt-get install -y doxygen libexpat1-dev liblz4-dev libssl-dev libzstd-dev zlib1g-dev
+      - name: Configure generated API reference
+        run: >-
+          cmake -S . -B build-docs
+          -DMMXISF_BUILD_DOCS=ON
+          -DMMXISF_BUILD_TESTS=OFF
+          -DMMXISF_BUILD_TOOLS=OFF
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Generate API reference
+        run: cmake --build build-docs --target mmxisf_docs
+      - name: Verify generated entry point
+        run: test -s build-docs/api/html/index.html
+      - name: Upload generated API reference
+        uses: actions/upload-artifact@v4
+        with:
+          name: mmxisf-api-${{ github.sha }}
+          path: build-docs/api/html/
+          if-no-files-found: error
+          retention-days: 14
+
   fuzz-smoke:
     runs-on: ubuntu-latest
     steps:
