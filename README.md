@@ -31,6 +31,11 @@ uses the public project/package name `mmxisf`, CMake target
 `mmxisf::mmxisf`, and C++ namespace `mmxisf`. The final public repository name
 is a release gate, not an assumption.
 
+Contributions must follow [`CONTRIBUTING.md`](CONTRIBUTING.md); security reports
+follow [`SECURITY.md`](SECURITY.md). The fail-closed candidate, publication,
+and rollback checklist is in
+[`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md).
+
 ## Intended scope
 
 - Portable C++20 with CMake package installation.

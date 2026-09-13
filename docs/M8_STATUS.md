@@ -23,6 +23,9 @@
 - A separate CI job produces the Git source archive twice, requires byte
   identity, computes SHA-256, and retains the archive/checksum for 14 days
   without creating a tag or release.
+- Contributor clean-room/testing requirements, the current untrusted-input
+  security boundary, and an exact candidate/publication/rollback checklist are
+  documented without claiming an unreleased support policy.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
 
@@ -42,7 +45,8 @@
 - Extend the source-dependency SBOM with resolved binary package versions in
   release builds.
 - Run longer continuous fuzz campaigns and preserve any minimized regressions.
-- Complete API reference and contribution/release documentation.
+- Complete generated API reference and enable a private vulnerability-reporting
+  channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
   profiles; UI automation remains intentionally excluded.
 - Perform a final dependency/license/security audit before any public tag.
