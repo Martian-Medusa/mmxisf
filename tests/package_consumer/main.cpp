@@ -37,11 +37,15 @@ int main() {
                  property.checksum_verification ==
                      mmxisf::ChecksumVerification::not_declared &&
                  write_image.pixel_storage == mmxisf::PixelStorage::planar &&
+                 write_image.compression == mmxisf::CompressionCodec::none &&
+                 write_image.checksum == mmxisf::ChecksumAlgorithm::none &&
                  writer_options.attachment_alignment == 4096 &&
                  writer_options.max_images == 64 &&
                  writer_options.max_metadata_entries == 4096 &&
                  writer_options.max_metadata_value_bytes > 0 &&
                  writer_options.max_cumulative_image_bytes > 0 &&
+                 writer_options.max_serialized_image_bytes > 0 &&
+                 writer_options.max_cumulative_serialized_bytes > 0 &&
                  write_metadata.kind == mmxisf::MetadataWriteKind::property &&
                  write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
                  write_summary.image_blocks.empty() &&

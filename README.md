@@ -99,7 +99,9 @@ per-image and cumulative resource limits and arithmetic are checked before file
 creation, and cancellation removes incomplete temporary output. A declarative
 metadata overload writes image-scoped String/TimePoint Properties and FITS
 keywords plus XISF-unit String/TimePoint Properties without accepting raw XML.
-Numeric/block Properties, references, and compression remain later profiles.
+Optional zlib, LZ4, LZ4HC, and Zstandard compression can be combined with byte
+shuffle and SHA-1/256/512 checksums. Numeric/block Properties and references
+remain later profiles.
 
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Decoded attachment bytes can be returned in an

@@ -239,6 +239,35 @@ void check_metadata_writer_fixture(const std::filesystem::path &path) {
          "metadata writer fixture pixels changed");
 }
 
+void check_codec_writer_fixture(const std::filesystem::path &path) {
+  auto bytes = load_base64(path);
+  expect(sha256_hex(bytes) ==
+             "78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5",
+         "codec writer fixture identity changed");
+  auto opened = mmxisf::Reader::open_source(
+      std::make_shared<MemorySource>(std::move(bytes)));
+  expect(opened.has_value(), "codec writer fixture did not open");
+  const auto &images = opened.value().document().images();
+  expect(images.size() == 5, "codec writer fixture image count changed");
+  const std::array<std::string_view, 5> compression{
+      "zlib:512", "lz4+sh:512:2", "lz4hc:512", "zstd+sh:512:2", ""};
+  const std::array<std::string_view, 5> checksums{
+      "sha-1:", "sha-256:", "sha-512:", "sha-256:", "sha-256:"};
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    expect(images[index].compression == compression[index] &&
+               images[index].checksum.starts_with(checksums[index]),
+           "codec writer fixture descriptor changed");
+    auto decoded = opened.value().read_image(index);
+    expect(decoded.has_value() &&
+               decoded.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified &&
+               sha256_hex(decoded.value().pixels) ==
+                   "09b05089277895cf05fab154c732c5e8228d7735879075fd1edf57e901f"
+                   "07042",
+           "codec writer fixture pixels or checksum changed");
+  }
+}
+
 } // namespace
 
 int main() {
@@ -307,6 +336,7 @@ int main() {
     }
     check_multi_writer_fixture(root / "mmxisf-writer-multi-scalars.xisf.b64");
     check_metadata_writer_fixture(root / "mmxisf-writer-metadata.xisf.b64");
+    check_codec_writer_fixture(root / "mmxisf-writer-codecs.xisf.b64");
     std::cout << "PASS: independent producer and consumer interop matrix\n";
     return 0;
   } catch (const std::exception &exception) {

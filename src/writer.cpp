@@ -2,12 +2,20 @@
 
 #include "mmxisf/writer.hpp"
 
+#include <lz4.h>
+#include <lz4hc.h>
+#include <openssl/evp.h>
+#include <zlib.h>
+#include <zstd.h>
+
 #include <algorithm>
 #include <array>
 #include <charconv>
 #include <cmath>
+#include <exception>
 #include <fstream>
 #include <limits>
+#include <new>
 #include <string_view>
 #include <system_error>
 #include <unordered_set>
@@ -288,9 +296,231 @@ Result<std::string> format_bound(double value) {
   return std::string(buffer.data(), converted.ptr);
 }
 
+struct PreparedImageBlock {
+  std::vector<std::byte> storage;
+  std::uint64_t serialized_size{0};
+  std::string compression;
+  std::string checksum;
+};
+
+std::string_view compression_name(CompressionCodec codec) {
+  switch (codec) {
+  case CompressionCodec::none:
+    return {};
+  case CompressionCodec::zlib:
+    return "zlib";
+  case CompressionCodec::lz4:
+    return "lz4";
+  case CompressionCodec::lz4hc:
+    return "lz4hc";
+  case CompressionCodec::zstd:
+    return "zstd";
+  }
+  return {};
+}
+
+bool is_valid_compression_codec(CompressionCodec codec) {
+  switch (codec) {
+  case CompressionCodec::none:
+  case CompressionCodec::zlib:
+  case CompressionCodec::lz4:
+  case CompressionCodec::lz4hc:
+  case CompressionCodec::zstd:
+    return true;
+  }
+  return false;
+}
+
+const EVP_MD *checksum_digest(ChecksumAlgorithm algorithm) {
+  switch (algorithm) {
+  case ChecksumAlgorithm::none:
+    return nullptr;
+  case ChecksumAlgorithm::sha1:
+    return EVP_sha1();
+  case ChecksumAlgorithm::sha256:
+    return EVP_sha256();
+  case ChecksumAlgorithm::sha512:
+    return EVP_sha512();
+  }
+  return nullptr;
+}
+
+std::string_view checksum_name(ChecksumAlgorithm algorithm) {
+  switch (algorithm) {
+  case ChecksumAlgorithm::none:
+    return {};
+  case ChecksumAlgorithm::sha1:
+    return "sha-1";
+  case ChecksumAlgorithm::sha256:
+    return "sha-256";
+  case ChecksumAlgorithm::sha512:
+    return "sha-512";
+  }
+  return {};
+}
+
+bool is_valid_checksum_algorithm(ChecksumAlgorithm algorithm) {
+  switch (algorithm) {
+  case ChecksumAlgorithm::none:
+  case ChecksumAlgorithm::sha1:
+  case ChecksumAlgorithm::sha256:
+  case ChecksumAlgorithm::sha512:
+    return true;
+  }
+  return false;
+}
+
+Result<std::vector<std::byte>> shuffle_bytes(std::span<const std::byte> input,
+                                             std::size_t item_size) {
+  if (item_size == 0 || input.size() % item_size != 0) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer byte shuffle has invalid item geometry");
+  }
+  const auto item_count = input.size() / item_size;
+  std::vector<std::byte> output(input.size());
+  for (std::size_t byte = 0; byte < item_size; ++byte) {
+    for (std::size_t item = 0; item < item_count; ++item) {
+      output[byte * item_count + item] = input[item * item_size + byte];
+    }
+  }
+  return output;
+}
+
+Result<std::vector<std::byte>> compress_bytes(std::span<const std::byte> input,
+                                              CompressionCodec codec,
+                                              std::uint64_t max_output_bytes,
+                                              std::stop_token stop_token) {
+  if (stop_token.stop_requested()) {
+    return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+  }
+  if (max_output_bytes == 0) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer compressed block has no remaining byte budget");
+  }
+  const auto bounded_capacity = [&](std::uint64_t codec_bound) {
+    return static_cast<std::size_t>(std::min<std::uint64_t>(
+        std::min<std::uint64_t>(codec_bound, max_output_bytes),
+        std::numeric_limits<std::size_t>::max()));
+  };
+  std::vector<std::byte> output;
+  switch (codec) {
+  case CompressionCodec::zlib: {
+    if (input.size() > std::numeric_limits<uLong>::max()) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer zlib input exceeds codec limit");
+    }
+    const auto bound = compressBound(static_cast<uLong>(input.size()));
+    output.resize(bounded_capacity(bound));
+    auto output_size = static_cast<uLongf>(output.size());
+    const auto status =
+        compress2(reinterpret_cast<Bytef *>(output.data()), &output_size,
+                  reinterpret_cast<const Bytef *>(input.data()),
+                  static_cast<uLong>(input.size()), Z_BEST_COMPRESSION);
+    if (status == Z_BUF_ERROR) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer zlib output exceeds its byte budget");
+    }
+    if (status != Z_OK) {
+      return make_error(ErrorCode::internal_error,
+                        "Writer zlib compression failed");
+    }
+    output.resize(static_cast<std::size_t>(output_size));
+    break;
+  }
+  case CompressionCodec::lz4:
+  case CompressionCodec::lz4hc: {
+    if (input.size() > static_cast<std::size_t>(LZ4_MAX_INPUT_SIZE)) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer LZ4 input exceeds codec limit");
+    }
+    const auto input_size = static_cast<int>(input.size());
+    const auto bound = LZ4_compressBound(input_size);
+    if (bound <= 0) {
+      return make_error(ErrorCode::internal_error,
+                        "Writer LZ4 compression bound failed");
+    }
+    const auto capacity = bounded_capacity(static_cast<std::uint64_t>(bound));
+    output.resize(capacity);
+    const auto produced =
+        codec == CompressionCodec::lz4
+            ? LZ4_compress_default(reinterpret_cast<const char *>(input.data()),
+                                   reinterpret_cast<char *>(output.data()),
+                                   input_size, static_cast<int>(capacity))
+            : LZ4_compress_HC(reinterpret_cast<const char *>(input.data()),
+                              reinterpret_cast<char *>(output.data()),
+                              input_size, static_cast<int>(capacity),
+                              LZ4HC_CLEVEL_DEFAULT);
+    if (produced <= 0) {
+      return make_error(capacity < static_cast<std::size_t>(bound)
+                            ? ErrorCode::resource_limit
+                            : ErrorCode::internal_error,
+                        capacity < static_cast<std::size_t>(bound)
+                            ? "Writer LZ4 output exceeds its byte budget"
+                            : "Writer LZ4 compression failed");
+    }
+    output.resize(static_cast<std::size_t>(produced));
+    break;
+  }
+  case CompressionCodec::zstd: {
+    const auto bound = ZSTD_compressBound(input.size());
+    if (ZSTD_isError(bound) != 0) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer Zstandard output exceeds codec limit");
+    }
+    const auto capacity = bounded_capacity(bound);
+    output.resize(capacity);
+    const auto produced = ZSTD_compress(output.data(), output.size(),
+                                        input.data(), input.size(), 3);
+    if (ZSTD_isError(produced) != 0) {
+      return make_error(capacity < bound ? ErrorCode::resource_limit
+                                         : ErrorCode::internal_error,
+                        capacity < bound
+                            ? "Writer Zstandard output exceeds its byte budget"
+                            : "Writer Zstandard compression failed");
+    }
+    output.resize(produced);
+    break;
+  }
+  case CompressionCodec::none:
+    return make_error(ErrorCode::internal_error,
+                      "Writer compression codec is missing");
+  }
+  if (stop_token.stop_requested()) {
+    return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+  }
+  return output;
+}
+
+Result<std::string> compute_checksum(std::span<const std::byte> bytes,
+                                     ChecksumAlgorithm algorithm) {
+  const auto *digest = checksum_digest(algorithm);
+  const auto name = checksum_name(algorithm);
+  if (digest == nullptr || name.empty()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer checksum algorithm is invalid");
+  }
+  std::array<unsigned char, EVP_MAX_MD_SIZE> hash{};
+  unsigned int hash_size = 0;
+  if (EVP_Digest(bytes.data(), bytes.size(), hash.data(), &hash_size, digest,
+                 nullptr) != 1) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer checksum computation failed");
+  }
+  constexpr std::string_view digits = "0123456789abcdef";
+  std::string result(name);
+  result += ':';
+  result.reserve(result.size() + hash_size * 2U);
+  for (unsigned int index = 0; index < hash_size; ++index) {
+    result.push_back(digits[hash[index] >> 4U]);
+    result.push_back(digits[hash[index] & 0x0fU]);
+  }
+  return result;
+}
+
 Result<std::string> make_header(std::span<const ImageWriteView> images,
                                 std::span<const MetadataWriteEntry> metadata,
                                 const WriterOptions &options,
+                                std::span<const PreparedImageBlock> prepared,
                                 std::span<const BlockLocation> image_blocks) {
   auto escaped_creator = escape_xml(options.creator_application, false);
   if (!escaped_creator) {
@@ -327,6 +557,12 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
         return upper.error();
       }
       header += " bounds=\"" + lower.value() + ':' + upper.value() + "\"";
+    }
+    if (!prepared[index].compression.empty()) {
+      header += " compression=\"" + prepared[index].compression + "\"";
+    }
+    if (!prepared[index].checksum.empty()) {
+      header += " checksum=\"" + prepared[index].checksum + "\"";
     }
     header +=
         " location=\"attachment:" + std::to_string(image_blocks[index].offset) +
@@ -416,11 +652,13 @@ Writer::write_file(const std::filesystem::path &destination,
   return write_file(destination, images, {}, options, stop_token);
 }
 
+namespace {
+
 Result<WriteSummary>
-Writer::write_file(const std::filesystem::path &destination,
-                   std::span<const ImageWriteView> images,
-                   std::span<const MetadataWriteEntry> metadata,
-                   const WriterOptions &options, std::stop_token stop_token) {
+write_file_impl(const std::filesystem::path &destination,
+                std::span<const ImageWriteView> images,
+                std::span<const MetadataWriteEntry> metadata,
+                const WriterOptions &options, std::stop_token stop_token) {
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "XISF write was cancelled");
   }
@@ -546,6 +784,18 @@ Writer::write_file(const std::filesystem::path &destination,
           "Writer supports little-endian Planar UInt8, UInt16, UInt32, "
           "Float32, or Float64 Gray and RGB images");
     }
+    if (!is_valid_compression_codec(image.compression)) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer image compression codec is invalid");
+    }
+    if (!is_valid_checksum_algorithm(image.checksum)) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer image checksum algorithm is invalid");
+    }
+    if (image.byte_shuffle && image.compression == CompressionCodec::none) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer byte shuffle requires compression");
+    }
     if (image.width == 0 || image.height == 0 ||
         (image.color_space == "Gray" ? image.channels != 1
                                      : image.channels != 3)) {
@@ -595,6 +845,78 @@ Writer::write_file(const std::filesystem::path &destination,
     pixel_sizes.push_back(pixel_bytes);
   }
 
+  std::vector<PreparedImageBlock> prepared(images.size());
+  std::uint64_t cumulative_serialized_bytes = 0;
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    const auto &image = images[index];
+    auto &block = prepared[index];
+    std::vector<std::byte> shuffled;
+    std::span<const std::byte> compression_input = image.pixels;
+    if (image.byte_shuffle) {
+      const auto sample_size =
+          sample_format_description(image.sample_format).second;
+      auto result =
+          shuffle_bytes(image.pixels, static_cast<std::size_t>(sample_size));
+      if (!result) {
+        return result.error();
+      }
+      shuffled = std::move(result).value();
+      compression_input = shuffled;
+    }
+    if (image.compression != CompressionCodec::none) {
+      if (cumulative_serialized_bytes >
+          options.max_cumulative_serialized_bytes) {
+        return make_error(
+            ErrorCode::resource_limit,
+            "Writer images exceed their cumulative serialized-byte budget");
+      }
+      const auto remaining_cumulative =
+          options.max_cumulative_serialized_bytes - cumulative_serialized_bytes;
+      const auto compression_budget =
+          std::min(options.max_serialized_image_bytes, remaining_cumulative);
+      auto compressed = compress_bytes(compression_input, image.compression,
+                                       compression_budget, stop_token);
+      if (!compressed) {
+        return compressed.error();
+      }
+      block.storage = std::move(compressed).value();
+      block.serialized_size = block.storage.size();
+      block.compression = std::string(compression_name(image.compression));
+      if (image.byte_shuffle) {
+        block.compression += "+sh";
+      }
+      block.compression += ':' + std::to_string(pixel_sizes[index]);
+      if (image.byte_shuffle) {
+        block.compression +=
+            ':' + std::to_string(
+                      sample_format_description(image.sample_format).second);
+      }
+    } else {
+      block.serialized_size = pixel_sizes[index];
+    }
+    if (block.serialized_size > options.max_serialized_image_bytes) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer serialized image exceeds its byte budget");
+    }
+    if (!checked_add(cumulative_serialized_bytes, block.serialized_size,
+                     cumulative_serialized_bytes) ||
+        cumulative_serialized_bytes > options.max_cumulative_serialized_bytes) {
+      return make_error(
+          ErrorCode::resource_limit,
+          "Writer images exceed their cumulative serialized-byte budget");
+    }
+    if (image.checksum != ChecksumAlgorithm::none) {
+      const auto serialized = block.storage.empty()
+                                  ? image.pixels
+                                  : std::span<const std::byte>(block.storage);
+      auto checksum = compute_checksum(serialized, image.checksum);
+      if (!checksum) {
+        return checksum.error();
+      }
+      block.checksum = std::move(checksum).value();
+    }
+  }
+
   std::vector<BlockLocation> image_blocks(images.size());
   const auto plan_blocks =
       [&](std::uint64_t first_offset) -> Result<std::uint64_t> {
@@ -603,11 +925,11 @@ Writer::write_file(const std::filesystem::path &destination,
       auto &block = image_blocks[index];
       block.kind = BlockKind::attachment;
       block.offset = offset;
-      block.size = pixel_sizes[index];
+      block.size = prepared[index].serialized_size;
       block.raw = "attachment:" + std::to_string(offset) + ':' +
-                  std::to_string(pixel_sizes[index]);
+                  std::to_string(prepared[index].serialized_size);
       std::uint64_t end = 0;
-      if (!checked_add(offset, pixel_sizes[index], end)) {
+      if (!checked_add(offset, prepared[index].serialized_size, end)) {
         return make_error(ErrorCode::overflow, "Writer file layout overflows");
       }
       if (index + 1 == images.size()) {
@@ -631,7 +953,8 @@ Writer::write_file(const std::filesystem::path &destination,
   std::string header;
   bool layout_stable = false;
   for (unsigned iteration = 0; iteration < 4; ++iteration) {
-    auto candidate = make_header(images, metadata, options, image_blocks);
+    auto candidate =
+        make_header(images, metadata, options, prepared, image_blocks);
     if (!candidate) {
       return candidate.error();
     }
@@ -725,7 +1048,11 @@ Writer::write_file(const std::filesystem::path &destination,
       }
       padding -= count;
     }
-    auto pixels_written = write_all(output, images[index].pixels, stop_token);
+    const auto serialized =
+        prepared[index].storage.empty()
+            ? images[index].pixels
+            : std::span<const std::byte>(prepared[index].storage);
+    auto pixels_written = write_all(output, serialized, stop_token);
     if (!pixels_written) {
       return pixels_written.error();
     }
@@ -754,6 +1081,27 @@ Writer::write_file(const std::filesystem::path &destination,
   summary.image_block = image_blocks.front();
   summary.image_blocks = std::move(image_blocks);
   return summary;
+}
+
+} // namespace
+
+Result<WriteSummary>
+Writer::write_file(const std::filesystem::path &destination,
+                   std::span<const ImageWriteView> images,
+                   std::span<const MetadataWriteEntry> metadata,
+                   const WriterOptions &options, std::stop_token stop_token) {
+  try {
+    return write_file_impl(destination, images, metadata, options, stop_token);
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer could not allocate within configured budgets");
+  } catch (const std::exception &) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer dependency raised an unexpected exception");
+  } catch (...) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer failed with an unexpected exception");
+  }
 }
 
 } // namespace mmxisf

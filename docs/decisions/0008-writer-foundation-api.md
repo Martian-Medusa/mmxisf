@@ -35,6 +35,11 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
   Properties and FITS keywords plus XISF-unit String/TimePoint Properties;
 - metadata identifiers, scope, uniqueness, value budgets, time syntax, and XML
   text are validated before file creation; callers cannot inject raw XML;
+- per-image zlib, LZ4, LZ4HC, or Zstandard compression can apply XISF byte
+  shuffle before compression, and SHA-1/256/512 checksums cover the serialized
+  bytes that are written;
+- decoded and serialized bytes have independent per-image and cumulative
+  resource limits;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,
   arithmetic, and resource budgets are validated before file creation;
 - output is written to a sibling temporary path and renamed only after all
@@ -55,7 +60,9 @@ multi-image PFI-scalar Gray/RGB round trips without claiming a general writer.
 The original single-image byte hash remains stable. An independent consumer
 preserved all four types in the multi-image oracle but did not honor a
 big-endian writer probe, so big-endian output fails explicitly until broader
-external evidence is available. Numeric and block-backed Properties,
-references, compression, checksums, caller-provided sinks, and replacement
+external evidence is available. Compressed output is deterministic for a fixed
+codec/dependency set, but dependency upgrades can change a valid compressed byte
+stream; decoded pixel identity remains the cross-version oracle. Numeric and
+block-backed Properties, references, caller-provided sinks, and replacement
 policy are follow-up gates. Unsupported requests fail explicitly instead of
 being coerced into the narrow profile.

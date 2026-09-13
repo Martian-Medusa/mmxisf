@@ -16,6 +16,9 @@
 
 namespace mmxisf {
 
+enum class CompressionCodec { none, zlib, lz4, lz4hc, zstd };
+enum class ChecksumAlgorithm { none, sha1, sha256, sha512 };
+
 struct ImageWriteView {
   std::string id;
   std::uint64_t width{0};
@@ -27,6 +30,9 @@ struct ImageWriteView {
   ByteOrder byte_order{ByteOrder::little};
   std::optional<double> lower_bound;
   std::optional<double> upper_bound;
+  CompressionCodec compression{CompressionCodec::none};
+  bool byte_shuffle{false};
+  ChecksumAlgorithm checksum{ChecksumAlgorithm::none};
   std::span<const std::byte> pixels;
 };
 
@@ -52,6 +58,9 @@ struct WriterOptions {
   std::size_t max_metadata_value_bytes{1024U * 1024U};
   std::uint64_t max_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_image_bytes{4ULL * 1024ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_cumulative_serialized_bytes{4ULL * 1024ULL * 1024ULL *
+                                                1024ULL};
   std::string creation_time;
   std::string creator_application;
 };
@@ -68,6 +77,8 @@ public:
   // The 0.1 writer accepts attached Planar Gray or RGB images using the
   // scalar sample formats supported by the reader. Input bytes are
   // little-endian. Floating-point images require explicit finite bounds.
+  // Lossless compression, byte shuffle, and serialized-block checksums are
+  // selected independently for each image.
   // Existing destinations and stale temporary files are never overwritten.
   [[nodiscard]] static Result<WriteSummary>
   write_file(const std::filesystem::path &destination,

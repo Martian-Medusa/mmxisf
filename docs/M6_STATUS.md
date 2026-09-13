@@ -17,6 +17,9 @@
 - Declarative direct metadata records for image-scoped String/TimePoint
   Properties and FITS keywords plus XISF-unit String/TimePoint Properties;
   raw XML is never accepted.
+- Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
+  and SHA-1/256/512 checksums over exact serialized attachment bytes.
+- Independent decoded and serialized per-image/cumulative byte budgets.
 - Canonical XML field order, XML 1.0 UTF-8 validation/escaping, fixed zero
   padding, power-of-two attachment alignment, and fixed-point block planning.
 - Checked geometry arithmetic and finite header/image budgets before creating a
@@ -61,12 +64,19 @@
   exact UInt16 pixels in both `mmxisf` and independent package `xisf` 0.9.7.
   Its serialized SHA-256 is
   `e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8`.
+- A five-image codec fixture covers all four writer codecs, shuffled and
+  unshuffled paths, all three checksums, and an uncompressed checksummed block.
+  `mmxisf` verifies each digest before decompression and recovers one exact pixel
+  hash; independent package `xisf` 0.9.7 accepts every descriptor and returns
+  identical UInt16 pixels. The anchored file SHA-256 is
+  `78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5`.
 
 ## Still required for M6
 
 - Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
 - Expand caller-declared Properties beyond the current String/TimePoint direct
   profile to numeric and block-backed forms when required.
-- Add requested compression/shuffle/checksum output profiles.
+- Measure representative compressed writer throughput and peak memory before
+  assigning a portable writer performance claim.
 - Add a sink abstraction after actual file-writer behavior establishes its
   ownership and failure requirements.

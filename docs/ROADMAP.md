@@ -181,7 +181,9 @@ cancellation, non-overwrite commit behavior, and exact self-round-trips. The
 committed multi-image oracle passed an independent public-API read with exact
 types, shapes, bounds, and values. A following declarative metadata slice adds
 direct String/TimePoint Properties and FITS keywords with independent-consumer
-evidence. Numeric/block metadata and compressed/checksummed writer profiles
+evidence. A third slice adds all four reader codecs, byte shuffle, and
+SHA-1/256/512 with exact self-round-trips and an independent-consumer oracle.
+Numeric/block metadata, writer performance evidence, and the sink abstraction
 remain open.
 
 These windows are recalibrated after every milestone using actual elapsed time,

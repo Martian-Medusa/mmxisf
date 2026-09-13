@@ -134,6 +134,18 @@
       "expectedArtifact": "Independent public-API read: exact 2x2x1 uint16 pixels; image String and TimePoint Properties preserved; FITS EXPTIME value/comment preserved; XISF-unit Property preserved; serialized SHA-256 e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8"
     },
     {
+      "id": "mmxisf-writer-codecs",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-codecs.xisf.b64"},
+      "sha256": "78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
+      "generationProcedure": "Invoke Writer::write_file with five copies of a deterministic 16x16 UInt16 Gray array using zlib/SHA-1, LZ4+shuffle/SHA-256, LZ4HC/SHA-512, Zstandard+shuffle/SHA-256, and uncompressed/SHA-256 profiles anchored in tests/writer_test.cpp.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.compression-integrity", "compression.zlib", "compression.lz4-shuffle", "compression.lz4hc", "compression.zstd-shuffle", "checksum.sha1", "checksum.sha256", "checksum.sha512", "checksum.before-decompression", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "mmxisf verifies every declared checksum and decodes all five images to pixel SHA-256 09b05089277895cf05fab154c732c5e8228d7735879075fd1edf57e901f07042; independent public-API read preserves all five codec descriptors, shapes, dtypes, and exact pixels; serialized SHA-256 78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5"
+    },
+    {
       "id": "mmxisf-writer-rgb-u16",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-rgb-u16.xisf.b64"},
       "sha256": "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",

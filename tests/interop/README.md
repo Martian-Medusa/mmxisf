@@ -44,3 +44,12 @@ serialization without exposing raw XML: image-scoped String and TimePoint
 Properties, an image FITS keyword, and an XISF-unit String Property. The same
 independent consumer preserved the exact Property values, FITS value/comment,
 scope split, and UInt16 pixels through its public metadata and image APIs.
+
+The `mmxisf-writer-codecs` fixture covers zlib, LZ4, LZ4HC, and Zstandard
+output, both shuffled and unshuffled blocks, and SHA-1/256/512 declarations.
+Compiled tests verify every checksum before decompression and compare the exact
+decoded pixel hash for all five images. The independent consumer accepted the
+same descriptors and returned the exact shapes, dtypes, and pixels. Because
+codec byte streams can change across dependency versions, this committed file
+anchors the observed external result without imposing its whole-file hash on
+future writer builds.

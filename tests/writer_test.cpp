@@ -366,6 +366,68 @@ void test_declared_metadata_round_trip() {
          "metadata child elements changed image pixels");
 }
 
+void test_compression_shuffle_checksum_round_trip() {
+  std::array<std::byte, 512> pixels{};
+  for (std::size_t sample = 0; sample < pixels.size() / 2; ++sample) {
+    const auto value = static_cast<std::uint16_t>((sample % 16) * 257U);
+    pixels[sample * 2] = static_cast<std::byte>(value & 0xffU);
+    pixels[sample * 2 + 1] = static_cast<std::byte>(value >> 8U);
+  }
+  const std::array codecs{
+      mmxisf::CompressionCodec::zlib, mmxisf::CompressionCodec::lz4,
+      mmxisf::CompressionCodec::lz4hc, mmxisf::CompressionCodec::zstd,
+      mmxisf::CompressionCodec::none};
+  const std::array checksums{
+      mmxisf::ChecksumAlgorithm::sha1, mmxisf::ChecksumAlgorithm::sha256,
+      mmxisf::ChecksumAlgorithm::sha512, mmxisf::ChecksumAlgorithm::sha256,
+      mmxisf::ChecksumAlgorithm::sha256};
+  std::vector<mmxisf::ImageWriteView> images(codecs.size());
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    images[index] = {.id = "codec" + std::to_string(index),
+                     .width = 16,
+                     .height = 16,
+                     .channels = 1,
+                     .sample_format = mmxisf::SampleFormat::uint16,
+                     .color_space = "Gray",
+                     .compression = codecs[index],
+                     .byte_shuffle = index == 1 || index == 3,
+                     .checksum = checksums[index],
+                     .pixels = pixels};
+  }
+  const auto path = output_path("mmxisf-writer-codecs.xisf");
+  auto written = mmxisf::Writer::write_file(
+      path, std::span<const mmxisf::ImageWriteView>(images), options());
+  expect(written.has_value() &&
+             written.value().image_blocks.size() == images.size(),
+         "compressed writer matrix failed");
+
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value() &&
+             opened.value().document().images().size() == images.size(),
+         "compressed writer matrix did not reopen");
+  const std::array<std::string_view, 5> compression_prefixes{
+      "zlib:512", "lz4+sh:512:2", "lz4hc:512", "zstd+sh:512:2", ""};
+  const std::array<std::string_view, 5> checksum_prefixes{
+      "sha-1:", "sha-256:", "sha-512:", "sha-256:", "sha-256:"};
+  for (std::size_t index = 0; index < images.size(); ++index) {
+    const auto &descriptor = opened.value().document().images()[index];
+    expect(descriptor.compression == compression_prefixes[index] &&
+               descriptor.checksum.starts_with(checksum_prefixes[index]),
+           "writer codec/checksum descriptor changed");
+    if (codecs[index] != mmxisf::CompressionCodec::none) {
+      expect(written.value().image_blocks[index].size < pixels.size(),
+             "compressible writer fixture did not shrink");
+    }
+    auto decoded = opened.value().read_image(index);
+    expect(decoded.has_value() &&
+               decoded.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified &&
+               decoded.value().pixels ==
+                   std::vector<std::byte>(pixels.begin(), pixels.end()),
+           "writer codec/shuffle/checksum round trip changed pixels");
+  }
+}
+
 void test_rejection_and_cleanup() {
   const std::array<std::byte, 8> pixels{};
   auto image = gray_image(pixels);
@@ -434,6 +496,47 @@ void test_rejection_and_cleanup() {
       output_path("mmxisf-writer-empty.xisf"), no_images, options());
   expect(!empty && empty.error().code == mmxisf::ErrorCode::invalid_argument,
          "writer accepted an empty image sequence");
+  image = gray_image(pixels);
+  image.byte_shuffle = true;
+  auto invalid_shuffle = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-shuffle.xisf"), image, options());
+  expect(!invalid_shuffle && invalid_shuffle.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "writer accepted byte shuffle without compression");
+  image.byte_shuffle = false;
+  image.compression = static_cast<mmxisf::CompressionCodec>(999);
+  auto invalid_codec = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-codec.xisf"), image, options());
+  expect(!invalid_codec &&
+             invalid_codec.error().code == mmxisf::ErrorCode::invalid_argument,
+         "writer accepted an invalid compression codec");
+  image = gray_image(pixels);
+  image.checksum = static_cast<mmxisf::ChecksumAlgorithm>(999);
+  auto invalid_checksum = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-checksum.xisf"), image, options());
+  expect(!invalid_checksum && invalid_checksum.error().code ==
+                                  mmxisf::ErrorCode::invalid_argument,
+         "writer accepted an invalid checksum algorithm");
+  image = gray_image(pixels);
+  image.compression = mmxisf::CompressionCodec::zstd;
+  auto serialized_options = options();
+  serialized_options.max_serialized_image_bytes = 1;
+  auto serialized_limit = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-serialized-limit.xisf"), image,
+      serialized_options);
+  expect(!serialized_limit &&
+             serialized_limit.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer serialized image-byte budget was not enforced");
+  image = gray_image(pixels);
+  two_images = {image, image};
+  serialized_options = options();
+  serialized_options.max_cumulative_serialized_bytes = pixels.size();
+  auto cumulative_serialized = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-cumulative-serialized-limit.xisf"), two_images,
+      serialized_options);
+  expect(!cumulative_serialized && cumulative_serialized.error().code ==
+                                       mmxisf::ErrorCode::resource_limit,
+         "writer cumulative serialized-byte budget was not enforced");
 
   const std::span images(&image, 1);
   const auto metadata_path = [&](std::string_view suffix) {
@@ -648,6 +751,7 @@ int main() {
     test_rgb_little_endian_round_trip();
     test_multi_image_scalar_round_trip();
     test_declared_metadata_round_trip();
+    test_compression_shuffle_checksum_round_trip();
     test_rejection_and_cleanup();
     std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;

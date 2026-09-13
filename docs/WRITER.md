@@ -11,11 +11,13 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - direct image-scoped String and TimePoint Properties;
 - direct image-scoped FITS keywords;
 - direct XISF-unit String and TimePoint Properties;
+- zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
+- SHA-1, SHA-256, and SHA-512 checksums over exact serialized block bytes;
 - fixed caller-supplied creation time and creator application.
 
 The current writer rejects big-endian and Normal/interleaved output, numeric or
-block-backed Properties, references, raw XML, compression, shuffle, and
-checksums. Reader support for a feature does not imply writer support.
+block-backed Properties, references, and raw XML. Reader support for any other
+feature does not imply writer support.
 
 ## Minimal use
 
@@ -50,6 +52,20 @@ if (!result) {
 Pixel spans are borrowed and must remain valid until `write_file` returns. No
 sample conversion is performed: bytes must already match the declared
 little-endian Planar profile.
+
+Compression and integrity are selected per image:
+
+```cpp
+image.compression = mmxisf::CompressionCodec::zstd;
+image.byte_shuffle = true;
+image.checksum = mmxisf::ChecksumAlgorithm::sha256;
+```
+
+Byte shuffle is valid only with compression and uses the declared sample width.
+Checksums cover the serialized attachment bytes, so the reader can reject a
+damaged block before decompression. Compression output is deterministic for a
+fixed dependency/toolchain set; dependency upgrades may legitimately change
+the compressed byte stream while preserving the decoded image.
 
 ## Multiple images and metadata
 
@@ -87,11 +103,12 @@ replace them through the metadata array.
 
 ## Failure and filesystem contract
 
-Geometry arithmetic, image and metadata counts, per-image and cumulative byte
-budgets, header size, identifiers, XML UTF-8, and metadata scope are validated
-before the destination is created. Output is written to a sibling temporary
-file, flushed, closed, and committed through a no-overwrite hard link. An
-existing destination or stale `.mmxisf-tmp` sibling is never replaced.
+Geometry arithmetic, image and metadata counts, decoded and serialized
+per-image/cumulative byte budgets, header size, identifiers, XML UTF-8, and
+metadata scope are validated before the destination is created. Output is
+written to a sibling temporary file, flushed, closed, and committed through a
+no-overwrite hard link. An existing destination or stale `.mmxisf-tmp` sibling
+is never replaced.
 
 Cancellation is cooperative between bounded write chunks and immediately
 before commit. A cancelled or failed write removes its incomplete temporary
