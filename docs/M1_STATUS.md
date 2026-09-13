@@ -32,13 +32,18 @@
 
 - CMake Release build: PASS.
 - CTest: 3/3 PASS (`version`, `reader`, planning consistency).
-- Synthetic reader coverage (60 checks): valid preamble/XML/metadata/raw pixels, DOCTYPE
+- Synthetic reader coverage (63 checks): valid preamble/XML/metadata/raw pixels, DOCTYPE
   rejection, invalid root/namespace/core grammar, mandatory attributes,
   preamble and block ranges, every exposed resource-limit class, cancellation,
   caller buffers, partial ByteSource reads, and fail-closed compressed decode.
 - Pinned-spec spot audit: PASS for Image geometry/channel semantics, optional
   `colorSpace="Gray"` default, case-sensitive `Planar`/`Normal` storage values,
-  floating-point bounds, Metadata uniqueness, and FITSKeyword placement.
+  floating-point bounds, mandatory Metadata properties, Metadata uniqueness,
+  and FITSKeyword placement.
+- Interoperability exception: the private PixInsight corpus declares
+  `XISF:CreationTime` as `String` instead of the specified `TimePoint`; both
+  declarations are accepted without coercion and the discrepancy is recorded
+  in `SPECIFICATION_NOTES.md`.
 - Local private corpus metadata inspection: 9/9 files PASS, including one
   three-image unit and a 3.4 MiB XML header.
 - Native launch/open/render: PASS on a private 6248 x 4176, Float32, Gray,

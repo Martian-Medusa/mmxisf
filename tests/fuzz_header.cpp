@@ -75,7 +75,9 @@ std::vector<std::uint8_t> seed_unit() {
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
       "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
       "<Property id=\"test\" type=\"String\">value</Property>"
-      "<Metadata><Property id=\"XISF:CreatorApplication\" "
+      "<Metadata><Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
+      "value=\"2026-09-13T00:00:00Z\"/>"
+      "<Property id=\"XISF:CreatorApplication\" "
       "type=\"String\">fuzz smoke</Property></Metadata></xisf>";
   std::vector<std::uint8_t> bytes(16 + xml.size(), 0);
   const std::string signature = "XISF0100";

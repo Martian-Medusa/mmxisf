@@ -100,6 +100,15 @@ std::filesystem::path write_fixture(const std::string &name,
   return path;
 }
 
+std::string valid_metadata() {
+  return "<Metadata>"
+         "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
+         "value=\"2026-09-13T00:00:00Z\"/>"
+         "<Property id=\"XISF:CreatorApplication\" "
+         "type=\"String\">test</Property>"
+         "</Metadata>";
+}
+
 std::string valid_xml(std::string_view image_attributes = {}) {
   return std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">" +
@@ -109,8 +118,7 @@ std::string valid_xml(std::string_view image_attributes = {}) {
          "<FITSKeyword name=\"EXPTIME\" value=\"30\" comment=\"seconds\"/>" +
          "<Property id=\"Observation:Time:Start\" "
          "type=\"String\">now</Property>" +
-         "</Image><Metadata><Property id=\"XISF:CreatorApplication\" "
-         "type=\"String\">test</Property></Metadata></xisf>";
+         "</Image>" + valid_metadata() + "</xisf>";
 }
 
 std::vector<std::byte> read_bytes(const std::filesystem::path &path) {
@@ -146,7 +154,7 @@ int main() {
     auto reader = std::move(reader_result).value();
     expect(reader.document().version() == "1.0", "version is parsed");
     expect(reader.document().images().size() == 1, "one image is enumerated");
-    expect(reader.document().metadata().size() == 3,
+    expect(reader.document().metadata().size() == 4,
            "image and document metadata are preserved");
     expect(reader.document().metadata()[1].value == "now",
            "property element text is preserved");
@@ -211,10 +219,11 @@ int main() {
 
   const auto default_image_attributes_path = write_fixture(
       "mmxisf-image-defaults.xisf",
-      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-      "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" "
-      "pixelStorage=\"Normal\" location=\"attachment:1024:8\"/>"
-      "<Metadata/></xisf>",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" "
+          "pixelStorage=\"Normal\" location=\"attachment:1024:8\"/>") +
+          valid_metadata() + "</xisf>",
       pixels);
   auto default_image_attributes =
       mmxisf::Reader::open_file(default_image_attributes_path);
@@ -305,6 +314,41 @@ int main() {
   expect(!duplicate_metadata &&
              duplicate_metadata.error().code == mmxisf::ErrorCode::invalid_xisf,
          "duplicate Metadata element is rejected");
+
+  const auto missing_metadata_property_path = write_fixture(
+      "mmxisf-missing-metadata-property.xisf",
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<Metadata><Property id=\"XISF:CreatorApplication\" "
+      "type=\"String\">test</Property></Metadata></xisf>");
+  auto missing_metadata_property =
+      mmxisf::Reader::open_file(missing_metadata_property_path);
+  expect(!missing_metadata_property && missing_metadata_property.error().code ==
+                                           mmxisf::ErrorCode::invalid_xisf,
+         "mandatory Metadata properties are enforced");
+
+  const auto wrong_metadata_type_path = write_fixture(
+      "mmxisf-wrong-metadata-type.xisf",
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<Metadata><Property id=\"XISF:CreationTime\" type=\"UInt32\">"
+      "now</Property><Property id=\"XISF:CreatorApplication\" "
+      "type=\"String\">test</Property></Metadata></xisf>");
+  auto wrong_metadata_type =
+      mmxisf::Reader::open_file(wrong_metadata_type_path);
+  expect(!wrong_metadata_type && wrong_metadata_type.error().code ==
+                                     mmxisf::ErrorCode::invalid_xisf,
+         "mandatory Metadata property types are enforced");
+
+  const auto string_creation_time_path = write_fixture(
+      "mmxisf-string-creation-time.xisf",
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<Metadata><Property id=\"XISF:CreationTime\" type=\"String\">"
+      "2026-09-13T00:00:00Z</Property>"
+      "<Property id=\"XISF:CreatorApplication\" "
+      "type=\"String\">PixInsight</Property></Metadata></xisf>");
+  auto string_creation_time =
+      mmxisf::Reader::open_file(string_creation_time_path);
+  expect(string_creation_time.has_value(),
+         "PixInsight String CreationTime compatibility is retained");
 
   mmxisf::ReaderOptions tiny_metadata_limit;
   tiny_metadata_limit.max_metadata_value_bytes = 2;
@@ -431,9 +475,11 @@ int main() {
 
   const auto bad_attachment_path = write_fixture(
       "mmxisf-attachment-range.xisf",
-      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-      "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" colorSpace=\"Gray\" "
-      "location=\"attachment:1:8\"/><Metadata/></xisf>",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"Gray\" location=\"attachment:1:8\"/>") +
+          valid_metadata() + "</xisf>",
       pixels);
   auto bad_attachment = mmxisf::Reader::open_file(bad_attachment_path);
   expect(!bad_attachment &&
@@ -485,10 +531,11 @@ int main() {
 
   const auto spaced_bounds_path = write_fixture(
       "mmxisf-spaced-bounds.xisf",
-      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-      "<Image geometry=\"1:1:1\" sampleFormat=\"Float32\" "
-      "bounds=\" +0 : +1 \" location=\"attachment:1024:4\"/>"
-      "<Metadata/></xisf>",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"Float32\" "
+          "bounds=\" +0 : +1 \" location=\"attachment:1024:4\"/>") +
+          valid_metadata() + "</xisf>",
       {std::byte{0}, std::byte{0}, std::byte{0}, std::byte{0}});
   auto spaced_bounds = mmxisf::Reader::open_file(spaced_bounds_path);
   expect(spaced_bounds.has_value(),
@@ -506,9 +553,11 @@ int main() {
 
   const auto one_dimensional_path = write_fixture(
       "mmxisf-one-dimensional.xisf",
-      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-      "<Image geometry=\"4:1\" sampleFormat=\"UInt16\" colorSpace=\"Gray\" "
-      "location=\"attachment:1024:8\"/><Metadata/></xisf>",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"4:1\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"Gray\" location=\"attachment:1024:8\"/>") +
+          valid_metadata() + "</xisf>",
       pixels);
   auto one_dimensional = mmxisf::Reader::open_file(one_dimensional_path);
   expect(one_dimensional.has_value(), "one-dimensional Image is inspectable");
@@ -541,6 +590,9 @@ int main() {
   std::filesystem::remove(no_namespace_path);
   std::filesystem::remove(missing_metadata_path);
   std::filesystem::remove(duplicate_metadata_path);
+  std::filesystem::remove(missing_metadata_property_path);
+  std::filesystem::remove(wrong_metadata_type_path);
+  std::filesystem::remove(string_creation_time_path);
   std::filesystem::remove(bad_storage_path);
   std::filesystem::remove(duplicate_attribute_path);
   std::filesystem::remove(bad_attachment_path);

@@ -275,6 +275,8 @@ struct XmlBuilder {
   std::vector<std::string> element_stack;
   std::optional<std::size_t> text_metadata_index;
   std::size_t metadata_count{0};
+  bool saw_creation_time{false};
+  bool saw_creator_application{false};
 
   void fail(ErrorCode code, std::string message, std::string element = {},
             std::string attribute_name = {}) {
@@ -491,14 +493,41 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     const auto identity =
         attribute(attributes, name == "Property" ? "id" : "name");
+    const auto type = attribute(attributes, "type");
     const auto value = attribute(attributes, "value");
     const auto comment = attribute(attributes, "comment");
     if (!identity || identity->empty() ||
-        (name == "Property" && !attribute(attributes, "type")) ||
+        (name == "Property" && (!type || type->empty())) ||
         (name == "FITSKeyword" && (!value || !comment))) {
       state.fail(ErrorCode::invalid_xisf,
                  name + " is missing a mandatory attribute", name);
       return;
+    }
+    if (name == "Property" && parent == "Metadata") {
+      if (!identity->starts_with("XISF:")) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Metadata Property identifiers must use the XISF namespace",
+                   name, "id");
+        return;
+      }
+      if (*identity == "XISF:CreationTime") {
+        const bool compatible_type = *type == "TimePoint" || *type == "String";
+        if (!compatible_type || state.saw_creation_time) {
+          state.fail(ErrorCode::invalid_xisf,
+                     "Invalid or duplicate XISF:CreationTime property", name,
+                     "type");
+          return;
+        }
+        state.saw_creation_time = true;
+      } else if (*identity == "XISF:CreatorApplication") {
+        if (*type != "String" || state.saw_creator_application) {
+          state.fail(ErrorCode::invalid_xisf,
+                     "Invalid or duplicate XISF:CreatorApplication property",
+                     name, "type");
+          return;
+        }
+        state.saw_creator_application = true;
+      }
     }
     MetadataEntry entry;
     entry.kind = name == "Property" ? MetadataEntry::Kind::property
@@ -612,6 +641,11 @@ Result<Document> parse_header(std::string_view xml,
   if (state.metadata_count != 1) {
     return make_error(ErrorCode::invalid_xisf,
                       "XISF header must contain exactly one Metadata element");
+  }
+  if (!state.saw_creation_time || !state.saw_creator_application) {
+    return make_error(
+        ErrorCode::invalid_xisf,
+        "Metadata must define XISF:CreationTime and XISF:CreatorApplication");
   }
   const auto header_end = 16ULL + static_cast<std::uint64_t>(header_length);
   for (std::size_t index = 0; index < state.images.size(); ++index) {
