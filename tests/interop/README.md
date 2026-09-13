@@ -53,3 +53,11 @@ same descriptors and returned the exact shapes, dtypes, and pixels. Because
 codec byte streams can change across dependency versions, this committed file
 anchors the observed external result without imposing its whole-file hash on
 future writer builds.
+
+A 2026-09-14 black-box consumer check covered the block-Property writer API.
+Package `xisf` 0.9.7 returned the exact 2x2 F64Matrix values, a big-endian
+UI16Vector as `[513, 1027]`, formatting metadata, byte order, and attachment
+locations from the public metadata API. The deterministic 12,292-byte probe had
+SHA-256 `e80a2d0a478cfc8fb8d09595855eb8f21da56f55ee96703551d973f34965626c`.
+The compiled writer test regenerates and verifies its stronger self-round-trip
+contract; the external package is not a project dependency.

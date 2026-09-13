@@ -1,6 +1,6 @@
 # M6 progress: deterministic monolithic writer
 
-- Status: MULTI_SCALAR_IMPLEMENTED; EXTERNAL_ORACLE_PASS; CROSS_PLATFORM_PENDING
+- Status: BLOCK_PROPERTIES_IMPLEMENTED; EXTERNAL_ORACLE_PASS; CROSS_PLATFORM_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
 - Publication status: private repository; no tag or release
@@ -19,6 +19,9 @@
 - Direct Boolean, signed/unsigned integer through 128-bit, real floating-point,
   and complex Properties with lexical/range validation and exact text
   preservation.
+- Deterministic attached vector/matrix Properties with exact typed extents,
+  little- or big-endian source bytes, formatting metadata, independent budgets,
+  and block layout reporting.
 - Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
   and SHA-1/256/512 checksums over exact serialized attachment bytes.
 - Deterministic sample-aligned compression subblocks with a 16 MiB default,
@@ -76,6 +79,13 @@
   before file creation. Independent package `xisf` 0.9.7 returns five
   representative Boolean, integer, real, and complex values through its public
   metadata API with exact types and typed values.
+- A deterministic writer file with an image-scoped 2x2 F64Matrix and an
+  XISF-unit big-endian UI16Vector reopens with exact source bytes in `mmxisf`.
+  Independent package `xisf` 0.9.7 returned matrix values `[[1,2],[3,4]]`,
+  vector values `[513,1027]`, the declared format and byte order, and both exact
+  attachment descriptors through its public API. The observed file is 12,292
+  bytes with SHA-256
+  `e80a2d0a478cfc8fb8d09595855eb8f21da56f55ee96703551d973f34965626c`.
 - A five-image codec fixture covers all four writer codecs, shuffled and
   unshuffled paths, all three checksums, and an uncompressed checksummed block.
   `mmxisf` verifies each digest before decompression and recovers one exact pixel
@@ -101,7 +111,8 @@
 ## Still required for M6
 
 - Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
-- Add block-backed vector/matrix Properties when required.
+- Validate writer-produced vector/matrix Properties natively in PixInsight.
+- Reuse the bounded compression/checksum pipeline for Property attachments.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.
 - Add a sink abstraction after actual file-writer behavior establishes its

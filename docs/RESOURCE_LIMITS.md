@@ -25,6 +25,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
 | writer compression subblock bytes | 16 MiB | Bounds codec and byte-shuffle scratch independently of full image size |
+| writer Property bytes | 256 MiB per block / 512 MiB cumulative | Bounds caller-provided typed vector and matrix attachments independently of images |
 | decompression ratio | 65,536:1 | Measured current-producer sparse embedded RGB requires about 32,506:1; absolute decoded-byte and sample caps remain authoritative |
 | Zstandard window | 256 MiB | Bounds codec history allocation independently of decoded image size; configurable only as a power of two |
 | diagnostic records | 1,000 | Prevent error amplification |

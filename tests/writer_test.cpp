@@ -427,6 +427,87 @@ void test_scalar_metadata_round_trip() {
   }
 }
 
+void test_block_property_round_trip() {
+  const std::array<std::byte, 8> pixels{
+      std::byte{1}, std::byte{0}, std::byte{2}, std::byte{0},
+      std::byte{3}, std::byte{0}, std::byte{4}, std::byte{0}};
+  const std::array<std::byte, 32> matrix{
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0xf0}, std::byte{0x3f},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x40},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x08}, std::byte{0x40},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x10}, std::byte{0x40}};
+  const std::array<std::byte, 4> weights{std::byte{0x01}, std::byte{0x02},
+                                         std::byte{0x03}, std::byte{0x04}};
+  const auto image = gray_image(pixels);
+  const std::array metadata{
+      mmxisf::MetadataWriteEntry{
+          .image_index = 0,
+          .name = "PCL:AstrometricSolution:ProjectionSystem",
+          .type = "F64Matrix",
+          .value_form = mmxisf::MetadataWriteValueForm::data_block,
+          .rows = 2,
+          .columns = 2,
+          .format = "matrix:2x2",
+          .block_bytes = matrix},
+      mmxisf::MetadataWriteEntry{.name = "XISF:TestWeights",
+                                 .type = "UI16Vector",
+                                 .value_form =
+                                     mmxisf::MetadataWriteValueForm::data_block,
+                                 .length = 2,
+                                 .byte_order = mmxisf::ByteOrder::big,
+                                 .block_bytes = weights}};
+  const auto first_path = output_path("mmxisf-writer-property-block-a.xisf");
+  const auto second_path = output_path("mmxisf-writer-property-block-b.xisf");
+  auto first = mmxisf::Writer::write_file(first_path, std::span(&image, 1),
+                                          metadata, options());
+  auto second = mmxisf::Writer::write_file(second_path, std::span(&image, 1),
+                                           metadata, options());
+  expect(first && second && read_file(first_path) == read_file(second_path),
+         "block Property writer is not deterministic");
+  expect(first.value().property_blocks.size() == 2 &&
+             first.value().property_blocks[0].size == matrix.size() &&
+             first.value().property_blocks[1].size == weights.size() &&
+             first.value().property_blocks[0].offset % 4096 == 0 &&
+             first.value().property_blocks[1].offset % 4096 == 0,
+         "block Property layout summary changed");
+
+  auto opened = mmxisf::Reader::open_file(first_path);
+  expect(opened.has_value(), "block Property writer result did not reopen");
+  std::optional<std::size_t> matrix_index;
+  std::optional<std::size_t> weights_index;
+  const auto &entries = opened.value().document().metadata();
+  for (std::size_t index = 0; index < entries.size(); ++index) {
+    if (entries[index].name == "PCL:AstrometricSolution:ProjectionSystem") {
+      matrix_index = index;
+      expect(entries[index].image_index == 0 && entries[index].rows == 2 &&
+                 entries[index].columns == 2 &&
+                 entries[index].format == "matrix:2x2",
+             "matrix Property descriptor changed");
+    } else if (entries[index].name == "XISF:TestWeights") {
+      weights_index = index;
+      expect(!entries[index].image_index && entries[index].length == 2 &&
+                 entries[index].byte_order == mmxisf::ByteOrder::big,
+             "vector Property descriptor changed");
+    }
+  }
+  expect(matrix_index && weights_index,
+         "block Properties were not retained in metadata");
+  auto matrix_block = opened.value().read_property_block(*matrix_index);
+  auto weights_block = opened.value().read_property_block(*weights_index);
+  expect(matrix_block &&
+             matrix_block.value().bytes ==
+                 std::vector<std::byte>(matrix.begin(), matrix.end()),
+         "matrix Property bytes did not round trip exactly");
+  expect(weights_block &&
+             weights_block.value().bytes ==
+                 std::vector<std::byte>(weights.begin(), weights.end()),
+         "vector Property source bytes did not round trip exactly");
+}
+
 void test_compression_shuffle_checksum_round_trip() {
   std::array<std::byte, 512> pixels{};
   for (std::size_t sample = 0; sample < pixels.size() / 2; ++sample) {
@@ -740,6 +821,66 @@ void test_rejection_and_cleanup() {
   expect(!metadata_result && metadata_result.error().code ==
                                  mmxisf::ErrorCode::unsupported_feature,
          "unsupported writer Property type was not explicit");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Vector",
+                      .type = "F64Vector",
+                      .value_form = mmxisf::MetadataWriteValueForm::data_block,
+                      .length = 2,
+                      .block_bytes = pixels};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-size"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "mismatched writer Property block size was accepted");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Matrix",
+                      .type = "F64Matrix",
+                      .value_form = mmxisf::MetadataWriteValueForm::data_block,
+                      .rows = std::numeric_limits<std::uint64_t>::max(),
+                      .columns = 2,
+                      .block_bytes = pixels};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-overflow"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result &&
+             metadata_result.error().code == mmxisf::ErrorCode::overflow,
+         "overflowing writer Property matrix extent was accepted");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Vector",
+                      .type = "UI8Vector",
+                      .value = "not-direct",
+                      .value_form = mmxisf::MetadataWriteValueForm::data_block,
+                      .length = pixels.size(),
+                      .block_bytes = pixels};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-value"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "writer Property block with a direct value was accepted");
+  invalid_metadata.value.clear();
+  auto property_options = options();
+  property_options.max_property_bytes = pixels.size() - 1;
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-limit"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      property_options);
+  expect(!metadata_result &&
+             metadata_result.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer Property block byte budget was not enforced");
+  invalid_metadata.format = std::string("bad") + static_cast<char>(0xff);
+  property_options = options();
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-block-format"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      property_options);
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "writer Property block accepted invalid format UTF-8");
   invalid_metadata = {
       .image_index = 0, .name = "Test:Value", .type = "UInt8", .value = "256"};
   metadata_result = mmxisf::Writer::write_file(
@@ -937,6 +1078,7 @@ int main() {
     test_multi_image_scalar_round_trip();
     test_declared_metadata_round_trip();
     test_scalar_metadata_round_trip();
+    test_block_property_round_trip();
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();

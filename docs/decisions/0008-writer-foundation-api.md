@@ -69,10 +69,10 @@ preserved all four types in the multi-image oracle but did not honor a
 big-endian writer probe, so big-endian output fails explicitly until broader
 external evidence is available. Compressed output is deterministic for a fixed
 codec/dependency set, but dependency upgrades can change a valid compressed byte
-stream; decoded pixel identity remains the cross-version oracle. Numeric and
-block-backed Properties, references, caller-provided sinks, and replacement
-policy are follow-up gates. Unsupported requests fail explicitly instead of
-being coerced into the narrow profile.
+stream; decoded pixel identity remains the cross-version oracle. Block-backed
+Properties are governed by ADR 0009. References, caller-provided sinks, and
+replacement policy are follow-up gates. Unsupported requests fail explicitly
+instead of being coerced into the narrow profile.
 
 The independent `xisf` 0.9.7 consumer enumerates writer subblock descriptors
 but does not assemble them in its public image API. This is a third-party

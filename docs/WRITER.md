@@ -12,13 +12,15 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
   real, and complex Properties;
 - direct image-scoped FITS keywords;
 - direct XISF-unit Properties from the same profile;
+- attached typed vector and matrix Properties in little- or big-endian source
+  byte order;
 - zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
 - bounded, sample-aligned compression subblocks for large images;
 - SHA-1, SHA-256, and SHA-512 checksums over exact serialized block bytes;
 - fixed caller-supplied creation time and creator application.
 
-The current writer rejects big-endian and Normal/interleaved output,
-vector/matrix or block-backed Properties, references, and raw XML.
+The current writer rejects big-endian image and Normal/interleaved output,
+compressed Property blocks, references, and raw XML.
 Reader support for any other feature does not imply writer support.
 
 ## Minimal use
@@ -125,6 +127,18 @@ XML escaping, but must satisfy the reader's Boolean, integer range/base, or
 floating-point grammar before any file is created. Complex32/64/128 and
 `Complex` use a parenthesized pair of valid real components. No numeric value is
 silently clamped, rounded, reformatted, or inferred.
+
+Block-backed vector and matrix Properties use the same ordered metadata array.
+Set `value_form` to `data_block`, declare either `length` or `rows` and
+`columns`, and provide exact typed bytes through `block_bytes`. The bytes are
+borrowed until `write_file` returns and are never converted. Their size must
+match the declared element type and extent exactly. `byte_order` defaults to
+little endian and `format` is retained as declarative metadata.
+
+Property attachments follow image attachments and preserve metadata encounter
+order. `WriteSummary::property_blocks` reports their locations in block-entry
+encounter order. `max_property_bytes` and `max_cumulative_property_bytes`
+independently bound this data before a destination is created.
 
 ## Failure and filesystem contract
 

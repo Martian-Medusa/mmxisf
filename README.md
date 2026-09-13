@@ -99,11 +99,12 @@ per-image and cumulative resource limits and arithmetic are checked before file
 creation, and cancellation removes incomplete temporary output. A declarative
 metadata overload writes image-scoped direct scalar/String/TimePoint Properties
 and FITS keywords plus the corresponding XISF-unit Properties without accepting
-raw XML.
+raw XML. The same ordered metadata records can attach exact typed vector and
+matrix bytes with checked extents, explicit byte order, and independent limits.
 Optional zlib, LZ4, LZ4HC, and Zstandard compression can be combined with byte
 shuffle and SHA-1/256/512 checksums. Large compressed images use bounded,
 sample-aligned subblocks so codec/shuffle scratch does not scale to the complete
-image. Numeric/block Properties and references remain later profiles.
+image. Compressed Property blocks and references remain later profiles.
 
 The optional build-tree `mmxisf-writer-benchmark` exercises a deterministic
 73.5 MB RGB compression/checksum profile without committing a large fixture;

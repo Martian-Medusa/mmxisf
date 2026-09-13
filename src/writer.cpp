@@ -473,7 +473,62 @@ bool is_supported_scalar_property_type(std::string_view type) {
          is_valid_scalar_property(type, "(0,0)");
 }
 
-Result<std::string> make_metadata_xml(const MetadataWriteEntry &entry) {
+struct PropertyElementLayout {
+  std::uint64_t element_size{0};
+  bool vector{false};
+  bool matrix{false};
+};
+
+std::optional<PropertyElementLayout>
+property_element_layout(std::string_view type) {
+  const bool vector = type.ends_with("Vector") || type == "ByteArray";
+  const bool matrix = type.ends_with("Matrix") || type == "ByteMatrix";
+  if (!vector && !matrix) {
+    return std::nullopt;
+  }
+  constexpr std::array<std::string_view, 6> one_byte{"I8Vector",  "UI8Vector",
+                                                     "ByteArray", "I8Matrix",
+                                                     "UI8Matrix", "ByteMatrix"};
+  constexpr std::array<std::string_view, 4> two_byte{"I16Vector", "UI16Vector",
+                                                     "I16Matrix", "UI16Matrix"};
+  constexpr std::array<std::string_view, 10> four_byte{
+      "I32Vector", "IVector", "UI32Vector", "UIVector", "F32Vector",
+      "I32Matrix", "IMatrix", "UI32Matrix", "UIMatrix", "F32Matrix"};
+  constexpr std::array<std::string_view, 8> eight_byte{
+      "I64Vector", "UI64Vector", "F64Vector", "Vector",
+      "I64Matrix", "UI64Matrix", "F64Matrix", "Matrix"};
+  constexpr std::array<std::string_view, 6> sixteen_byte{
+      "I128Vector", "UI128Vector", "F128Vector",
+      "I128Matrix", "UI128Matrix", "F128Matrix"};
+  const auto contains = [type](const auto &types) {
+    return std::find(types.begin(), types.end(), type) != types.end();
+  };
+  std::uint64_t element_size = 0;
+  if (contains(one_byte)) {
+    element_size = 1;
+  } else if (contains(two_byte)) {
+    element_size = 2;
+  } else if (contains(four_byte)) {
+    element_size = 4;
+  } else if (contains(eight_byte)) {
+    element_size = 8;
+  } else if (contains(sixteen_byte)) {
+    element_size = 16;
+  } else if (type == "C32Vector" || type == "C32Matrix") {
+    element_size = 8;
+  } else if (type == "C64Vector" || type == "C64Matrix") {
+    element_size = 16;
+  } else if (type == "C128Vector" || type == "C128Matrix") {
+    element_size = 32;
+  } else {
+    return std::nullopt;
+  }
+  return PropertyElementLayout{element_size, vector, matrix};
+}
+
+Result<std::string>
+make_metadata_xml(const MetadataWriteEntry &entry,
+                  const BlockLocation *property_block = nullptr) {
   auto escaped_name = escape_xml(entry.name, true);
   auto escaped_value = escape_xml(
       entry.value,
@@ -492,6 +547,34 @@ Result<std::string> make_metadata_xml(const MetadataWriteEntry &entry) {
     return "<FITSKeyword name=\"" + escaped_name.value() + "\" value=\"" +
            escaped_value.value() + "\" comment=\"" + escaped_comment.value() +
            "\"/>";
+  }
+  if (entry.value_form == MetadataWriteValueForm::data_block) {
+    if (property_block == nullptr) {
+      return make_error(ErrorCode::internal_error,
+                        "Writer Property block layout is missing");
+    }
+    auto escaped_format = escape_xml(entry.format, true);
+    if (!escaped_format) {
+      return escaped_format.error();
+    }
+    std::string result = "<Property id=\"" + escaped_name.value() +
+                         "\" type=\"" + entry.type + "\"";
+    if (entry.length) {
+      result += " length=\"" + std::to_string(*entry.length) + "\"";
+    } else {
+      result += " rows=\"" + std::to_string(*entry.rows) + "\" columns=\"" +
+                std::to_string(*entry.columns) + "\"";
+    }
+    if (entry.byte_order == ByteOrder::big) {
+      result += " byteOrder=\"big\"";
+    }
+    if (!entry.format.empty()) {
+      result += " format=\"" + escaped_format.value() + "\"";
+    }
+    result +=
+        " location=\"attachment:" + std::to_string(property_block->offset) +
+        ':' + std::to_string(property_block->size) + "\"/>";
+    return result;
   }
   if (entry.type == "String") {
     return "<Property id=\"" + escaped_name.value() + "\" type=\"String\">" +
@@ -821,11 +904,13 @@ Result<std::string> compute_checksum_file(const std::filesystem::path &path,
   return result;
 }
 
-Result<std::string> make_header(std::span<const ImageWriteView> images,
-                                std::span<const MetadataWriteEntry> metadata,
-                                const WriterOptions &options,
-                                std::span<const PreparedImageBlock> prepared,
-                                std::span<const BlockLocation> image_blocks) {
+Result<std::string>
+make_header(std::span<const ImageWriteView> images,
+            std::span<const MetadataWriteEntry> metadata,
+            const WriterOptions &options,
+            std::span<const PreparedImageBlock> prepared,
+            std::span<const BlockLocation> image_blocks,
+            std::span<const BlockLocation> metadata_blocks) {
   auto escaped_creator = escape_xml(options.creator_application, false);
   if (!escaped_creator) {
     return escaped_creator.error();
@@ -875,7 +960,9 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
         " location=\"attachment:" + std::to_string(image_blocks[index].offset) +
         ':' + std::to_string(image_blocks[index].size) + "\"";
     bool has_metadata = false;
-    for (const auto &entry : metadata) {
+    for (std::size_t metadata_index = 0; metadata_index < metadata.size();
+         ++metadata_index) {
+      const auto &entry = metadata[metadata_index];
       if (entry.image_index != index) {
         continue;
       }
@@ -883,7 +970,10 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
         header += '>';
         has_metadata = true;
       }
-      auto serialized = make_metadata_xml(entry);
+      const auto *block = entry.value_form == MetadataWriteValueForm::data_block
+                              ? &metadata_blocks[metadata_index]
+                              : nullptr;
+      auto serialized = make_metadata_xml(entry, block);
       if (!serialized) {
         return serialized.error();
       }
@@ -896,11 +986,16 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
             options.creation_time + "\"/>";
   header += "<Property id=\"XISF:CreatorApplication\" type=\"String\">" +
             escaped_creator.value() + "</Property>";
-  for (const auto &entry : metadata) {
+  for (std::size_t metadata_index = 0; metadata_index < metadata.size();
+       ++metadata_index) {
+    const auto &entry = metadata[metadata_index];
     if (entry.image_index) {
       continue;
     }
-    auto serialized = make_metadata_xml(entry);
+    const auto *block = entry.value_form == MetadataWriteValueForm::data_block
+                            ? &metadata_blocks[metadata_index]
+                            : nullptr;
+    auto serialized = make_metadata_xml(entry, block);
     if (!serialized) {
       return serialized.error();
     }
@@ -1068,7 +1163,11 @@ write_file_impl(const std::filesystem::path &destination,
                                                     "XISF:CreatorApplication"};
   std::vector<std::unordered_set<std::string>> image_property_ids(
       images.size());
-  for (const auto &entry : metadata) {
+  std::vector<std::uint64_t> property_sizes(metadata.size(), 0);
+  std::uint64_t cumulative_property_bytes = 0;
+  for (std::size_t metadata_index = 0; metadata_index < metadata.size();
+       ++metadata_index) {
+    const auto &entry = metadata[metadata_index];
     if (entry.kind != MetadataWriteKind::property &&
         entry.kind != MetadataWriteKind::fits_keyword) {
       return make_error(ErrorCode::invalid_argument,
@@ -1079,11 +1178,18 @@ write_file_impl(const std::filesystem::path &destination,
                         "Writer metadata image index is out of range");
     }
     if (entry.value.size() > options.max_metadata_value_bytes ||
-        entry.comment.size() > options.max_metadata_value_bytes) {
+        entry.comment.size() > options.max_metadata_value_bytes ||
+        entry.format.size() > options.max_metadata_value_bytes) {
       return make_error(ErrorCode::resource_limit,
                         "Writer metadata value exceeds its byte budget");
     }
     if (entry.kind == MetadataWriteKind::fits_keyword) {
+      if (entry.value_form != MetadataWriteValueForm::direct || entry.length ||
+          entry.rows || entry.columns || !entry.format.empty() ||
+          !entry.block_bytes.empty()) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer FITS keywords cannot use Property blocks");
+      }
       if (!entry.image_index) {
         return make_error(ErrorCode::invalid_argument,
                           "Writer FITS keywords require an image index");
@@ -1101,25 +1207,101 @@ write_file_impl(const std::filesystem::path &destination,
         return make_error(ErrorCode::invalid_argument,
                           "Writer Property identifier has invalid syntax");
       }
-      if (entry.type != "String" && entry.type != "TimePoint" &&
-          !is_supported_scalar_property_type(entry.type)) {
-        return make_error(ErrorCode::unsupported_feature,
-                          "Writer metadata Property type is not supported");
-      }
       if (!entry.comment.empty()) {
         return make_error(ErrorCode::invalid_argument,
                           "Writer Properties cannot declare a FITS comment");
       }
-      if (entry.type == "TimePoint" && !is_canonical_utc_time(entry.value)) {
-        return make_error(
-            ErrorCode::invalid_argument,
-            "Writer TimePoint values must be YYYY-MM-DDTHH:MM:SSZ");
-      }
-      if (is_supported_scalar_property_type(entry.type) &&
-          !is_valid_scalar_property(entry.type, entry.value)) {
-        return make_error(
-            ErrorCode::invalid_argument,
-            "Writer scalar Property value is invalid or out of range");
+      if (entry.value_form == MetadataWriteValueForm::direct) {
+        if (entry.length || entry.rows || entry.columns ||
+            !entry.format.empty() || !entry.block_bytes.empty() ||
+            entry.byte_order != ByteOrder::little) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer direct Properties cannot declare block fields");
+        }
+        if (entry.type != "String" && entry.type != "TimePoint" &&
+            !is_supported_scalar_property_type(entry.type)) {
+          return make_error(ErrorCode::unsupported_feature,
+                            "Writer metadata Property type is not supported");
+        }
+        if (entry.type == "TimePoint" && !is_canonical_utc_time(entry.value)) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer TimePoint values must be YYYY-MM-DDTHH:MM:SSZ");
+        }
+        if (is_supported_scalar_property_type(entry.type) &&
+            !is_valid_scalar_property(entry.type, entry.value)) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer scalar Property value is invalid or out of range");
+        }
+      } else if (entry.value_form == MetadataWriteValueForm::data_block) {
+        if (!entry.value.empty()) {
+          return make_error(ErrorCode::invalid_argument,
+                            "Writer block Properties cannot declare a value");
+        }
+        const auto layout = property_element_layout(entry.type);
+        if (!layout) {
+          return make_error(
+              ErrorCode::unsupported_feature,
+              "Writer block Property element type is not supported");
+        }
+        std::uint64_t element_count = 0;
+        if (layout->vector) {
+          if (!entry.length || *entry.length == 0 || entry.rows ||
+              entry.columns) {
+            return make_error(
+                ErrorCode::invalid_argument,
+                "Writer vector Properties require a nonzero length only");
+          }
+          element_count = *entry.length;
+        } else {
+          if (entry.length || !entry.rows || !entry.columns ||
+              *entry.rows == 0 || *entry.columns == 0) {
+            return make_error(
+                ErrorCode::invalid_argument,
+                "Writer matrix Properties require nonzero rows and columns");
+          }
+          if (!checked_multiply(*entry.rows, *entry.columns, element_count)) {
+            return make_error(ErrorCode::overflow,
+                              "Writer Property matrix extent overflows");
+          }
+        }
+        std::uint64_t expected_bytes = 0;
+        if (!checked_multiply(element_count, layout->element_size,
+                              expected_bytes)) {
+          return make_error(ErrorCode::overflow,
+                            "Writer Property byte count overflows");
+        }
+        if (expected_bytes != entry.block_bytes.size()) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer Property byte span does not match its typed extent");
+        }
+        if (expected_bytes > options.max_property_bytes) {
+          return make_error(ErrorCode::resource_limit,
+                            "Writer Property exceeds its byte budget");
+        }
+        if (!checked_add(cumulative_property_bytes, expected_bytes,
+                         cumulative_property_bytes) ||
+            cumulative_property_bytes > options.max_cumulative_property_bytes) {
+          return make_error(
+              ErrorCode::resource_limit,
+              "Writer Properties exceed their cumulative byte budget");
+        }
+        if (entry.byte_order != ByteOrder::little &&
+            entry.byte_order != ByteOrder::big) {
+          return make_error(ErrorCode::invalid_argument,
+                            "Writer Property byte order is invalid");
+        }
+        auto escaped_format = escape_xml(entry.format, true);
+        if (!escaped_format) {
+          return escaped_format.error();
+        }
+        property_sizes[metadata_index] = expected_bytes;
+      } else {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer Property value form is invalid");
       }
       auto &property_ids = entry.image_index
                                ? image_property_ids[*entry.image_index]
@@ -1135,9 +1317,11 @@ write_file_impl(const std::filesystem::path &destination,
             "Writer Property identifiers must be unique per association");
       }
     }
-    auto serialized = make_metadata_xml(entry);
-    if (!serialized) {
-      return serialized.error();
+    if (entry.value_form == MetadataWriteValueForm::direct) {
+      auto serialized = make_metadata_xml(entry);
+      if (!serialized) {
+        return serialized.error();
+      }
     }
   }
 
@@ -1402,21 +1586,29 @@ write_file_impl(const std::filesystem::path &destination,
   }
 
   std::vector<BlockLocation> image_blocks(images.size());
+  std::vector<BlockLocation> metadata_blocks(metadata.size());
+  const auto property_block_count = static_cast<std::size_t>(std::count_if(
+      metadata.begin(), metadata.end(), [](const MetadataWriteEntry &entry) {
+        return entry.value_form == MetadataWriteValueForm::data_block;
+      }));
   const auto plan_blocks =
       [&](std::uint64_t first_offset) -> Result<std::uint64_t> {
     auto offset = first_offset;
-    for (std::size_t index = 0; index < images.size(); ++index) {
-      auto &block = image_blocks[index];
+    std::size_t planned = 0;
+    const auto total_blocks = images.size() + property_block_count;
+    const auto plan_one = [&](BlockLocation &block,
+                              std::uint64_t size) -> Result<std::uint64_t> {
       block.kind = BlockKind::attachment;
       block.offset = offset;
-      block.size = prepared[index].serialized_size;
-      block.raw = "attachment:" + std::to_string(offset) + ':' +
-                  std::to_string(prepared[index].serialized_size);
+      block.size = size;
+      block.raw =
+          "attachment:" + std::to_string(offset) + ':' + std::to_string(size);
       std::uint64_t end = 0;
-      if (!checked_add(offset, prepared[index].serialized_size, end)) {
+      if (!checked_add(offset, size, end)) {
         return make_error(ErrorCode::overflow, "Writer file layout overflows");
       }
-      if (index + 1 == images.size()) {
+      ++planned;
+      if (planned == total_blocks) {
         return end;
       }
       auto aligned = align_up(end, options.attachment_alignment);
@@ -1424,9 +1616,32 @@ write_file_impl(const std::filesystem::path &destination,
         return aligned.error();
       }
       offset = aligned.value();
+      return offset;
+    };
+    for (std::size_t index = 0; index < images.size(); ++index) {
+      auto result =
+          plan_one(image_blocks[index], prepared[index].serialized_size);
+      if (!result) {
+        return result.error();
+      }
+      if (planned == total_blocks) {
+        return result.value();
+      }
+    }
+    for (std::size_t index = 0; index < metadata.size(); ++index) {
+      if (metadata[index].value_form != MetadataWriteValueForm::data_block) {
+        continue;
+      }
+      auto result = plan_one(metadata_blocks[index], property_sizes[index]);
+      if (!result) {
+        return result.error();
+      }
+      if (planned == total_blocks) {
+        return result.value();
+      }
     }
     return make_error(ErrorCode::internal_error,
-                      "Writer block planner received no images");
+                      "Writer block planner did not finish");
   };
 
   std::uint64_t attachment_offset = options.attachment_alignment;
@@ -1437,8 +1652,8 @@ write_file_impl(const std::filesystem::path &destination,
   std::string header;
   bool layout_stable = false;
   for (unsigned iteration = 0; iteration < 4; ++iteration) {
-    auto candidate =
-        make_header(images, metadata, options, prepared, image_blocks);
+    auto candidate = make_header(images, metadata, options, prepared,
+                                 image_blocks, metadata_blocks);
     if (!candidate) {
       return candidate.error();
     }
@@ -1530,6 +1745,29 @@ write_file_impl(const std::filesystem::path &destination,
     }
     output_position = image_blocks[index].offset + image_blocks[index].size;
   }
+  for (std::size_t index = 0; index < metadata.size(); ++index) {
+    if (metadata[index].value_form != MetadataWriteValueForm::data_block) {
+      continue;
+    }
+    auto padding = metadata_blocks[index].offset - output_position;
+    while (padding != 0) {
+      const auto count = static_cast<std::size_t>(
+          std::min<std::uint64_t>(padding, zeros.size()));
+      auto padding_written =
+          write_all(output, std::span(zeros).first(count), stop_token);
+      if (!padding_written) {
+        return padding_written.error();
+      }
+      padding -= count;
+    }
+    auto property_written =
+        write_all(output, metadata[index].block_bytes, stop_token);
+    if (!property_written) {
+      return property_written.error();
+    }
+    output_position =
+        metadata_blocks[index].offset + metadata_blocks[index].size;
+  }
   output.flush();
   if (!output) {
     return make_error(ErrorCode::io_error, "Unable to flush XISF file");
@@ -1552,6 +1790,12 @@ write_file_impl(const std::filesystem::path &destination,
   summary.header_length = header_length;
   summary.image_block = image_blocks.front();
   summary.image_blocks = std::move(image_blocks);
+  summary.property_blocks.reserve(property_block_count);
+  for (std::size_t index = 0; index < metadata.size(); ++index) {
+    if (metadata[index].value_form == MetadataWriteValueForm::data_block) {
+      summary.property_blocks.push_back(std::move(metadata_blocks[index]));
+    }
+  }
   return summary;
 }
 

@@ -44,11 +44,16 @@ int main() {
                  writer_options.max_metadata_entries == 4096 &&
                  writer_options.max_metadata_value_bytes > 0 &&
                  writer_options.max_cumulative_image_bytes > 0 &&
+                 writer_options.max_property_bytes > 0 &&
+                 writer_options.max_cumulative_property_bytes > 0 &&
                  writer_options.max_serialized_image_bytes > 0 &&
                  writer_options.max_cumulative_serialized_bytes > 0 &&
                  write_metadata.kind == mmxisf::MetadataWriteKind::property &&
+                 write_metadata.value_form ==
+                     mmxisf::MetadataWriteValueForm::direct &&
                  write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
                  write_summary.image_blocks.empty() &&
+                 write_summary.property_blocks.empty() &&
                  std::string_view(mmxisf::version()) == "0.1.0"
              ? 0
              : 1;

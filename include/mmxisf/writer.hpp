@@ -37,6 +37,7 @@ struct ImageWriteView {
 };
 
 enum class MetadataWriteKind { property, fits_keyword };
+enum class MetadataWriteValueForm { direct, data_block };
 
 struct MetadataWriteEntry {
   MetadataWriteKind kind{MetadataWriteKind::property};
@@ -49,6 +50,15 @@ struct MetadataWriteEntry {
   std::string type;
   std::string value;
   std::string comment;
+  // Block-backed vector/matrix Properties borrow exact serialized element
+  // bytes for the duration of write_file(). No byte-order conversion occurs.
+  MetadataWriteValueForm value_form{MetadataWriteValueForm::direct};
+  std::optional<std::uint64_t> length;
+  std::optional<std::uint64_t> rows;
+  std::optional<std::uint64_t> columns;
+  ByteOrder byte_order{ByteOrder::little};
+  std::string format;
+  std::span<const std::byte> block_bytes;
 };
 
 struct WriterOptions {
@@ -61,6 +71,8 @@ struct WriterOptions {
   std::size_t max_compression_subblocks{65'536};
   std::uint64_t max_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_image_bytes{4ULL * 1024ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_property_bytes{256ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_cumulative_property_bytes{512ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_serialized_bytes{4ULL * 1024ULL * 1024ULL *
                                                 1024ULL};
@@ -73,6 +85,8 @@ struct WriteSummary {
   std::uint32_t header_length{0};
   BlockLocation image_block;
   std::vector<BlockLocation> image_blocks;
+  // Block locations in the encounter order of data_block metadata entries.
+  std::vector<BlockLocation> property_blocks;
 };
 
 class Writer {
