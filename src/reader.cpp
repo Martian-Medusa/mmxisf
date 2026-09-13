@@ -456,8 +456,18 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       image.sample_format = SampleFormat::uint8;
     } else if (*sample_format == "UInt16") {
       image.sample_format = SampleFormat::uint16;
+    } else if (*sample_format == "UInt32") {
+      image.sample_format = SampleFormat::uint32;
+    } else if (*sample_format == "UInt64") {
+      image.sample_format = SampleFormat::uint64;
     } else if (*sample_format == "Float32") {
       image.sample_format = SampleFormat::float32;
+    } else if (*sample_format == "Float64") {
+      image.sample_format = SampleFormat::float64;
+    } else if (*sample_format == "Complex32") {
+      image.sample_format = SampleFormat::complex32;
+    } else if (*sample_format == "Complex64") {
+      image.sample_format = SampleFormat::complex64;
     }
     constexpr std::array<std::string_view, 8> kSampleFormats{
         "UInt8",   "UInt16",  "UInt32",    "UInt64",
@@ -490,6 +500,14 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         image.color_space != "CIELab") {
       state.fail(ErrorCode::invalid_xisf, "Invalid Image colorSpace value",
                  name, "colorSpace");
+      return;
+    }
+    const auto channel_count = image.geometry.back();
+    if ((image.color_space == "RGB" || image.color_space == "CIELab") &&
+        channel_count < 3) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Color Image requires at least three nominal channels", name,
+                 "geometry");
       return;
     }
     image.id = std::string(attribute(attributes, "id").value_or(""));
@@ -772,8 +790,15 @@ std::optional<std::uint64_t> bytes_per_sample(SampleFormat format) {
     return 1;
   case SampleFormat::uint16:
     return 2;
+  case SampleFormat::uint32:
+    return 4;
   case SampleFormat::float32:
     return 4;
+  case SampleFormat::float64:
+    return 8;
+  case SampleFormat::uint64:
+  case SampleFormat::complex32:
+  case SampleFormat::complex64:
   case SampleFormat::unsupported:
     return std::nullopt;
   }
@@ -810,12 +835,17 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
   }
   if (image.geometry.size() != 3) {
     return make_error(ErrorCode::unsupported_feature,
-                      "M1 PoC only reads 2-D images");
+                      "The PFI reader profile only reads 2-D images");
+  }
+  if (image.color_space == "CIELab") {
+    return make_error(ErrorCode::unsupported_feature,
+                      "CIELab conversion is outside the M2 reader profile");
   }
   const auto sample_size = bytes_per_sample(image.sample_format);
   if (!sample_size) {
     return make_error(ErrorCode::unsupported_feature,
-                      "M1 PoC supports UInt8, UInt16, and Float32 samples");
+                      "The M2 reader profile supports UInt8, UInt16, UInt32, "
+                      "Float32, and Float64 samples");
   }
   const std::uint64_t channels = image.geometry[2];
   if (channels > options.max_decoded_channels) {
@@ -1083,8 +1113,18 @@ const char *to_string(SampleFormat format) noexcept {
     return "UInt8";
   case SampleFormat::uint16:
     return "UInt16";
+  case SampleFormat::uint32:
+    return "UInt32";
+  case SampleFormat::uint64:
+    return "UInt64";
   case SampleFormat::float32:
     return "Float32";
+  case SampleFormat::float64:
+    return "Float64";
+  case SampleFormat::complex32:
+    return "Complex32";
+  case SampleFormat::complex64:
+    return "Complex64";
   case SampleFormat::unsupported:
     return "Unsupported";
   }

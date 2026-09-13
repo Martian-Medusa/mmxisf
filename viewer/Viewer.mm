@@ -4,6 +4,7 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #include "mmxisf/reader.hpp"
+#include "Preview.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -47,94 +48,6 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   return [axes componentsJoinedByString:@" × "];
 }
 
-double sample_value(const mmxisf::RawImage &image, std::uint64_t index) {
-  const auto *bytes =
-      reinterpret_cast<const std::uint8_t *>(image.pixels.data());
-  switch (image.sample_format) {
-  case mmxisf::SampleFormat::uint8:
-    return bytes[index];
-  case mmxisf::SampleFormat::uint16: {
-    const auto offset = index * 2;
-    const std::uint16_t value =
-        image.byte_order == mmxisf::ByteOrder::little
-            ? static_cast<std::uint16_t>(bytes[offset]) |
-                  (static_cast<std::uint16_t>(bytes[offset + 1]) << 8U)
-            : (static_cast<std::uint16_t>(bytes[offset]) << 8U) |
-                  static_cast<std::uint16_t>(bytes[offset + 1]);
-    return value;
-  }
-  case mmxisf::SampleFormat::float32: {
-    const auto offset = index * 4;
-    std::uint32_t bits = 0;
-    if (image.byte_order == mmxisf::ByteOrder::little) {
-      bits = static_cast<std::uint32_t>(bytes[offset]) |
-             (static_cast<std::uint32_t>(bytes[offset + 1]) << 8U) |
-             (static_cast<std::uint32_t>(bytes[offset + 2]) << 16U) |
-             (static_cast<std::uint32_t>(bytes[offset + 3]) << 24U);
-    } else {
-      bits = (static_cast<std::uint32_t>(bytes[offset]) << 24U) |
-             (static_cast<std::uint32_t>(bytes[offset + 1]) << 16U) |
-             (static_cast<std::uint32_t>(bytes[offset + 2]) << 8U) |
-             static_cast<std::uint32_t>(bytes[offset + 3]);
-    }
-    return static_cast<double>(std::bit_cast<float>(bits));
-  }
-  case mmxisf::SampleFormat::unsupported:
-    return 0.0;
-  }
-  return 0.0;
-}
-
-struct StretchRange {
-  double linear_low{0.0};
-  double linear_high{1.0};
-  double auto_low{0.0};
-  double auto_high{1.0};
-};
-
-StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
-  const std::uint64_t count = image.width * image.height;
-  constexpr std::uint64_t kMaximumSamples = 300'000;
-  const auto stride = std::max<std::uint64_t>(1, count / kMaximumSamples);
-  std::vector<double> samples;
-  samples.reserve(
-      static_cast<std::size_t>(std::min(count, kMaximumSamples + 1)));
-  for (std::uint64_t index = 0; index < count; index += stride) {
-    const auto value = sample_value(image, index);
-    if (std::isfinite(value)) {
-      samples.push_back(value);
-    }
-  }
-  StretchRange range;
-  if (image.lower_bound && image.upper_bound) {
-    range.linear_low = *image.lower_bound;
-    range.linear_high = *image.upper_bound;
-  } else if (image.sample_format == mmxisf::SampleFormat::uint8) {
-    range.linear_high = 255.0;
-  } else if (image.sample_format == mmxisf::SampleFormat::uint16) {
-    range.linear_high = 65535.0;
-  }
-  if (samples.empty()) {
-    return range;
-  }
-  std::sort(samples.begin(), samples.end());
-  const auto at = [&](double percentile) {
-    const auto index = static_cast<std::size_t>(
-        percentile * static_cast<double>(samples.size() - 1));
-    return samples[index];
-  };
-  range.auto_low = at(0.005);
-  range.auto_high = at(0.999);
-  if (!(range.auto_high > range.auto_low)) {
-    range.auto_low = samples.front();
-    range.auto_high = samples.back();
-  }
-  if (!(range.auto_high > range.auto_low)) {
-    range.auto_high = range.auto_low + 1.0;
-  }
-  return range;
-}
-
 } // namespace
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSTableViewDataSource,
@@ -150,7 +63,7 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
   NSString *pending_path_;
   std::unique_ptr<mmxisf::Reader> reader_;
   std::optional<mmxisf::RawImage> raw_image_;
-  StretchRange stretch_range_;
+  mmxisf::viewer::StretchRange stretch_range_;
 }
 @end
 
@@ -295,8 +208,8 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
   split.translatesAutoresizingMaskIntoConstraints = NO;
 
   status_label_ =
-      [NSTextField labelWithString:@"Open an uncompressed Gray XISF attachment "
-                                   @"(UInt8, UInt16, or Float32)."];
+      [NSTextField labelWithString:@"Open an uncompressed Gray or RGB XISF "
+                                   @"attachment."];
   status_label_.lineBreakMode = NSLineBreakByTruncatingMiddle;
   status_label_.textColor = NSColor.secondaryLabelColor;
   status_label_.translatesAutoresizingMaskIntoConstraints = NO;
@@ -380,10 +293,10 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
     return;
   }
   const auto &info = reader_->document().images().front();
-  if (info.color_space != "Gray") {
+  if (info.color_space != "Gray" && info.color_space != "RGB") {
     [self showMessage:@"Preview unavailable"
-               detail:@"The M1 viewer PoC currently renders Gray images only. "
-                      @"Metadata is available."];
+               detail:@"The M2 viewer currently renders Gray and RGB images. "
+                      @"CIELab metadata is available, but conversion is not."];
     return;
   }
   auto image = reader_->read_image(0);
@@ -391,14 +304,17 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
     [self showError:image.error()];
     return;
   }
-  if (image.value().channels != 1) {
+  const bool valid_channels =
+      (info.color_space == "Gray" && image.value().channels >= 1) ||
+      (info.color_space == "RGB" && image.value().channels >= 3);
+  if (!valid_channels) {
     [self showMessage:@"Preview unavailable"
-               detail:@"The M1 viewer PoC currently renders one-channel images "
-                      @"only. Metadata is available."];
+               detail:@"The channel count is incompatible with the declared "
+                      @"color space. Metadata is available."];
     return;
   }
   raw_image_ = std::move(image).value();
-  stretch_range_ = calculate_stretch_range(*raw_image_);
+  stretch_range_ = mmxisf::viewer::calculate_stretch_range(*raw_image_);
   stretch_slider_.doubleValue = 100.0;
   stretch_value_label_.stringValue = @"100%";
   [self renderImage];
@@ -417,18 +333,22 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
   }
   const auto width = static_cast<NSInteger>(raw_image_->width);
   const auto height = static_cast<NSInteger>(raw_image_->height);
+  const bool is_rgb = raw_image_->channels >= 3;
+  const NSInteger preview_channels = is_rgb ? 3 : 1;
   NSBitmapImageRep *bitmap =
       [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:nullptr
                                               pixelsWide:width
                                               pixelsHigh:height
                                            bitsPerSample:8
-                                         samplesPerPixel:1
+                                         samplesPerPixel:preview_channels
                                                 hasAlpha:NO
                                                 isPlanar:NO
-                                          colorSpaceName:NSDeviceWhiteColorSpace
+                                          colorSpaceName:is_rgb
+                                                             ? NSDeviceRGBColorSpace
+                                                             : NSDeviceWhiteColorSpace
                                             bitmapFormat:0
-                                             bytesPerRow:width
-                                            bitsPerPixel:8];
+                                             bytesPerRow:width * preview_channels
+                                            bitsPerPixel:8 * preview_channels];
   if (!bitmap) {
     [self showMessage:@"Preview unavailable"
                detail:@"Unable to allocate the 8-bit preview buffer."];
@@ -447,13 +367,19 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
   unsigned char *output = bitmap.bitmapData;
   const std::uint64_t count = raw_image_->width * raw_image_->height;
   for (std::uint64_t index = 0; index < count; ++index) {
-    double normalized = (sample_value(*raw_image_, index) - low) / span;
-    if (!std::isfinite(normalized)) {
-      normalized = 0.0;
+    for (std::uint64_t channel = 0;
+         channel < static_cast<std::uint64_t>(preview_channels); ++channel) {
+      double normalized =
+          (mmxisf::viewer::sample_value(*raw_image_, index, channel) - low) /
+          span;
+      if (!std::isfinite(normalized)) {
+        normalized = 0.0;
+      }
+      normalized = std::clamp(normalized, 0.0, 1.0);
+      output[index * static_cast<std::uint64_t>(preview_channels) + channel] =
+          static_cast<unsigned char>(
+              std::lround(std::pow(normalized, gamma) * 255.0));
     }
-    normalized = std::clamp(normalized, 0.0, 1.0);
-    output[index] = static_cast<unsigned char>(
-        std::lround(std::pow(normalized, gamma) * 255.0));
   }
   NSImage *image = [[NSImage alloc] initWithSize:NSMakeSize(width, height)];
   [image addRepresentation:bitmap];

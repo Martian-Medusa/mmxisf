@@ -37,6 +37,16 @@ target_include_directories(
 )
 target_link_libraries(mmxisf PRIVATE EXPAT::EXPAT)
 
+if(MMXISF_BUILD_TESTS OR MMXISF_BUILD_VIEWER)
+  add_library(mmxisf_viewer_preview STATIC viewer/Preview.cpp)
+  target_compile_features(mmxisf_viewer_preview PUBLIC cxx_std_20)
+  target_include_directories(
+    mmxisf_viewer_preview
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/viewer"
+  )
+  target_link_libraries(mmxisf_viewer_preview PUBLIC mmxisf::mmxisf)
+endif()
+
 if(MMXISF_BUILD_FUZZER OR MMXISF_BUILD_FUZZ_SMOKE)
   if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     message(FATAL_ERROR "MMXISF_BUILD_FUZZER currently requires Clang")
@@ -65,6 +75,11 @@ if(MMXISF_BUILD_TESTS)
   add_executable(mmxisf_reader_test tests/reader_test.cpp)
   target_link_libraries(mmxisf_reader_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.reader COMMAND mmxisf_reader_test)
+  add_executable(mmxisf_viewer_preview_test tests/viewer_preview_test.cpp)
+  target_link_libraries(
+    mmxisf_viewer_preview_test PRIVATE mmxisf_viewer_preview
+  )
+  add_test(NAME mmxisf.viewer-preview COMMAND mmxisf_viewer_preview_test)
   add_test(
     NAME mmxisf.planning
     COMMAND

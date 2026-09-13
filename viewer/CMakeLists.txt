@@ -9,7 +9,7 @@ target_compile_options(mmxisf_viewer PRIVATE -fobjc-arc)
 target_link_libraries(
   mmxisf_viewer
   PRIVATE
-    mmxisf::mmxisf
+    mmxisf_viewer_preview
     "-framework AppKit"
     "-framework QuartzCore"
     "-framework UniformTypeIdentifiers"

@@ -13,6 +13,7 @@
 #include <span>
 #include <stop_token>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -261,6 +262,147 @@ int main() {
     expect(image.color_space == "Gray", "missing colorSpace defaults to Gray");
     expect(image.pixel_storage == mmxisf::PixelStorage::normal,
            "canonical Normal pixelStorage is preserved");
+    expect(!image.lower_bound && !image.upper_bound,
+           "absent integer bounds remain explicitly absent");
+  }
+
+  struct ScalarDecodeCase {
+    const char *name;
+    const char *sample_format;
+    const char *bounds;
+    mmxisf::SampleFormat expected_format;
+    std::size_t byte_count;
+  };
+  const std::array scalar_decode_cases{
+      ScalarDecodeCase{"uint8", "UInt8", "", mmxisf::SampleFormat::uint8,
+                       1},
+      ScalarDecodeCase{"uint16", "UInt16", "",
+                       mmxisf::SampleFormat::uint16, 2},
+      ScalarDecodeCase{"uint32", "UInt32", "",
+                       mmxisf::SampleFormat::uint32, 4},
+      ScalarDecodeCase{"float32", "Float32", " bounds=\"0:1\"",
+                       mmxisf::SampleFormat::float32, 4},
+      ScalarDecodeCase{"float64", "Float64", " bounds=\"-1:1\"",
+                       mmxisf::SampleFormat::float64, 8},
+  };
+  for (const auto &test : scalar_decode_cases) {
+    std::vector<std::byte> sample_bytes(test.byte_count);
+    for (std::size_t index = 0; index < sample_bytes.size(); ++index) {
+      sample_bytes[index] = static_cast<std::byte>(index + 1);
+    }
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-scalar-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:1\" sampleFormat=\"") +
+            test.sample_format + "\" colorSpace=\"Gray\"" + test.bounds +
+            " location=\"attachment:1024:" +
+            std::to_string(test.byte_count) + "\"/>" + valid_metadata() +
+            "</xisf>",
+        sample_bytes);
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      const auto &info = result.value().document().images()[0];
+      expect(info.sample_format == test.expected_format, test.name);
+      expect(std::string(mmxisf::to_string(info.sample_format)) ==
+                 test.sample_format,
+             test.name);
+      auto image = result.value().read_image(0);
+      expect(image && image.value().pixels == sample_bytes, test.name);
+    }
+  }
+
+  struct InspectOnlyScalarCase {
+    const char *name;
+    const char *sample_format;
+    mmxisf::SampleFormat expected_format;
+  };
+  const std::array inspect_only_scalar_cases{
+      InspectOnlyScalarCase{"uint64", "UInt64",
+                            mmxisf::SampleFormat::uint64},
+      InspectOnlyScalarCase{"complex32", "Complex32",
+                            mmxisf::SampleFormat::complex32},
+      InspectOnlyScalarCase{"complex64", "Complex64",
+                            mmxisf::SampleFormat::complex64},
+  };
+  for (const auto &test : inspect_only_scalar_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-inspect-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:1\" sampleFormat=\"") +
+            test.sample_format +
+            "\" colorSpace=\"Gray\" location=\"attachment:1024:8\"/>" +
+            valid_metadata() + "</xisf>",
+        std::vector<std::byte>(8));
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      expect(result.value().document().images()[0].sample_format ==
+                 test.expected_format,
+             test.name);
+      auto image = result.value().read_image(0);
+      expect(!image &&
+                 image.error().code == mmxisf::ErrorCode::unsupported_feature,
+             test.name);
+    }
+  }
+
+  struct RgbStorageCase {
+    const char *name;
+    const char *pixel_storage;
+    mmxisf::PixelStorage expected_storage;
+  };
+  const std::array rgb_storage_cases{
+      RgbStorageCase{"planar", "Planar", mmxisf::PixelStorage::planar},
+      RgbStorageCase{"normal", "Normal", mmxisf::PixelStorage::normal},
+  };
+  const std::vector<std::byte> rgb_pixels{
+      std::byte{0x10}, std::byte{0x20}, std::byte{0x30},
+      std::byte{0x40}, std::byte{0x50}, std::byte{0x60}};
+  for (const auto &test : rgb_storage_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-rgb-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"RGB\" pixelStorage=\"") +
+            test.pixel_storage +
+            "\" location=\"attachment:1024:6\"/>" + valid_metadata() +
+            "</xisf>",
+        rgb_pixels);
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      const auto &info = result.value().document().images()[0];
+      expect(info.color_space == "RGB" &&
+                 info.pixel_storage == test.expected_storage,
+             test.name);
+      auto image = result.value().read_image(0);
+      expect(image && image.value().channels == 3 &&
+                 image.value().pixels == rgb_pixels,
+             test.name);
+    }
+  }
+
+  const std::array invalid_color_channel_cases{
+      std::pair{"RGB", "2"}, std::pair{"CIELab", "2"}};
+  for (const auto &[color_space, channel_count] :
+       invalid_color_channel_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-invalid-") + color_space + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:") +
+            channel_count + "\" sampleFormat=\"UInt8\" colorSpace=\"" +
+            color_space +
+            "\" location=\"attachment:1024:2\"/>" + valid_metadata() +
+            "</xisf>",
+        {std::byte{0}, std::byte{0}});
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           color_space);
   }
 
   auto bad_signature_bytes = read_bytes(valid_path);

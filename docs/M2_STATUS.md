@@ -1,0 +1,55 @@
+# M2 progress: PFI scalar pixels and RGB preview
+
+- Status: IN_PROGRESS
+- Started: 2026-09-13
+- Specification baseline: pinned XISF 1.0 sections 8.5, 10.3, 10.4 and 11.5
+- Publication status: private repository; no tag or release
+
+## Implemented in the first M2 slice
+
+- The document model represents every standard XISF sample format without
+  collapsing valid but unsupported formats into an unknown value.
+- Exact uncompressed attachment reads cover the PFI scalar set: UInt8, UInt16,
+  UInt32, Float32 and Float64.
+- UInt64 and complex formats remain inspectable but decoding fails explicitly;
+  CIELab remains inspectable but conversion is outside M2.
+- RGB images require at least three nominal channels. Additional alpha channels
+  are preserved and ignored by the preview.
+- The reader preserves the serialized byte order and Planar/Normal layout; it
+  performs no silent conversion or precision loss.
+- The macOS PoC viewer renders Gray and RGB attachments in both Planar and
+  Normal layouts, interprets little- and big-endian scalar samples, and derives
+  auto-stretch statistics from all nominal RGB channels.
+- Missing integer `bounds` remain missing in the document model. The viewer
+  applies the specification's default representable range only in its display
+  calculation.
+
+## Evidence available now
+
+- Warning-clean Release build: PASS locally on macOS.
+- Unit suite: 4/4 PASS, including a pure C++ preview test for Planar and Normal
+  RGB channel indexing, big-endian UInt32, little-endian Float64, and RGB
+  stretch sampling.
+- Existing private PixInsight corpus: 9/9 files and 11/11 uncompressed Float32
+  Gray image attachments decode successfully with exact declared byte counts.
+- Deterministic ASan/UBSan mutation smoke: 20,000 cases PASS.
+- ASan/UBSan unit suite: 4/4 PASS.
+- Independent installed-package consumer: 1/1 PASS locally.
+- Strict ad-hoc bundle signature validation: PASS.
+- Embedded Expat dependency resolution through `@rpath`: PASS.
+- Human test of a real RGB producer file: PENDING; the user has been asked to
+  test the generated local bundle manually.
+
+## Still required to close M2
+
+- Embedded Base64 and hexadecimal image blocks.
+- Zero-filled unused-space validation and remaining raw-block grammar.
+- Independent or producer-generated fixtures for every claimed scalar,
+  storage, byte-order, and color combination.
+- Full-precision parity evidence against an independent pixel oracle.
+- Cross-platform CI and coverage-guided fuzz gates for the complete M2 change
+  set.
+
+Compression, byte shuffle, checksum verification, and their resource budgets
+are scheduled as M3. A compressed RGB file is therefore expected to remain
+inspectable but fail closed at pixel decoding in this checkpoint.

@@ -60,7 +60,9 @@ public:
 
   [[nodiscard]] const Document &document() const noexcept;
 
-  // M1 PoC read path: exact, uncompressed local attachment bytes only.
+  // Exact serialized bytes for supported, uncompressed local attachments.
+  // byte_order and pixel_storage describe the returned byte representation;
+  // no implicit endian or layout conversion is performed.
   [[nodiscard]] Result<RawImage>
   read_image(std::size_t image_index, std::stop_token stop_token = {}) const;
   [[nodiscard]] Result<std::size_t>

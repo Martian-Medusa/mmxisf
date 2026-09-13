@@ -11,7 +11,17 @@
 
 namespace mmxisf {
 
-enum class SampleFormat { uint8, uint16, float32, unsupported };
+enum class SampleFormat {
+  uint8,
+  uint16,
+  uint32,
+  uint64,
+  float32,
+  float64,
+  complex32,
+  complex64,
+  unsupported
+};
 enum class PixelStorage { planar, normal };
 enum class ByteOrder { little, big };
 enum class BlockKind { attachment, embedded, inline_data, external, unknown };

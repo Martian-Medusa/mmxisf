@@ -5,10 +5,11 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete. Version `0.1.0` parses bounded monolithic XISF 1.0
-> headers and inspects image descriptors, properties, and FITS keywords. A
-> narrow, fail-closed raw attachment path powers the macOS viewer PoC. This is
-> still a pre-release inspection profile, not a general XISF decoder.
+> Status: M1 is complete and M2 is in progress. Version `0.1.0` parses bounded
+> monolithic XISF 1.0 headers and inspects image descriptors, properties, and
+> FITS keywords. The current M2 slice reads the PFI scalar profile from exact,
+> uncompressed attachments and powers Gray/RGB preview in the macOS viewer.
+> This is still a pre-release profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
 
@@ -47,6 +48,7 @@ milestone. They remain candidates for later conformance work.
 - [Fixture policy](docs/FIXTURE_POLICY.md)
 - [Accelerated M0 status](docs/M0_STATUS.md)
 - [M1 parser/viewer checkpoint](docs/M1_STATUS.md)
+- [M2 progress](docs/M2_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
@@ -56,6 +58,7 @@ cmake -S . -B build -DMMXISF_BUILD_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 build/mmxisf-inspect path/to/image.xisf
+build/mmxisf-inspect --decode path/to/image.xisf
 ```
 
 Normal configuration requires an installed Expat development package. No
@@ -74,6 +77,10 @@ The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Exact uncompressed attachment bytes can be returned in an
 owning `RawImage` or written into a caller-owned span with cooperative
 `std::stop_token` cancellation.
+
+The inspector's optional `--decode` mode validates every declared image block
+and reports the exact decoded byte count. It does not convert endian, storage
+layout, color, or sample precision.
 
 For a local sanitizer mutation smoke:
 
@@ -105,9 +112,10 @@ open "artifacts/mmXISF Viewer PoC.app"
 
 The optional AppKit target is macOS-only and does not enter the standalone
 library. The generated local bundle embeds Expat. Its current preview scope is
-the first uncompressed local Gray attachment with UInt8, UInt16, or Float32
-samples. The metadata inspector can still open a broader set of headers, while
-unsupported image decoding fails closed.
+the first uncompressed local Gray or RGB attachment in Planar or Normal layout,
+with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
+can still open a broader set of headers, while unsupported image decoding fails
+closed.
 
 ## License
 

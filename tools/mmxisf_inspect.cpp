@@ -7,11 +7,12 @@
 #include <string>
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    std::cerr << "Usage: mmxisf-inspect <file.xisf>\n";
+  const bool decode = argc == 3 && std::string(argv[1]) == "--decode";
+  if ((!decode && argc != 2) || (argc == 3 && !decode)) {
+    std::cerr << "Usage: mmxisf-inspect [--decode] <file.xisf>\n";
     return EXIT_FAILURE;
   }
-  auto result = mmxisf::Reader::open_file(argv[1]);
+  auto result = mmxisf::Reader::open_file(argv[decode ? 2 : 1]);
   if (!result) {
     std::cerr << mmxisf::to_string(result.error().code) << ": "
               << result.error().message << '\n';
@@ -41,6 +42,18 @@ int main(int argc, char **argv) {
                 << *image.upper_bound;
     }
     std::cout << '\n';
+    if (decode) {
+      auto pixels = result.value().read_image(index);
+      if (!pixels) {
+        std::cerr << "image[" << index
+                  << "] decode: " << mmxisf::to_string(pixels.error().code)
+                  << ": " << pixels.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      std::cout << "image[" << index
+                << "] decoded-bytes: " << pixels.value().pixels.size()
+                << '\n';
+    }
   }
   for (const auto &entry : document.metadata()) {
     std::cout << (entry.image_index
