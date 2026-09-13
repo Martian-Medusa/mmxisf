@@ -120,13 +120,14 @@ The complete M2 change set passed Linux, Windows, macOS, installed-package, and
 two 20,000-case fuzz gates in CI run `34774526481`. M2 implementation is closed;
 its independent-producer parity evidence remains an explicit acceptance gate.
 
-The first local M3 session implemented all six required zlib/LZ4/LZ4HC codec
+The M3 implementation delivered all six required zlib/LZ4/LZ4HC codec
 identifiers, reverse byte shuffle, compression subblocks, SHA-1/256/512, and the
 checksum-before-decompression invariant. Local Release, warning-as-error,
 ASan/UBSan, installed-package, deterministic fuzz, and standalone macOS bundle
-gates pass. Cross-platform CI and independent compressed producer files remain
-open, so this checkpoint does not yet close M3 or trigger another calendar
-rebaseline.
+gates pass. CI run `34775853605` also passed Linux, macOS, Windows, installed
+consumers, and both 20,000-case fuzz gates. M3 implementation is complete;
+independent compressed producer files and representative performance/memory
+measurements remain acceptance evidence before the support claim is closed.
 
 M4 began in parallel with the final M3 cross-platform gate. Its first bounded
 slice replaces the ambiguous flat metadata tuple with explicit lexical scope,

@@ -1,6 +1,6 @@
 # ADR 0005: private and replaceable third-party dependencies
 
-- Status: Proposed; freeze after M1/M2 spikes
+- Status: Accepted for the pre-1.0 read path
 - Date: 2026-09-13
 
 ## Context
@@ -32,9 +32,17 @@ Dependency policy:
 - version minimums are selected from tested security-supported releases during
   the spike, not guessed in this ADR.
 
+The selected dependency families have passed the library, installed-package,
+and application-bundle gates locally, plus Linux, macOS, and Windows CI in run
+`34775853605`. This accepts the dependency and encapsulation policy, not a
+permanent version floor. Exact versions, hashes, licenses, and SBOM data remain
+release-artifact records and must be refreshed for each publication candidate.
+
 ## Consequences
 
 Packaging work is higher than embedding convenience copies, but consumers keep
-a clean API and can audit their dependency graph. M1 must verify Expat's strict
-handler behavior and Windows/macOS packaging. M2 must benchmark codec and EVP
-integration in static and shared builds before this ADR becomes Accepted.
+a clean API and can audit their dependency graph. The development and CI gates
+verify Expat's strict handler behavior, all selected codec/EVP integrations,
+Windows package consumption, and macOS bundle relocation. Representative-image
+performance measurements remain an M3 acceptance gate, not a reason to keep
+the dependency-family decision provisional.

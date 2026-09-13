@@ -1,6 +1,6 @@
 # M3 progress: codecs, shuffle, checksums, and budgets
 
-- Status: IMPLEMENTATION_COMPLETE_LOCAL; CI_AND_INTEROPERABILITY_PENDING
+- Status: IMPLEMENTATION_COMPLETE; INTEROPERABILITY_AND_PERFORMANCE_PENDING
 - Started: 2026-09-13
 - Specification baseline: pinned XISF 1.0 sections 10.5 and 10.6
 - Publication status: private repository; no tag or release
@@ -61,9 +61,12 @@
   zlib, LZ4, and OpenSSL Crypto: PASS.
 - Coverage-guided seed corpus now includes valid embedded zlib+SHA-256 and LZ4
   files, in addition to the minimal metadata-only seed.
+- CI run `34775853605`: PASS on Linux, macOS, and Windows, including build,
+  tests, install, and a separately configured installed-package consumer.
+- The same CI run passed both the deterministic ASan/UBSan mutation smoke and
+  the coverage-guided libFuzzer campaign at 20,000 cases each.
 
 ## Still required to close M3
 
-- Cross-platform CI and coverage-guided fuzzing for the complete M3 change set.
 - Independent-producer compressed fixtures and performance/memory measurements
   on representative PFI mono and RGB images.
