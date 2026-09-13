@@ -91,6 +91,9 @@
   complex, alias, and byte-array vector/matrix element width through the public
   API, preserving input order and exact bytes. This is a reader/writer drift
   guard, not independent semantic validation of every numeric type.
+- Property classification and binary element layout now come from one internal
+  registry shared by XML validation, block reading, and writing; the 40-type
+  matrix guards the registry at the public round-trip boundary.
 - A five-image codec fixture covers all four writer codecs, shuffled and
   unshuffled paths, all three checksums, and an uncompressed checksummed block.
   `mmxisf` verifies each digest before decompression and recovers one exact pixel

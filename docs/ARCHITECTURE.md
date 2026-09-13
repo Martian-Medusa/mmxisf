@@ -49,17 +49,20 @@ The M1 pre-release API now supports:
   native-endian conversion;
 - bounded chunk reads with cooperative cancellation;
 
-The initial writer foundation now provides:
+The pre-release writer now provides:
 
-- `Writer::write_file` for a single attached little-endian Planar UInt16
-  Gray/RGB image with deterministic XML/block planning, explicit volatile
-  provenance, finite budgets, and cooperative cancellation.
+- `Writer::write_file` for one or more attached little-endian Planar PFI-scalar
+  Gray/RGB images, ordered direct metadata, and typed vector/matrix Property
+  attachments;
+- one bounded compression/checksum/subblock/spool pipeline shared by image and
+  Property attachments, plus deterministic XML/layout planning, explicit
+  volatile provenance, finite budgets, and cooperative cancellation;
+- one internal Property type/category/layout registry shared by parsing,
+  reading, and writing so aliases and element widths cannot drift by subsystem.
 
 Later milestones still need:
 
 - a bounded row/tile callback for low-copy analysis;
-- expansion from the narrow writer foundation to multiple images, declared
-  metadata, compression, and an explicit provenance policy;
 - injectable byte sinks for files, memory, and tests.
 
 Remote locations must not trigger network access. A future network resolver is

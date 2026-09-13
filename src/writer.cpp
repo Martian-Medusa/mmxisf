@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "mmxisf/writer.hpp"
+#include "property_types.hpp"
 
 #include <lz4.h>
 #include <lz4hc.h>
@@ -23,6 +24,10 @@
 
 namespace mmxisf {
 namespace {
+
+using detail::classify_property_type;
+using detail::property_element_layout;
+using detail::PropertyCategory;
 
 Error make_error(ErrorCode code, std::string message) {
   Error error;
@@ -473,12 +478,6 @@ bool is_supported_scalar_property_type(std::string_view type) {
          is_valid_scalar_property(type, "(0,0)");
 }
 
-struct PropertyElementLayout {
-  std::uint64_t element_size{0};
-  bool vector{false};
-  bool matrix{false};
-};
-
 struct PreparedBlock {
   std::vector<std::byte> storage;
   std::filesystem::path spool_path;
@@ -487,53 +486,6 @@ struct PreparedBlock {
   std::string subblocks;
   std::string checksum;
 };
-
-std::optional<PropertyElementLayout>
-property_element_layout(std::string_view type) {
-  const bool vector = type.ends_with("Vector") || type == "ByteArray";
-  const bool matrix = type.ends_with("Matrix") || type == "ByteMatrix";
-  if (!vector && !matrix) {
-    return std::nullopt;
-  }
-  constexpr std::array<std::string_view, 6> one_byte{"I8Vector",  "UI8Vector",
-                                                     "ByteArray", "I8Matrix",
-                                                     "UI8Matrix", "ByteMatrix"};
-  constexpr std::array<std::string_view, 4> two_byte{"I16Vector", "UI16Vector",
-                                                     "I16Matrix", "UI16Matrix"};
-  constexpr std::array<std::string_view, 10> four_byte{
-      "I32Vector", "IVector", "UI32Vector", "UIVector", "F32Vector",
-      "I32Matrix", "IMatrix", "UI32Matrix", "UIMatrix", "F32Matrix"};
-  constexpr std::array<std::string_view, 8> eight_byte{
-      "I64Vector", "UI64Vector", "F64Vector", "Vector",
-      "I64Matrix", "UI64Matrix", "F64Matrix", "Matrix"};
-  constexpr std::array<std::string_view, 6> sixteen_byte{
-      "I128Vector", "UI128Vector", "F128Vector",
-      "I128Matrix", "UI128Matrix", "F128Matrix"};
-  const auto contains = [type](const auto &types) {
-    return std::find(types.begin(), types.end(), type) != types.end();
-  };
-  std::uint64_t element_size = 0;
-  if (contains(one_byte)) {
-    element_size = 1;
-  } else if (contains(two_byte)) {
-    element_size = 2;
-  } else if (contains(four_byte)) {
-    element_size = 4;
-  } else if (contains(eight_byte)) {
-    element_size = 8;
-  } else if (contains(sixteen_byte)) {
-    element_size = 16;
-  } else if (type == "C32Vector" || type == "C32Matrix") {
-    element_size = 8;
-  } else if (type == "C64Vector" || type == "C64Matrix") {
-    element_size = 16;
-  } else if (type == "C128Vector" || type == "C128Matrix") {
-    element_size = 32;
-  } else {
-    return std::nullopt;
-  }
-  return PropertyElementLayout{element_size, vector, matrix};
-}
 
 Result<std::string>
 make_metadata_xml(const MetadataWriteEntry &entry,
@@ -1431,7 +1383,8 @@ write_file_impl(const std::filesystem::path &destination,
               "Writer block Property element type is not supported");
         }
         std::uint64_t element_count = 0;
-        if (layout->vector) {
+        const auto category = classify_property_type(entry.type);
+        if (category == PropertyCategory::vector) {
           if (!entry.length || *entry.length == 0 || entry.rows ||
               entry.columns) {
             return make_error(
@@ -1439,7 +1392,7 @@ write_file_impl(const std::filesystem::path &destination,
                 "Writer vector Properties require a nonzero length only");
           }
           element_count = *entry.length;
-        } else {
+        } else if (category == PropertyCategory::matrix) {
           if (entry.length || !entry.rows || !entry.columns ||
               *entry.rows == 0 || *entry.columns == 0) {
             return make_error(
@@ -1450,6 +1403,9 @@ write_file_impl(const std::filesystem::path &destination,
             return make_error(ErrorCode::overflow,
                               "Writer Property matrix extent overflows");
           }
+        } else {
+          return make_error(ErrorCode::internal_error,
+                            "Writer Property category is inconsistent");
         }
         std::uint64_t expected_bytes = 0;
         if (!checked_multiply(element_count, layout->element_size,
