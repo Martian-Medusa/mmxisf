@@ -111,9 +111,9 @@ build-fuzz-smoke/mmxisf_fuzz_smoke
 
 On a Clang installation that includes libFuzzer, enable
 `MMXISF_BUILD_FUZZER=ON` as well and run `mmxisf_fuzz_header` with
-`tests/fuzz_header.dict`. CI decodes the committed minimal seed from
-`tests/fuzz_seed.xisf.b64`, performs 20,000 coverage-guided runs, and retains a
-crashing input when the job fails.
+`tests/fuzz_header.dict`. CI decodes the committed metadata, zlib, and LZ4 seed
+corpus from `tests/fuzz_seed*.xisf.b64`, performs 20,000 coverage-guided runs,
+and retains a crashing input when the job fails.
 
 ## Build and run the macOS PoC viewer
 

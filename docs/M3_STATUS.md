@@ -65,8 +65,14 @@
   tests, install, and a separately configured installed-package consumer.
 - The same CI run passed both the deterministic ASan/UBSan mutation smoke and
   the coverage-guided libFuzzer campaign at 20,000 cases each.
+- A local warm-cache Release checkpoint decoded one private PixInsight
+  6248x4176 Float32 Gray attachment in a 34.9 ms median and three such images
+  sequentially in a 75.5 ms median. Peak RSS remained approximately one
+  decoded 100 MiB plane in both cases; methodology and limitations are recorded
+  in [M3_PERFORMANCE.md](M3_PERFORMANCE.md).
 
 ## Still required to close M3
 
-- Independent-producer compressed fixtures and performance/memory measurements
-  on representative PFI mono and RGB images.
+- Independent-producer compressed fixtures and representative real RGB
+  performance/memory measurements. The first local mono/multi-image checkpoint
+  is recorded, but it is not a cross-platform performance claim or SLA.

@@ -58,6 +58,8 @@
   forms, decimal and prefixed integers, floating special values and exponents,
   complex components, calendar validity, fractional seconds, and optional time
   zones: PASS locally.
+- Deterministic and coverage-guided fuzz seed corpora include valid Boolean,
+  integer, floating-point, complex, and TimePoint Property values.
 
 ## Still required for M4
 
