@@ -19,6 +19,12 @@
 - Ordered metadata bindings resolve forward `Reference` elements to shared
   Property/FITSKeyword entries while preserving lexical scope, duplicates, and
   direct-versus-reference provenance.
+- Property categories enforce their structural serialization contracts:
+  scalar/complex and TimePoint attributes, String character data or block,
+  vector length plus block, and matrix dimensions plus block.
+- Property identifiers and FITS keyword names are checked against their
+  respective XISF/FITS ASCII grammars, and Property identifiers must remain
+  unique within each resolved unit or image association.
 - Malformed numeric property extents and malformed block locations fail closed.
 
 ## Evidence available now
@@ -34,12 +40,18 @@
   image-binding order: PASS locally.
 - A FITS keyword reference targeting XISF-unit metadata is rejected: PASS
   locally.
+- Positive scalar, complex, String, TimePoint, vector, and matrix forms plus a
+  negative structural-form matrix: PASS locally.
+- Invalid Property identifiers, invalid FITS names, and duplicate image
+  Property identifiers: PASS locally.
+- Metadata inspection with the new scope/value/binding model: 9/9 private local
+  PixInsight corpus files PASS; files remain outside the repository.
 - Release unit suite and macOS viewer build: PASS locally.
 
 ## Still required for M4
 
-- Complete type-specific Property grammar for scalar, complex, String,
-  TimePoint, vector, and matrix serializations.
+- Validate scalar, complex, Boolean, and TimePoint lexical value syntax without
+  coercing the preserved source representation.
 - Define and test the PFI-facing metadata projection, including conservative
   FITS raw/stripped handling and duplicate-keyword order.
 - Exercise the metadata parity matrix against independently produced files and

@@ -90,11 +90,101 @@ bool is_valid_unique_id(std::string_view value) {
   });
 }
 
+bool is_valid_fits_keyword_name(std::string_view value) {
+  return !value.empty() && value.size() <= 8 &&
+         std::all_of(value.begin(), value.end(), [](char character) {
+           return (character >= 'A' && character <= 'Z') ||
+                  (character >= '0' && character <= '9') ||
+                  character == '_' || character == '-';
+         });
+}
+
+bool is_valid_property_identifier(std::string_view value) {
+  const auto is_start = [](char character) {
+    return character == '_' ||
+           (character >= 'A' && character <= 'Z') ||
+           (character >= 'a' && character <= 'z');
+  };
+  const auto is_continue = [&](char character) {
+    return is_start(character) ||
+           (character >= '0' && character <= '9');
+  };
+  if (value.empty()) {
+    return false;
+  }
+  bool expect_start = true;
+  for (const char character : value) {
+    if (character == ':') {
+      if (expect_start) {
+        return false;
+      }
+      expect_start = true;
+      continue;
+    }
+    if (expect_start ? !is_start(character) : !is_continue(character)) {
+      return false;
+    }
+    expect_start = false;
+  }
+  return !expect_start;
+}
+
 bool contains_non_xml_whitespace(std::string_view text) {
   return std::any_of(text.begin(), text.end(), [](char character) {
     return character != ' ' && character != '\t' && character != '\r' &&
            character != '\n';
   });
+}
+
+enum class PropertyCategory {
+  scalar_or_complex,
+  string,
+  time_point,
+  vector,
+  matrix,
+  unknown
+};
+
+PropertyCategory classify_property_type(std::string_view type) {
+  constexpr std::array<std::string_view, 26> kScalarAndComplexTypes{
+      "Boolean",    "Int8",       "UInt8",      "Byte",
+      "Int16",      "Short",      "UInt16",     "UShort",
+      "Int32",      "Int",        "UInt32",     "UInt",
+      "Int64",      "Int128",     "UInt64",     "UInt128",
+      "Float32",    "Float",      "Float64",    "Double",
+      "Float128",   "Quad",       "Complex32",  "Complex64",
+      "Complex",    "Complex128"};
+  constexpr std::array<std::string_view, 20> kVectorTypes{
+      "I8Vector",   "UI8Vector",   "ByteArray",  "I16Vector",
+      "UI16Vector", "I32Vector",   "IVector",    "UI32Vector",
+      "UIVector",   "I64Vector",   "UI64Vector", "I128Vector",
+      "UI128Vector", "F32Vector",  "F64Vector",  "Vector",
+      "F128Vector", "C32Vector",   "C64Vector",  "C128Vector"};
+  constexpr std::array<std::string_view, 20> kMatrixTypes{
+      "I8Matrix",   "UI8Matrix",   "ByteMatrix",  "I16Matrix",
+      "UI16Matrix", "I32Matrix",   "IMatrix",     "UI32Matrix",
+      "UIMatrix",   "I64Matrix",   "UI64Matrix",  "I128Matrix",
+      "UI128Matrix", "F32Matrix",  "F64Matrix",   "Matrix",
+      "F128Matrix", "C32Matrix",   "C64Matrix",   "C128Matrix"};
+  if (std::find(kScalarAndComplexTypes.begin(), kScalarAndComplexTypes.end(),
+                type) != kScalarAndComplexTypes.end()) {
+    return PropertyCategory::scalar_or_complex;
+  }
+  if (type == "String") {
+    return PropertyCategory::string;
+  }
+  if (type == "TimePoint") {
+    return PropertyCategory::time_point;
+  }
+  if (std::find(kVectorTypes.begin(), kVectorTypes.end(), type) !=
+      kVectorTypes.end()) {
+    return PropertyCategory::vector;
+  }
+  if (std::find(kMatrixTypes.begin(), kMatrixTypes.end(), type) !=
+      kMatrixTypes.end()) {
+    return PropertyCategory::matrix;
+  }
+  return PropertyCategory::unknown;
 }
 
 template <typename T> bool parse_unsigned(std::string_view text, T &result) {
@@ -845,6 +935,16 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                  name + " is missing a mandatory attribute", name);
       return;
     }
+    if (name == "FITSKeyword" && !is_valid_fits_keyword_name(*identity)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "FITSKeyword name has invalid FITS syntax", name, "name");
+      return;
+    }
+    if (name == "Property" && !is_valid_property_identifier(*identity)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Property id has invalid XISF syntax", name, "id");
+      return;
+    }
     if (value && value->size() > state.options.max_metadata_value_bytes) {
       state.fail(ErrorCode::resource_limit,
                  "Metadata value exceeds the inspection limit", name, "value");
@@ -924,6 +1024,58 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         !parse_extent("rows", entry.rows) ||
         !parse_extent("columns", entry.columns)) {
       return;
+    }
+    if (name == "Property") {
+      const auto category = classify_property_type(*type);
+      const bool has_dimensions = entry.length || entry.rows || entry.columns;
+      const auto reject_form = [&](std::string message,
+                                   std::string attribute_name = {}) {
+        state.fail(ErrorCode::invalid_xisf, std::move(message), name,
+                   std::move(attribute_name));
+      };
+      switch (category) {
+      case PropertyCategory::scalar_or_complex:
+        if (!value || location || has_dimensions) {
+          reject_form("Scalar and complex Property values require only a "
+                      "value attribute");
+          return;
+        }
+        break;
+      case PropertyCategory::string:
+        if (value || has_dimensions) {
+          reject_form("String Property values cannot use value or extent "
+                      "attributes",
+                      value ? "value" : "length");
+          return;
+        }
+        break;
+      case PropertyCategory::time_point:
+        if (!value || location || has_dimensions || !entry.format.empty()) {
+          reject_form("TimePoint Property values require a value attribute "
+                      "and cannot use a format or data block");
+          return;
+        }
+        break;
+      case PropertyCategory::vector:
+        if (value || !location || !entry.length || entry.rows ||
+            entry.columns) {
+          reject_form("Vector Property values require length and location "
+                      "attributes only");
+          return;
+        }
+        break;
+      case PropertyCategory::matrix:
+        if (value || !location || entry.length || !entry.rows ||
+            !entry.columns) {
+          reject_form("Matrix Property values require rows, columns, and "
+                      "location attributes only");
+          return;
+        }
+        break;
+      case PropertyCategory::unknown:
+        reject_form("Property declares an unknown XISF type", "type");
+        return;
+      }
     }
     const auto metadata_index = state.metadata.size();
     if (!entry.uid.empty()) {
@@ -1145,6 +1297,31 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     binding.image_index = event.image_index;
     binding.by_reference = event.by_reference;
     metadata_bindings.push_back(std::move(binding));
+  }
+  std::unordered_set<std::string> unit_property_ids;
+  std::vector<std::unordered_set<std::string>> image_property_ids(
+      state.images.size());
+  for (const auto &binding : metadata_bindings) {
+    const auto &entry = state.metadata[binding.metadata_index];
+    if (entry.kind != MetadataEntry::Kind::property) {
+      continue;
+    }
+    bool inserted = false;
+    if (binding.scope == MetadataBinding::Scope::xisf_unit) {
+      inserted = unit_property_ids.emplace(entry.name).second;
+    } else {
+      if (!binding.image_index || *binding.image_index >= state.images.size()) {
+        return make_error(ErrorCode::internal_error,
+                          "Image metadata binding has no valid image index");
+      }
+      inserted =
+          image_property_ids[*binding.image_index].emplace(entry.name).second;
+    }
+    if (!inserted) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Property identifiers must be unique within each association");
+    }
   }
   const auto header_end = 16ULL + static_cast<std::uint64_t>(header_length);
   std::sort(state.attached_ranges.begin(), state.attached_ranges.end(),

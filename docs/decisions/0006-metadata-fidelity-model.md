@@ -35,6 +35,12 @@ explicitly and is not presented as a decoded property value. FITS keyword
 values remain in their source-compatible representation, including quotes;
 FITS stripping and PFI-specific parsing are adapter responsibilities.
 
+The reader validates the declared Property category and its structural form,
+identifier syntax, FITS keyword-name syntax, and per-association Property
+identifier uniqueness. This structural validation does not normalize the
+stored representation; lexical numeric/time validation is performed as a
+separate check over the same preserved text.
+
 Reference resolution does not rewrite the entry's lexical scope: a standalone
 metadata element with a `uid` remains standalone while its binding records each
 resolved association. References to non-metadata core elements remain part of

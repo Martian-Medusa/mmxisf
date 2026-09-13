@@ -131,7 +131,7 @@ std::string valid_metadata() {
 
 std::string short_metadata() {
   return "<Metadata>"
-         "<Property id=\"XISF:CreationTime\" type=\"TimePoint\">t</Property>"
+         "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" value=\"t\"/>"
          "<Property id=\"XISF:CreatorApplication\" type=\"String\">a</Property>"
          "</Metadata>";
 }
@@ -1374,7 +1374,7 @@ int main() {
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
           "<Reference ref=\"later\"/>"
-          "<Property uid=\"later\" id=\"p\" type=\"String\" value=\"x\"/>") +
+          "<Property uid=\"later\" id=\"p\" type=\"Int32\" value=\"1\"/>") +
           valid_metadata() + "</xisf>");
   auto forward_reference = mmxisf::Reader::open_file(forward_reference_path);
   expect(forward_reference.has_value(),
@@ -1480,9 +1480,9 @@ int main() {
       "mmxisf-duplicate-uid.xisf",
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-          "<Property uid=\"duplicate\" id=\"p1\" type=\"String\" value=\"x\"/>"
-          "<Property uid=\"duplicate\" id=\"p2\" type=\"String\" "
-          "value=\"y\"/>") +
+          "<Property uid=\"duplicate\" id=\"p1\" type=\"Int32\" value=\"1\"/>"
+          "<Property uid=\"duplicate\" id=\"p2\" type=\"Int32\" "
+          "value=\"2\"/>") +
           valid_metadata() + "</xisf>");
   auto duplicate_uid = mmxisf::Reader::open_file(duplicate_uid_path);
   expect(!duplicate_uid &&
@@ -1562,10 +1562,10 @@ int main() {
                         "<Property id=\"p\" type=\"String\">abcde</Property>",
                         false},
       MetadataValueCase{"attribute-at-limit",
-                        "<Property id=\"p\" type=\"String\" value=\"abcd\"/>",
+                        "<Property id=\"p\" type=\"Int32\" value=\"1234\"/>",
                         true},
       MetadataValueCase{"attribute-over-limit",
-                        "<Property id=\"p\" type=\"String\" value=\"abcde\"/>",
+                        "<Property id=\"p\" type=\"Int32\" value=\"12345\"/>",
                         false},
       MetadataValueCase{
           "fits-attribute-over-limit",
@@ -1872,6 +1872,93 @@ int main() {
              bad_property.error().code == mmxisf::ErrorCode::invalid_xisf,
          "Property mandatory attributes are enforced");
 
+  const auto property_forms_path = write_fixture(
+      "mmxisf-property-forms.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Scalar\" type=\"Int32\" value=\"-7\"/>"
+          "<Property id=\"Test:Complex\" type=\"Complex64\" "
+          "value=\"(1.5,-2)\"/>"
+          "<Property id=\"Test:String\" type=\"String\"> value </Property>"
+          "<Property id=\"Test:Time\" type=\"TimePoint\" "
+          "value=\"2026-09-13T00:00:00Z\"/>"
+          "<Property id=\"Test:Vector\" type=\"F64Vector\" length=\"1\" "
+          "location=\"inline:base64\">AAAAAAAAAAA=</Property>"
+          "<Property id=\"Test:Matrix\" type=\"F64Matrix\" rows=\"1\" "
+          "columns=\"1\" location=\"inline:base64\">AAAAAAAAAAA=</Property>") +
+          valid_metadata() + "</xisf>");
+  auto property_forms = mmxisf::Reader::open_file(property_forms_path);
+  expect(property_forms.has_value(),
+         "all Property serialization categories are accepted");
+  if (property_forms) {
+    expect(property_forms.value().document().metadata()[2].value == " value ",
+           "String Property whitespace remains significant");
+  }
+
+  struct InvalidPropertyFormCase {
+    const char *name;
+    const char *property;
+  };
+  const std::array invalid_property_forms{
+      InvalidPropertyFormCase{"scalar-without-value",
+                              "<Property id=\"p\" type=\"Int32\"/>"},
+      InvalidPropertyFormCase{
+          "string-with-value",
+          "<Property id=\"p\" type=\"String\" value=\"x\"/>"},
+      InvalidPropertyFormCase{
+          "timepoint-character-data",
+          "<Property id=\"p\" type=\"TimePoint\">time</Property>"},
+      InvalidPropertyFormCase{
+          "timepoint-with-format",
+          "<Property id=\"p\" type=\"TimePoint\" value=\"time\" "
+          "format=\"width:8\"/>"},
+      InvalidPropertyFormCase{
+          "vector-without-length",
+          "<Property id=\"p\" type=\"F64Vector\" "
+          "location=\"inline:base64\"/>"},
+      InvalidPropertyFormCase{
+          "vector-with-value",
+          "<Property id=\"p\" type=\"F64Vector\" length=\"1\" "
+          "value=\"1\" location=\"inline:base64\"/>"},
+      InvalidPropertyFormCase{
+          "matrix-without-columns",
+          "<Property id=\"p\" type=\"F64Matrix\" rows=\"1\" "
+          "location=\"inline:base64\"/>"},
+      InvalidPropertyFormCase{
+          "unknown-type",
+          "<Property id=\"p\" type=\"Custom\" value=\"1\"/>"},
+      InvalidPropertyFormCase{
+          "invalid-identifier",
+          "<Property id=\"bad-id\" type=\"Int32\" value=\"1\"/>"},
+  };
+  for (const auto &test : invalid_property_forms) {
+    const auto path = write_fixture(
+        std::string("mmxisf-invalid-property-form-") + test.name + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\">") +
+            test.property + valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           test.name);
+  }
+
+  const auto duplicate_image_property_path = write_fixture(
+      "mmxisf-duplicate-image-property.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"path(pixels.bin)\">"
+          "<Property id=\"Test:Value\" type=\"Int32\" value=\"1\"/>"
+          "<Property id=\"Test:Value\" type=\"Int32\" value=\"2\"/>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto duplicate_image_property =
+      mmxisf::Reader::open_file(duplicate_image_property_path);
+  expect(!duplicate_image_property &&
+             duplicate_image_property.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "Property identifiers are unique within an image association");
+
   const auto bad_fits_parent_path = write_fixture(
       "mmxisf-fits-parent.xisf",
       "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
@@ -1881,6 +1968,21 @@ int main() {
   expect(!bad_fits_parent &&
              bad_fits_parent.error().code == mmxisf::ErrorCode::invalid_xisf,
          "FITSKeyword parent grammar is enforced");
+
+  const std::array invalid_fits_names{"lower", "TOO-LONG9", "BAD NAME",
+                                      "NON.ASC"};
+  for (std::size_t index = 0; index < invalid_fits_names.size(); ++index) {
+    const auto path = write_fixture(
+        "mmxisf-invalid-fits-name-" + std::to_string(index) + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\"><FITSKeyword name=\"") +
+            invalid_fits_names[index] +
+            "\" value=\"1\" comment=\"invalid\"/>" + valid_metadata() +
+            "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           "invalid FITS keyword name is rejected");
+  }
 
   const auto float_without_bounds_path = write_fixture(
       "mmxisf-float-bounds.xisf",
