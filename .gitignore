@@ -1,0 +1,9 @@
+/build/
+/out/
+/coverage/
+/fuzz-corpus/
+/.cache/
+/.DS_Store
+compile_commands.json
+*.profraw
+*.profdata
