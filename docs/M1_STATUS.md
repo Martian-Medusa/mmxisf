@@ -83,6 +83,20 @@ floating-point `from_chars` dependency, and defer fixture deletion until all
 stable reader handles have been released. This failed attempt remains recorded
 separately and is not counted as cross-platform PASS.
 
+### Cross-platform CI attempt 2
+
+GitHub Actions run `34769307609` on commit `73b41fa` verified the portability
+fixes separately:
+
+- Ubuntu build, tests, install, and installed-package consumer: PASS.
+- Linux Clang ASan/UBSan 20,000-case mutation smoke: PASS.
+- Windows build, tests, install, and installed-package consumer: PASS.
+- macOS 15 build: FAIL because the runner's default Xcode 16.4 standard library
+  does not provide `std::stop_token`.
+
+The follow-up selects the runner's installed Xcode 26.3 explicitly. Attempt 2
+remains partial evidence and is not counted as cross-platform PASS.
+
 Private astronomy files were read locally and were not copied into this
 repository or its generated bundle.
 
