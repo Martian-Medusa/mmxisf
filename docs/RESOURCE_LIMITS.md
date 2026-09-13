@@ -18,7 +18,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | samples per image | 536,870,912 | Geometry cap independent of sample size |
 | decoded bytes per image | 2 GiB | Covers representative desktop astronomy images |
 | cumulative decoded bytes | 4 GiB | Bounds multi-image and metadata blocks |
-| encoded inline/embedded bytes | 256 MiB | Avoid huge XML-resident payloads in the PFI profile |
+| encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
 | decompression ratio | 8,192:1 | Secondary defense; decoded-byte cap remains authoritative |
 | diagnostic records | 1,000 | Prevent error amplification |
@@ -30,3 +30,9 @@ No preset is evidence that the host has sufficient memory.
 Before M2 is accepted, measure actual PFI fixtures and revise these values.
 Limits that reject a valid file must return a dedicated resource-limit error,
 not a generic malformed-file result.
+
+`max_encoded_block_bytes` is enforced on non-whitespace encoded characters.
+Decoded embedded bytes are also bounded by `max_decoded_image_bytes`. With the
+default profile, the 16 MiB XML-header limit is reached before the larger
+per-block encoded ceiling; applications must raise both limits deliberately for
+larger embedded payloads.

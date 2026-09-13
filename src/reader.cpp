@@ -299,8 +299,12 @@ BlockLocation parse_location(std::string_view text) {
 }
 
 struct XmlBuilder {
+  enum class EmbeddedEncoding { none, base64, hex };
+
   std::string version;
   std::vector<ImageInfo> images;
+  std::vector<std::vector<std::byte>> embedded_blocks;
+  std::vector<bool> embedded_data_seen;
   std::vector<MetadataEntry> metadata;
   ReaderOptions options;
   XML_Parser parser{nullptr};
@@ -317,6 +321,13 @@ struct XmlBuilder {
   bool saw_creator_application{false};
   std::unordered_set<std::string> core_uids;
   std::vector<std::string> references;
+  std::optional<std::size_t> embedded_image_index;
+  EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
+  std::array<unsigned char, 4> base64_quartet{};
+  std::size_t base64_quartet_size{0};
+  bool base64_complete{false};
+  std::optional<unsigned char> hex_high_nibble;
+  std::size_t encoded_block_bytes{0};
 
   void fail(ErrorCode code, std::string message, std::string element = {},
             std::string attribute_name = {}) {
@@ -337,6 +348,141 @@ struct XmlBuilder {
                                : std::optional<std::size_t>(image_stack.back());
   }
 };
+
+std::optional<unsigned char> base64_value(char character) {
+  if (character >= 'A' && character <= 'Z') {
+    return static_cast<unsigned char>(character - 'A');
+  }
+  if (character >= 'a' && character <= 'z') {
+    return static_cast<unsigned char>(character - 'a' + 26);
+  }
+  if (character >= '0' && character <= '9') {
+    return static_cast<unsigned char>(character - '0' + 52);
+  }
+  if (character == '+') {
+    return 62;
+  }
+  if (character == '/') {
+    return 63;
+  }
+  return std::nullopt;
+}
+
+bool append_embedded_byte(XmlBuilder &state, unsigned char value) {
+  auto &output = state.embedded_blocks[*state.embedded_image_index];
+  if (output.size() >= state.options.max_decoded_image_bytes) {
+    state.fail(ErrorCode::resource_limit,
+               "Embedded block exceeds the decoded byte limit", "Data");
+    return false;
+  }
+  try {
+    output.push_back(static_cast<std::byte>(value));
+  } catch (const std::bad_alloc &) {
+    state.fail(ErrorCode::resource_limit,
+               "Memory allocation failed for embedded block", "Data");
+    return false;
+  }
+  return true;
+}
+
+bool decode_base64_quartet(XmlBuilder &state) {
+  const auto &q = state.base64_quartet;
+  if (q[0] == 64 || q[1] == 64) {
+    state.fail(ErrorCode::invalid_xisf, "Invalid Base64 padding", "Data");
+    return false;
+  }
+  if (!append_embedded_byte(
+          state, static_cast<unsigned char>((q[0] << 2U) | (q[1] >> 4U)))) {
+    return false;
+  }
+  if (q[2] == 64) {
+    if (q[3] != 64 || (q[1] & 0x0fU) != 0) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Invalid or noncanonical Base64 padding", "Data");
+      return false;
+    }
+    state.base64_complete = true;
+    return true;
+  }
+  if (!append_embedded_byte(
+          state, static_cast<unsigned char>((q[1] << 4U) | (q[2] >> 2U)))) {
+    return false;
+  }
+  if (q[3] == 64) {
+    if ((q[2] & 0x03U) != 0) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Invalid or noncanonical Base64 padding", "Data");
+      return false;
+    }
+    state.base64_complete = true;
+    return true;
+  }
+  return append_embedded_byte(
+      state, static_cast<unsigned char>((q[2] << 6U) | q[3]));
+}
+
+void decode_embedded_text(XmlBuilder &state, std::string_view text) {
+  for (const char character : text) {
+    if (character == ' ' || character == '\t' || character == '\r' ||
+        character == '\n') {
+      continue;
+    }
+    if (state.encoded_block_bytes >= state.options.max_encoded_block_bytes) {
+      state.fail(ErrorCode::resource_limit,
+                 "Embedded block exceeds the encoded byte limit", "Data");
+      return;
+    }
+    ++state.encoded_block_bytes;
+    if (state.embedded_encoding == XmlBuilder::EmbeddedEncoding::hex) {
+      unsigned char nibble = 0;
+      if (character >= '0' && character <= '9') {
+        nibble = static_cast<unsigned char>(character - '0');
+      } else if (character >= 'a' && character <= 'f') {
+        nibble = static_cast<unsigned char>(character - 'a' + 10);
+      } else {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Embedded Base16 data must use lowercase hexadecimal",
+                   "Data");
+        return;
+      }
+      if (!state.hex_high_nibble) {
+        state.hex_high_nibble = nibble;
+      } else {
+        if (!append_embedded_byte(
+                state, static_cast<unsigned char>((*state.hex_high_nibble <<
+                                                   4U) |
+                                                  nibble))) {
+          return;
+        }
+        state.hex_high_nibble.reset();
+      }
+      continue;
+    }
+    if (state.base64_complete) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Base64 data continues after padding", "Data");
+      return;
+    }
+    if (character == '=') {
+      state.base64_quartet[state.base64_quartet_size++] = 64;
+    } else {
+      const auto value = base64_value(character);
+      if (!value) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Embedded block contains an invalid Base64 character",
+                   "Data");
+        return;
+      }
+      state.base64_quartet[state.base64_quartet_size++] = *value;
+    }
+    if (state.base64_quartet_size == state.base64_quartet.size()) {
+      if (!decode_base64_quartet(state)) {
+        return;
+      }
+      state.base64_quartet_size = 0;
+    }
+  }
+}
 
 void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                            const XML_Char **attributes) {
@@ -366,6 +512,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     return;
   }
   state.element_stack.push_back(is_xisf_element ? name : std::string{});
+
+  if (state.embedded_image_index) {
+    state.fail(ErrorCode::invalid_xisf,
+               "Embedded Data cannot contain child elements", name);
+    return;
+  }
 
   if (state.depth == 1) {
     if (state.saw_root || name != "xisf" ||
@@ -409,6 +561,37 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
     }
+  }
+
+  if (is_xisf_element && name == "Data") {
+    const auto image_index = state.current_image();
+    if (state.depth != 3 || parent != "Image" || !image_index ||
+        state.images[*image_index].block.kind != BlockKind::embedded) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Data must be a direct child of an embedded Image", name);
+      return;
+    }
+    if (state.embedded_data_seen[*image_index]) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded Image must contain exactly one Data element", name);
+      return;
+    }
+    const auto encoding = attribute(attributes, "encoding");
+    if (!encoding || (*encoding != "base64" && *encoding != "hex")) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Data requires a base64 or hex encoding", name, "encoding");
+      return;
+    }
+    state.embedded_data_seen[*image_index] = true;
+    state.embedded_image_index = *image_index;
+    state.embedded_encoding = *encoding == "base64"
+                                  ? XmlBuilder::EmbeddedEncoding::base64
+                                  : XmlBuilder::EmbeddedEncoding::hex;
+    state.base64_quartet_size = 0;
+    state.base64_complete = false;
+    state.hex_high_nibble.reset();
+    state.encoded_block_bytes = 0;
+    return;
   }
 
   if (is_xisf_element && name == "Image") {
@@ -545,6 +728,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     image.checksum =
         std::string(attribute(attributes, "checksum").value_or(""));
     state.images.push_back(std::move(image));
+    state.embedded_blocks.emplace_back();
+    state.embedded_data_seen.push_back(false);
     state.image_stack.push_back(state.images.size() - 1);
     return;
   }
@@ -641,9 +826,35 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
   }
   const std::string name(local_name(qualified_name));
   const bool is_xisf_element = namespace_name(qualified_name) == kXisfNamespace;
-  if (is_xisf_element && name == "Property") {
+  if (is_xisf_element && name == "Data") {
+    if (!state.embedded_image_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Data element", name);
+      return;
+    }
+    if ((state.embedded_encoding == XmlBuilder::EmbeddedEncoding::base64 &&
+         state.base64_quartet_size != 0) ||
+        (state.embedded_encoding == XmlBuilder::EmbeddedEncoding::hex &&
+         state.hex_high_nibble)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded block has an incomplete encoded byte sequence",
+                 name);
+      return;
+    }
+    state.embedded_image_index.reset();
+    state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
+  } else if (is_xisf_element && name == "Property") {
     state.text_metadata_index.reset();
   } else if (is_xisf_element && name == "Image") {
+    if (!state.image_stack.empty()) {
+      const auto image_index = state.image_stack.back();
+      if (state.images[image_index].block.kind == BlockKind::embedded &&
+          !state.embedded_data_seen[image_index]) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Embedded Image requires exactly one Data child", name);
+        return;
+      }
+    }
     if (!state.image_stack.empty()) {
       state.image_stack.pop_back();
     }
@@ -665,12 +876,22 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     return;
   }
   const std::string_view data(text, static_cast<std::size_t>(length));
+  if (state.embedded_image_index) {
+    decode_embedded_text(state, data);
+    return;
+  }
   if (!state.text_metadata_index) {
     if (state.depth == 1 && !state.element_stack.empty() &&
         state.element_stack.back() == "xisf" &&
         contains_non_xml_whitespace(data)) {
       state.fail(ErrorCode::invalid_xisf,
                  "The XISF root cannot contain character data", "xisf");
+    } else if (state.current_image() &&
+               state.images[*state.current_image()].block.kind ==
+                   BlockKind::embedded &&
+               contains_non_xml_whitespace(data)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded Image cannot contain text outside Data", "Image");
     }
     return;
   }
@@ -693,10 +914,15 @@ void XMLCALL reject_doctype(void *user_data, const XML_Char *, const XML_Char *,
              "DOCTYPE is not allowed in XISF headers");
 }
 
-Result<Document> parse_header(std::string_view xml,
-                              const ReaderOptions &options,
-                              std::uint64_t file_size,
-                              std::uint32_t header_length) {
+struct ParsedHeader {
+  Document document;
+  std::vector<std::vector<std::byte>> embedded_blocks;
+};
+
+Result<ParsedHeader> parse_header(std::string_view xml,
+                                  const ReaderOptions &options,
+                                  std::uint64_t file_size,
+                                  std::uint32_t header_length) {
   if (!xml.starts_with(kXmlDeclaration)) {
     return make_error(
         ErrorCode::invalid_xisf,
@@ -773,8 +999,9 @@ Result<Document> parse_header(std::string_view xml,
       return error;
     }
   }
-  return Document(std::move(state.version), std::move(state.images),
-                  std::move(state.metadata), file_size, header_length);
+  Document document(std::move(state.version), std::move(state.images),
+                    std::move(state.metadata), file_size, header_length);
+  return ParsedHeader{std::move(document), std::move(state.embedded_blocks)};
 }
 
 std::uint32_t read_le_u32(const unsigned char *bytes) {
@@ -807,12 +1034,15 @@ std::optional<std::uint64_t> bytes_per_sample(SampleFormat format) {
 
 struct ImageReadPlan {
   const ImageInfo *image{nullptr};
+  const std::vector<std::byte> *embedded_block{nullptr};
   std::uint64_t channels{0};
   std::uint64_t expected_bytes{0};
 };
 
 Result<ImageReadPlan> plan_image_read(const Document &document,
                                       const ReaderOptions &options,
+                                      const std::vector<std::vector<std::byte>>
+                                          &embedded_blocks,
                                       std::size_t image_index) {
   if (image_index >= document.images().size()) {
     Error error = make_error(ErrorCode::invalid_argument,
@@ -821,9 +1051,11 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
     return error;
   }
   const auto &image = document.images()[image_index];
-  if (image.block.kind != BlockKind::attachment) {
+  if (image.block.kind != BlockKind::attachment &&
+      image.block.kind != BlockKind::embedded) {
     return make_error(ErrorCode::unsupported_feature,
-                      "M1 PoC only reads local attachment image blocks");
+                      "The M2 reader only reads attachment and embedded image "
+                      "blocks");
   }
   if (!image.compression.empty()) {
     return make_error(ErrorCode::unsupported_feature,
@@ -869,17 +1101,26 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
     return make_error(ErrorCode::resource_limit,
                       "Image exceeds the configured decoded byte limit");
   }
-  if (image.block.size != expected_bytes) {
+  const std::vector<std::byte> *embedded_block = nullptr;
+  const std::uint64_t serialized_bytes =
+      image.block.kind == BlockKind::attachment
+          ? image.block.size
+          : static_cast<std::uint64_t>(embedded_blocks[image_index].size());
+  if (serialized_bytes != expected_bytes) {
     return make_error(
         ErrorCode::invalid_block,
-        "Attachment size does not match image geometry and sample format");
+        "Image block size does not match geometry and sample format");
   }
-  if (image.block.offset > document.file_size() ||
-      image.block.size > document.file_size() - image.block.offset) {
+  if (image.block.kind == BlockKind::attachment &&
+      (image.block.offset > document.file_size() ||
+       image.block.size > document.file_size() - image.block.offset)) {
     return make_error(ErrorCode::invalid_block,
                       "Attachment range extends beyond the source");
   }
-  return ImageReadPlan{&image, channels, expected_bytes};
+  if (image.block.kind == BlockKind::embedded) {
+    embedded_block = &embedded_blocks[image_index];
+  }
+  return ImageReadPlan{&image, embedded_block, channels, expected_bytes};
 }
 
 } // namespace
@@ -888,6 +1129,7 @@ struct Reader::Impl {
   std::shared_ptr<const ByteSource> source;
   ReaderOptions options;
   Document document;
+  std::vector<std::vector<std::byte>> embedded_blocks;
 };
 
 Reader::Reader(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -971,9 +1213,11 @@ Result<Reader> Reader::open_source(std::shared_ptr<const ByteSource> source,
       return parsed.error();
     }
     auto impl = std::make_unique<Impl>();
+    auto parsed_header = std::move(parsed).value();
     impl->source = std::move(source);
     impl->options = options;
-    impl->document = std::move(parsed).value();
+    impl->document = std::move(parsed_header.document);
+    impl->embedded_blocks = std::move(parsed_header.embedded_blocks);
     return Reader(std::move(impl));
   } catch (const std::bad_alloc &) {
     return make_error(ErrorCode::resource_limit,
@@ -990,7 +1234,8 @@ const Document &Reader::document() const noexcept { return impl_->document; }
 Result<RawImage> Reader::read_image(std::size_t image_index,
                                     std::stop_token stop_token) const {
   try {
-    auto plan = plan_image_read(impl_->document, impl_->options, image_index);
+    auto plan = plan_image_read(impl_->document, impl_->options,
+                                impl_->embedded_blocks, image_index);
     if (!plan) {
       return plan.error();
     }
@@ -1026,7 +1271,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
                                             std::span<std::byte> destination,
                                             std::stop_token stop_token) const {
   try {
-    auto plan = plan_image_read(impl_->document, impl_->options, image_index);
+    auto plan = plan_image_read(impl_->document, impl_->options,
+                                impl_->embedded_blocks, image_index);
     if (!plan) {
       return plan.error();
     }
@@ -1037,6 +1283,19 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
     }
     constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
     std::size_t total = 0;
+    if (plan.value().embedded_block != nullptr) {
+      while (total < expected) {
+        if (stop_token.stop_requested()) {
+          return make_error(ErrorCode::cancelled,
+                            "Image read was cancelled");
+        }
+        const auto chunk = std::min(kReadChunkBytes, expected - total);
+        std::copy_n(plan.value().embedded_block->data() + total, chunk,
+                    destination.data() + total);
+        total += chunk;
+      }
+      return total;
+    }
     while (total < expected) {
       if (stop_token.stop_requested()) {
         return make_error(ErrorCode::cancelled, "Image read was cancelled");

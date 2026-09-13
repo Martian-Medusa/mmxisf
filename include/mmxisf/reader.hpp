@@ -24,6 +24,7 @@ struct ReaderOptions {
   std::size_t max_images{64};
   std::size_t max_metadata_entries{100'000};
   std::size_t max_metadata_value_bytes{8U * 1024U * 1024U};
+  std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::size_t max_image_dimensions{8};
   std::uint64_t max_inspected_channels{64};
   std::uint64_t max_decoded_channels{16};
@@ -60,7 +61,8 @@ public:
 
   [[nodiscard]] const Document &document() const noexcept;
 
-  // Exact serialized bytes for supported, uncompressed local attachments.
+  // Exact serialized bytes for supported, uncompressed local or embedded
+  // blocks.
   // byte_order and pixel_storage describe the returned byte representation;
   // no implicit endian or layout conversion is performed.
   [[nodiscard]] Result<RawImage>

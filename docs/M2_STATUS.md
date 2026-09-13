@@ -17,6 +17,10 @@
   are preserved and ignored by the preview.
 - The reader preserves the serialized byte order and Planar/Normal layout; it
   performs no silent conversion or precision loss.
+- Embedded Image blocks decode incrementally from whitespace-tolerant Base64 or
+  lowercase hexadecimal `Data` content. Invalid characters, incomplete or
+  noncanonical padding, duplicate/missing Data children, nested elements, and
+  text outside Data fail closed.
 - The macOS PoC viewer renders Gray and RGB attachments in both Planar and
   Normal layouts, interprets little- and big-endian scalar samples, and derives
   auto-stretch statistics from all nominal RGB channels.
@@ -35,6 +39,10 @@
 - Deterministic ASan/UBSan mutation smoke: 20,000 cases PASS.
 - ASan/UBSan unit suite: 4/4 PASS.
 - Independent installed-package consumer: 1/1 PASS locally.
+- First M2 scalar/RGB/metadata slice cross-platform CI: PASS in run
+  `34772859588` on Linux, Windows, and macOS, including the installed consumer,
+  20,000 deterministic sanitizer mutations, and 20,000 coverage-guided
+  libFuzzer runs.
 - Strict ad-hoc bundle signature validation: PASS.
 - Embedded Expat dependency resolution through `@rpath`: PASS.
 - Human launch/open/render test of a real RGB producer file: PASS. The exact
@@ -48,7 +56,6 @@
 
 ## Still required to close M2
 
-- Embedded Base64 and hexadecimal image blocks.
 - Zero-filled unused-space validation and remaining raw-block grammar.
 - Independent or producer-generated fixtures for every claimed scalar,
   storage, byte-order, and color combination.

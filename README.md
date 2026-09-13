@@ -8,7 +8,8 @@ PFI, PixInsight, PCL, or Qt.
 > Status: M1 is complete and M2 is in progress. Version `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The current M2 slice reads the PFI scalar profile from exact,
-> uncompressed attachments and powers Gray/RGB preview in the macOS viewer.
+> uncompressed attachment or embedded blocks and powers Gray/RGB preview in the
+> macOS viewer.
 > This is still a pre-release profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
@@ -76,7 +77,8 @@ than the source tree.
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Exact uncompressed attachment bytes can be returned in an
 owning `RawImage` or written into a caller-owned span with cooperative
-`std::stop_token` cancellation.
+`std::stop_token` cancellation. Embedded image blocks support whitespace-tolerant
+Base64 and the specification's lowercase hexadecimal encoding.
 
 The inspector's optional `--decode` mode validates every declared image block
 and reports the exact decoded byte count. It does not convert endian, storage
@@ -112,10 +114,10 @@ open "artifacts/mmXISF Viewer PoC.app"
 
 The optional AppKit target is macOS-only and does not enter the standalone
 library. The generated local bundle embeds Expat. Its current preview scope is
-the first uncompressed local Gray or RGB attachment in Planar or Normal layout,
-with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
-can still open a broader set of headers, while unsupported image decoding fails
-closed.
+the first uncompressed local or embedded Gray/RGB block in Planar or Normal
+layout, with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata
+inspector can still open a broader set of headers, while unsupported image
+decoding fails closed.
 
 ## License
 

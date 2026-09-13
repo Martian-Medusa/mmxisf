@@ -405,6 +405,206 @@ int main() {
            color_space);
   }
 
+  struct EmbeddedDecodeCase {
+    const char *name;
+    const char *encoding;
+    const char *encoded;
+    const char *geometry;
+    const char *sample_format;
+    std::vector<std::byte> expected;
+  };
+  const std::array embedded_decode_cases{
+      EmbeddedDecodeCase{
+          "base64-rgb", "base64", " AAEC\nAwQF ", "2:1:3", "UInt8",
+          {std::byte{0x00}, std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
+           std::byte{0x04}, std::byte{0x05}}},
+      EmbeddedDecodeCase{"base64-padding", "base64", "EjQ=", "1:1:1",
+                         "UInt16", {std::byte{0x12}, std::byte{0x34}}},
+      EmbeddedDecodeCase{
+          "hex-rgb", "hex", " 0011\n22334455 ", "2:1:3", "UInt8",
+          {std::byte{0x00}, std::byte{0x11}, std::byte{0x22}, std::byte{0x33},
+           std::byte{0x44}, std::byte{0x55}}},
+  };
+  for (const auto &test : embedded_decode_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-embedded-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"") +
+            test.geometry + "\" sampleFormat=\"" + test.sample_format +
+            "\" colorSpace=\"" +
+            (std::string_view(test.geometry).ends_with(":3") ? "RGB" :
+                                                               "Gray") +
+            "\" location=\"embedded\"><Data encoding=\"" + test.encoding +
+            "\">" + test.encoded + "</Data></Image>" + valid_metadata() +
+            "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      expect(result.value().document().images()[0].block.kind ==
+                 mmxisf::BlockKind::embedded,
+             test.name);
+      auto image = result.value().read_image(0);
+      expect(image && image.value().pixels == test.expected, test.name);
+      std::vector<std::byte> destination(test.expected.size());
+      auto into = result.value().read_image_into(0, destination);
+      expect(into && into.value() == test.expected.size() &&
+                 destination == test.expected,
+             test.name);
+    }
+  }
+
+  struct InvalidEmbeddedCase {
+    const char *name;
+    const char *image_body;
+    mmxisf::ErrorCode expected_error;
+  };
+  const std::array invalid_embedded_cases{
+      InvalidEmbeddedCase{"missing-data", "", mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"invalid-encoding",
+                          "<Data encoding=\"Base64\">AA==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"uppercase-hex",
+                          "<Data encoding=\"hex\">0A</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"odd-hex",
+                          "<Data encoding=\"hex\">0</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"base64-character",
+                          "<Data encoding=\"base64\">A?==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"base64-incomplete",
+                          "<Data encoding=\"base64\">AAA</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{"base64-pad-bits",
+                          "<Data encoding=\"base64\">AB==</Data>",
+                          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{
+          "base64-after-padding",
+          "<Data encoding=\"base64\">AA==AA==</Data>",
+          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{
+          "duplicate-data",
+          "<Data encoding=\"base64\">AA==</Data>"
+          "<Data encoding=\"base64\">AA==</Data>",
+          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{
+          "data-child",
+          "<Data encoding=\"base64\"><Property id=\"p\" "
+          "type=\"String\" value=\"x\"/></Data>",
+          mmxisf::ErrorCode::invalid_xisf},
+      InvalidEmbeddedCase{
+          "text-outside-data", "x<Data encoding=\"base64\">AA==</Data>",
+          mmxisf::ErrorCode::invalid_xisf},
+  };
+  for (const auto &test : invalid_embedded_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-invalid-embedded-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+            "location=\"embedded\">") +
+            test.image_body + "</Image>" + valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == test.expected_error, test.name);
+  }
+
+  const auto data_on_attachment_path = write_fixture(
+      "mmxisf-m2-data-on-attachment.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"attachment:1024:1\">"
+          "<Data encoding=\"base64\">AA==</Data></Image>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0}});
+  auto data_on_attachment = mmxisf::Reader::open_file(data_on_attachment_path);
+  expect(!data_on_attachment &&
+             data_on_attachment.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "Data child on attachment Image is rejected");
+
+  const auto embedded_size_mismatch_path = write_fixture(
+      "mmxisf-m2-embedded-size-mismatch.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt16\" "
+          "location=\"embedded\"><Data encoding=\"base64\">AA==</Data>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_size_mismatch =
+      mmxisf::Reader::open_file(embedded_size_mismatch_path);
+  expect(embedded_size_mismatch.has_value(),
+         "embedded size mismatch remains inspectable");
+  if (embedded_size_mismatch) {
+    auto image = embedded_size_mismatch.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::invalid_block,
+           "embedded size mismatch is rejected before pixel delivery");
+  }
+
+  mmxisf::ReaderOptions tiny_encoded_block_limit;
+  tiny_encoded_block_limit.max_encoded_block_bytes = 3;
+  const auto encoded_limit_path = write_fixture(
+      "mmxisf-m2-embedded-encoded-limit.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"base64\">AA==</Data>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto encoded_limit =
+      mmxisf::Reader::open_file(encoded_limit_path, tiny_encoded_block_limit);
+  expect(!encoded_limit &&
+             encoded_limit.error().code == mmxisf::ErrorCode::resource_limit,
+         "embedded encoded-byte budget is enforced while parsing");
+
+  mmxisf::ReaderOptions tiny_embedded_decoded_limit;
+  tiny_embedded_decoded_limit.max_decoded_image_bytes = 1;
+  const auto decoded_limit_path = write_fixture(
+      "mmxisf-m2-embedded-decoded-limit.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt16\" "
+          "location=\"embedded\"><Data encoding=\"base64\">EjQ=</Data>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto decoded_limit = mmxisf::Reader::open_file(
+      decoded_limit_path, tiny_embedded_decoded_limit);
+  expect(!decoded_limit &&
+             decoded_limit.error().code == mmxisf::ErrorCode::resource_limit,
+         "embedded decoded-byte budget is enforced while parsing");
+
+  const auto embedded_memory_path = write_fixture(
+      "mmxisf-m2-embedded-memory-source.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"base64\">Kg==</Data>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_memory_source =
+      std::make_shared<MemoryByteSource>(read_bytes(embedded_memory_path));
+  auto embedded_memory_reader =
+      mmxisf::Reader::open_source(embedded_memory_source);
+  expect(embedded_memory_reader.has_value(),
+         "embedded image opens through a custom ByteSource");
+  if (embedded_memory_reader) {
+    const auto calls_after_open = embedded_memory_source->read_calls;
+    auto image = embedded_memory_reader.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{std::byte{0x2a}},
+           "embedded image bytes are retained exactly");
+    expect(embedded_memory_source->read_calls == calls_after_open,
+           "embedded image read performs no post-header source I/O");
+    std::stop_source embedded_stop;
+    embedded_stop.request_stop();
+    auto cancelled = embedded_memory_reader.value().read_image(
+        0, embedded_stop.get_token());
+    expect(!cancelled &&
+               cancelled.error().code == mmxisf::ErrorCode::cancelled,
+           "embedded image read observes pre-cancellation");
+  }
+
   auto bad_signature_bytes = read_bytes(valid_path);
   bad_signature_bytes[0] = std::byte{0};
   const auto bad_signature_path =
