@@ -853,12 +853,53 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     entry.kind = name == "Property" ? MetadataEntry::Kind::property
                                     : MetadataEntry::Kind::fits_keyword;
     entry.image_index = state.current_image();
+    entry.scope = entry.image_index
+                      ? MetadataEntry::Scope::image
+                      : parent == "Metadata"
+                            ? MetadataEntry::Scope::xisf_unit
+                            : MetadataEntry::Scope::standalone;
+    entry.uid = std::string(attribute(attributes, "uid").value_or(""));
     entry.name = std::string(*identity);
     entry.type = std::string(attribute(attributes, "type").value_or(""));
     entry.value = std::string(attribute(attributes, "value").value_or(""));
     entry.comment = std::string(attribute(attributes, "comment").value_or(""));
+    entry.format = std::string(attribute(attributes, "format").value_or(""));
+    const auto location = attribute(attributes, "location");
+    if (location) {
+      entry.block = parse_location(*location);
+      if (entry.block.kind == BlockKind::unknown) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Property has an invalid data block location", name,
+                   "location");
+        return;
+      }
+      entry.value_form = MetadataEntry::ValueForm::data_block;
+    } else if (name == "Property" && !value) {
+      entry.value_form = MetadataEntry::ValueForm::character_data;
+    }
+    const auto parse_extent = [&](std::string_view attribute_name,
+                                  std::optional<std::uint64_t> &target) {
+      const auto serialized = attribute(attributes, attribute_name);
+      if (!serialized) {
+        return true;
+      }
+      std::uint64_t parsed = 0;
+      if (!parse_unsigned(*serialized, parsed)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Property extent must be an unsigned integer", name,
+                   std::string(attribute_name));
+        return false;
+      }
+      target = parsed;
+      return true;
+    };
+    if (!parse_extent("length", entry.length) ||
+        !parse_extent("rows", entry.rows) ||
+        !parse_extent("columns", entry.columns)) {
+      return;
+    }
     state.metadata.push_back(std::move(entry));
-    if (name == "Property" && !attribute(attributes, "value")) {
+    if (name == "Property" && !value && !location) {
       state.text_metadata_index = state.metadata.size() - 1;
     }
   }
@@ -2208,6 +2249,30 @@ const char *to_string(BlockKind kind) noexcept {
     return "Unknown";
   }
   return "Unknown";
+}
+
+const char *to_string(MetadataEntry::Scope scope) noexcept {
+  switch (scope) {
+  case MetadataEntry::Scope::standalone:
+    return "Standalone";
+  case MetadataEntry::Scope::xisf_unit:
+    return "XISF unit";
+  case MetadataEntry::Scope::image:
+    return "Image";
+  }
+  return "Standalone";
+}
+
+const char *to_string(MetadataEntry::ValueForm value_form) noexcept {
+  switch (value_form) {
+  case MetadataEntry::ValueForm::attribute:
+    return "Attribute";
+  case MetadataEntry::ValueForm::character_data:
+    return "Character data";
+  case MetadataEntry::ValueForm::data_block:
+    return "Data block";
+  }
+  return "Attribute";
 }
 
 } // namespace mmxisf

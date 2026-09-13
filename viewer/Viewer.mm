@@ -485,15 +485,27 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     }
   }
   for (const auto &entry : document.metadata()) {
-    NSString *scope =
-        entry.image_index
-            ? [NSString stringWithFormat:@"Image %lu", *entry.image_index]
-            : @"Document";
+    NSString *scope = @"Standalone";
+    if (entry.scope == mmxisf::MetadataEntry::Scope::xisf_unit) {
+      scope = @"XISF unit";
+    } else if (entry.scope == mmxisf::MetadataEntry::Scope::image &&
+               entry.image_index) {
+      scope = [NSString stringWithFormat:@"Image %lu", *entry.image_index];
+    }
+    NSString *type = ns_string(entry.type);
+    if (entry.kind == mmxisf::MetadataEntry::Kind::property) {
+      type = [NSString
+          stringWithFormat:@"%@ · %s", type,
+                           mmxisf::to_string(entry.value_form)];
+    }
+    NSString *value = entry.value_form ==
+                              mmxisf::MetadataEntry::ValueForm::data_block
+                          ? ns_string(entry.block.raw)
+                          : display_string(entry.value);
     add(scope,
         entry.kind == mmxisf::MetadataEntry::Kind::property ? @"Property"
                                                             : @"FITS",
-        ns_string(entry.name), ns_string(entry.type),
-        display_string(entry.value), ns_string(entry.comment));
+        ns_string(entry.name), type, value, ns_string(entry.comment));
   }
   rows_ = [rows copy];
 }

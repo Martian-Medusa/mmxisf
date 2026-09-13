@@ -128,6 +128,13 @@ gates pass. Cross-platform CI and independent compressed producer files remain
 open, so this checkpoint does not yet close M3 or trigger another calendar
 rebaseline.
 
+M4 began in parallel with the final M3 cross-platform gate. Its first bounded
+slice replaces the ambiguous flat metadata tuple with explicit lexical scope,
+value serialization form, optional Property formatting and dimensions, raw
+block location, and uid provenance. It deliberately does not interpret FITS
+values or resolve references yet; those remain separate parity increments so a
+fast metadata projection cannot erase source distinctions needed by PFI.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

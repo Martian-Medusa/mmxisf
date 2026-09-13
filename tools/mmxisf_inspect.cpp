@@ -56,17 +56,36 @@ int main(int argc, char **argv) {
     }
   }
   for (const auto &entry : document.metadata()) {
-    std::cout << (entry.image_index
-                      ? "image[" + std::to_string(*entry.image_index) + "]"
-                      : "document")
-              << '\t'
+    std::cout << mmxisf::to_string(entry.scope);
+    if (entry.image_index) {
+      std::cout << '[' << *entry.image_index << ']';
+    }
+    std::cout << '\t'
               << (entry.kind == mmxisf::MetadataEntry::Kind::property
                       ? "Property"
                       : "FITSKeyword")
               << '\t' << entry.name << '\t' << entry.type << '\t'
-              << entry.value;
+              << mmxisf::to_string(entry.value_form) << '\t' << entry.value;
     if (!entry.comment.empty()) {
-      std::cout << '\t' << entry.comment;
+      std::cout << "\tcomment=" << entry.comment;
+    }
+    if (!entry.format.empty()) {
+      std::cout << "\tformat=" << entry.format;
+    }
+    if (!entry.uid.empty()) {
+      std::cout << "\tuid=" << entry.uid;
+    }
+    if (entry.block.kind != mmxisf::BlockKind::unknown) {
+      std::cout << "\tlocation=" << entry.block.raw;
+    }
+    if (entry.length) {
+      std::cout << "\tlength=" << *entry.length;
+    }
+    if (entry.rows) {
+      std::cout << "\trows=" << *entry.rows;
+    }
+    if (entry.columns) {
+      std::cout << "\tcolumns=" << *entry.columns;
     }
     std::cout << '\n';
   }

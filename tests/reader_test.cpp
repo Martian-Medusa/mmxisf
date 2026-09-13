@@ -215,6 +215,70 @@ int main() {
            "pre-cancelled image read is rejected at a safe boundary");
   }
 
+  const auto metadata_fidelity_path = write_fixture(
+      "mmxisf-metadata-fidelity.xisf",
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" "
+      "location=\"attachment:1024:8\">"
+      "<Property uid=\"exposure\" id=\"Instrument:ExposureTime\" "
+      "type=\"Float64\" value=\"30.000\" format=\"precision:3\" "
+      "comment=\"seconds\"/>"
+      "<FITSKeyword name=\"FILTER\" value=\"'Luminance'\" "
+      "comment=\"Filter name\"/>"
+      "</Image>"
+      "<Property uid=\"profile\" id=\"Test:Profile\" type=\"F64Vector\" "
+      "length=\"3\" location=\"inline:base64\">AAAAAAAAAAAAAAAAAAAAAA=="
+      "</Property>" +
+          valid_metadata() + "</xisf>",
+      pixels);
+  auto metadata_fidelity =
+      mmxisf::Reader::open_file(metadata_fidelity_path);
+  expect(metadata_fidelity.has_value(),
+         "metadata fidelity fixture opens");
+  if (metadata_fidelity) {
+    const auto &entries = metadata_fidelity.value().document().metadata();
+    expect(entries.size() == 5, "all metadata serializations are retained");
+    expect(entries[0].scope == mmxisf::MetadataEntry::Scope::image &&
+               entries[0].image_index == 0 && entries[0].uid == "exposure",
+           "direct image Property scope and uid are retained");
+    expect(entries[0].value_form ==
+                   mmxisf::MetadataEntry::ValueForm::attribute &&
+               entries[0].value == "30.000" &&
+               entries[0].format == "precision:3" &&
+               entries[0].comment == "seconds",
+           "Property attribute serialization remains exact");
+    expect(entries[1].kind == mmxisf::MetadataEntry::Kind::fits_keyword &&
+               entries[1].value == "'Luminance'" &&
+               entries[1].comment == "Filter name",
+           "FITS raw value and comment remain exact");
+    expect(entries[2].scope == mmxisf::MetadataEntry::Scope::standalone &&
+               entries[2].value_form ==
+                   mmxisf::MetadataEntry::ValueForm::data_block &&
+               entries[2].block.kind == mmxisf::BlockKind::inline_data &&
+               entries[2].block.raw == "inline:base64" &&
+               entries[2].length == 3,
+           "standalone block Property form and extent are retained");
+    expect(entries[4].scope == mmxisf::MetadataEntry::Scope::xisf_unit &&
+               entries[4].value_form ==
+                   mmxisf::MetadataEntry::ValueForm::character_data &&
+               entries[4].value == "test",
+           "XISF-unit character data Property remains exact");
+  }
+
+  const auto invalid_property_extent_path = write_fixture(
+      "mmxisf-invalid-property-extent.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Vector\" type=\"F64Vector\" "
+          "length=\"3x\" location=\"inline:base64\"/>") +
+          valid_metadata() + "</xisf>");
+  auto invalid_property_extent =
+      mmxisf::Reader::open_file(invalid_property_extent_path);
+  expect(!invalid_property_extent &&
+             invalid_property_extent.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "malformed Property extent is rejected");
+
   auto memory_source =
       std::make_shared<MemoryByteSource>(read_bytes(valid_path));
   auto source_reader = mmxisf::Reader::open_source(memory_source);

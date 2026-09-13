@@ -35,13 +35,23 @@ struct BlockLocation {
 
 struct MetadataEntry {
   enum class Kind { property, fits_keyword };
+  enum class Scope { standalone, xisf_unit, image };
+  enum class ValueForm { attribute, character_data, data_block };
 
   Kind kind{Kind::property};
+  Scope scope{Scope::standalone};
+  ValueForm value_form{ValueForm::attribute};
   std::optional<std::size_t> image_index;
+  std::string uid;
   std::string name;
   std::string type;
   std::string value;
   std::string comment;
+  std::string format;
+  BlockLocation block;
+  std::optional<std::uint64_t> length;
+  std::optional<std::uint64_t> rows;
+  std::optional<std::uint64_t> columns;
 };
 
 struct ImageInfo {
@@ -94,5 +104,8 @@ private:
 [[nodiscard]] const char *to_string(PixelStorage storage) noexcept;
 [[nodiscard]] const char *to_string(ByteOrder order) noexcept;
 [[nodiscard]] const char *to_string(BlockKind kind) noexcept;
+[[nodiscard]] const char *to_string(MetadataEntry::Scope scope) noexcept;
+[[nodiscard]] const char *
+to_string(MetadataEntry::ValueForm value_form) noexcept;
 
 } // namespace mmxisf

@@ -54,6 +54,7 @@ milestone. They remain candidates for later conformance work.
 - [M1 parser/viewer checkpoint](docs/M1_STATUS.md)
 - [M2 progress](docs/M2_STATUS.md)
 - [M3 progress](docs/M3_STATUS.md)
+- [M4 progress](docs/M4_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
