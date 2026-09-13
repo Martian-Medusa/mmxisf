@@ -15,6 +15,7 @@
 #include <exception>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <new>
 #include <string_view>
 #include <system_error>
@@ -298,6 +299,7 @@ Result<std::string> format_bound(double value) {
 
 struct PreparedImageBlock {
   std::vector<std::byte> storage;
+  std::filesystem::path spool_path;
   std::uint64_t serialized_size{0};
   std::string compression;
   std::string subblocks;
@@ -518,6 +520,68 @@ Result<std::string> compute_checksum(std::span<const std::byte> bytes,
   return result;
 }
 
+Result<std::string> compute_checksum_file(const std::filesystem::path &path,
+                                          std::uint64_t expected_size,
+                                          ChecksumAlgorithm algorithm,
+                                          std::stop_token stop_token) {
+  const auto *digest = checksum_digest(algorithm);
+  const auto name = checksum_name(algorithm);
+  if (digest == nullptr || name.empty()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer checksum algorithm is invalid");
+  }
+  using DigestContext = std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)>;
+  DigestContext context(EVP_MD_CTX_new(), EVP_MD_CTX_free);
+  if (!context || EVP_DigestInit_ex(context.get(), digest, nullptr) != 1) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer checksum initialization failed");
+  }
+  std::ifstream input(path, std::ios::binary);
+  if (!input) {
+    return make_error(ErrorCode::io_error,
+                      "Unable to read writer compression spool");
+  }
+  constexpr std::size_t kChunkBytes = 1024U * 1024U;
+  std::vector<std::byte> buffer(static_cast<std::size_t>(
+      std::min<std::uint64_t>(expected_size, kChunkBytes)));
+  auto remaining = expected_size;
+  while (remaining != 0) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+    }
+    const auto count = static_cast<std::size_t>(
+        std::min<std::uint64_t>(remaining, buffer.size()));
+    input.read(reinterpret_cast<char *>(buffer.data()),
+               static_cast<std::streamsize>(count));
+    if (input.gcount() != static_cast<std::streamsize>(count) ||
+        EVP_DigestUpdate(context.get(), buffer.data(), count) != 1) {
+      return make_error(input ? ErrorCode::internal_error : ErrorCode::io_error,
+                        input ? "Writer checksum update failed"
+                              : "Writer compression spool is truncated");
+    }
+    remaining -= count;
+  }
+  if (input.peek() != std::char_traits<char>::eof()) {
+    return make_error(ErrorCode::io_error,
+                      "Writer compression spool has unexpected trailing data");
+  }
+  std::array<unsigned char, EVP_MAX_MD_SIZE> hash{};
+  unsigned int hash_size = 0;
+  if (EVP_DigestFinal_ex(context.get(), hash.data(), &hash_size) != 1) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer checksum finalization failed");
+  }
+  constexpr std::string_view digits = "0123456789abcdef";
+  std::string result(name);
+  result += ':';
+  result.reserve(result.size() + hash_size * 2U);
+  for (unsigned int index = 0; index < hash_size; ++index) {
+    result.push_back(digits[hash[index] >> 4U]);
+    result.push_back(digits[hash[index] & 0x0fU]);
+  }
+  return result;
+}
+
 Result<std::string> make_header(std::span<const ImageWriteView> images,
                                 std::span<const MetadataWriteEntry> metadata,
                                 const WriterOptions &options,
@@ -607,9 +671,9 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
   return header;
 }
 
-Result<std::size_t> write_all(std::ofstream &output,
-                              std::span<const std::byte> bytes,
-                              std::stop_token stop_token) {
+Result<std::uint64_t> write_all(std::ofstream &output,
+                                std::span<const std::byte> bytes,
+                                std::stop_token stop_token) {
   constexpr std::size_t kChunkBytes = 8U * 1024U * 1024U;
   std::size_t written = 0;
   while (written < bytes.size()) {
@@ -624,21 +688,68 @@ Result<std::size_t> write_all(std::ofstream &output,
     }
     written += count;
   }
+  return static_cast<std::uint64_t>(written);
+}
+
+Result<std::uint64_t> write_file_contents(std::ofstream &output,
+                                          const std::filesystem::path &path,
+                                          std::uint64_t expected_size,
+                                          std::stop_token stop_token) {
+  std::ifstream input(path, std::ios::binary);
+  if (!input) {
+    return make_error(ErrorCode::io_error,
+                      "Unable to read writer compression spool");
+  }
+  constexpr std::size_t kChunkBytes = 1024U * 1024U;
+  std::vector<std::byte> buffer(static_cast<std::size_t>(
+      std::min<std::uint64_t>(expected_size, kChunkBytes)));
+  std::uint64_t written = 0;
+  while (written < expected_size) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+    }
+    const auto count = static_cast<std::size_t>(
+        std::min<std::uint64_t>(expected_size - written, buffer.size()));
+    input.read(reinterpret_cast<char *>(buffer.data()),
+               static_cast<std::streamsize>(count));
+    if (input.gcount() != static_cast<std::streamsize>(count)) {
+      return make_error(ErrorCode::io_error,
+                        "Writer compression spool is truncated");
+    }
+    auto copied = write_all(output, std::span(buffer).first(count), stop_token);
+    if (!copied) {
+      return copied.error();
+    }
+    written += count;
+  }
+  if (input.peek() != std::char_traits<char>::eof()) {
+    return make_error(ErrorCode::io_error,
+                      "Writer compression spool has unexpected trailing data");
+  }
   return written;
 }
 
-class TemporaryFileCleanup {
+class TemporaryFilesCleanup {
 public:
-  explicit TemporaryFileCleanup(std::filesystem::path path)
-      : path_(std::move(path)) {}
-  ~TemporaryFileCleanup() {
-    std::error_code ignored;
-    std::filesystem::remove(path_, ignored);
+  void track(std::filesystem::path path) { paths_.push_back(std::move(path)); }
+
+  ~TemporaryFilesCleanup() {
+    for (const auto &path : paths_) {
+      std::error_code ignored;
+      std::filesystem::remove(path, ignored);
+    }
   }
 
 private:
-  std::filesystem::path path_;
+  std::vector<std::filesystem::path> paths_;
 };
+
+bool path_is_available(const std::filesystem::path &path) {
+  std::error_code error;
+  const auto status = std::filesystem::symlink_status(path, error);
+  return (!error && status.type() == std::filesystem::file_type::not_found) ||
+         error == std::errc::no_such_file_or_directory;
+}
 
 } // namespace
 
@@ -860,6 +971,20 @@ write_file_impl(const std::filesystem::path &destination,
     pixel_sizes.push_back(pixel_bytes);
   }
 
+  if (!path_is_available(destination)) {
+    return make_error(ErrorCode::io_error,
+                      "Writer destination already exists or cannot be checked");
+  }
+  auto temporary = destination;
+  temporary += ".mmxisf-tmp";
+  if (!path_is_available(temporary)) {
+    return make_error(
+        ErrorCode::io_error,
+        "Writer temporary path already exists or cannot be checked");
+  }
+  TemporaryFilesCleanup cleanup;
+  cleanup.track(temporary);
+
   std::vector<PreparedImageBlock> prepared(images.size());
   std::uint64_t cumulative_serialized_bytes = 0;
   for (std::size_t index = 0; index < images.size(); ++index) {
@@ -891,7 +1016,25 @@ write_file_impl(const std::filesystem::path &destination,
       }
 
       std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
+      const bool use_spool = pixel_sizes[index] > chunk_limit;
+      std::ofstream spool_output;
+      if (use_spool) {
+        block.spool_path = destination;
+        block.spool_path += ".mmxisf-block-" + std::to_string(index) + "-tmp";
+        if (!path_is_available(block.spool_path)) {
+          return make_error(
+              ErrorCode::io_error,
+              "Writer compression spool already exists or cannot be checked");
+        }
+        cleanup.track(block.spool_path);
+        spool_output.open(block.spool_path, std::ios::binary | std::ios::trunc);
+        if (!spool_output) {
+          return make_error(ErrorCode::io_error,
+                            "Unable to create writer compression spool");
+        }
+      }
       std::uint64_t input_offset = 0;
+      std::uint64_t serialized_so_far = 0;
       while (input_offset < pixel_sizes[index]) {
         if (stop_token.stop_requested()) {
           return make_error(ErrorCode::cancelled, "XISF write was cancelled");
@@ -916,9 +1059,6 @@ write_file_impl(const std::filesystem::path &destination,
           shuffled = std::move(result).value();
           compression_input = shuffled;
         }
-
-        const auto serialized_so_far =
-            static_cast<std::uint64_t>(block.storage.size());
         if (serialized_so_far >= options.max_serialized_image_bytes ||
             serialized_so_far > options.max_cumulative_serialized_bytes -
                                     cumulative_serialized_bytes) {
@@ -940,12 +1080,32 @@ write_file_impl(const std::filesystem::path &destination,
         }
         const auto compressed_size =
             static_cast<std::uint64_t>(compressed.value().size());
-        block.storage.insert(block.storage.end(), compressed.value().begin(),
-                             compressed.value().end());
+        if (use_spool) {
+          auto spooled =
+              write_all(spool_output, compressed.value(), stop_token);
+          if (!spooled) {
+            return spooled.error();
+          }
+        } else {
+          block.storage = std::move(compressed).value();
+        }
         subblocks.emplace_back(compressed_size, uncompressed_size);
+        serialized_so_far += compressed_size;
         input_offset += uncompressed_size;
       }
-      block.serialized_size = block.storage.size();
+      if (use_spool) {
+        spool_output.flush();
+        if (!spool_output) {
+          return make_error(ErrorCode::io_error,
+                            "Unable to flush writer compression spool");
+        }
+        spool_output.close();
+        if (!spool_output) {
+          return make_error(ErrorCode::io_error,
+                            "Unable to close writer compression spool");
+        }
+      }
+      block.serialized_size = serialized_so_far;
       block.compression = std::string(compression_name(image.compression));
       if (image.byte_shuffle) {
         block.compression += "+sh";
@@ -980,10 +1140,15 @@ write_file_impl(const std::filesystem::path &destination,
           "Writer images exceed their cumulative serialized-byte budget");
     }
     if (image.checksum != ChecksumAlgorithm::none) {
-      const auto serialized = block.storage.empty()
-                                  ? image.pixels
-                                  : std::span<const std::byte>(block.storage);
-      auto checksum = compute_checksum(serialized, image.checksum);
+      auto checksum =
+          block.spool_path.empty()
+              ? compute_checksum(
+                    block.storage.empty()
+                        ? image.pixels
+                        : std::span<const std::byte>(block.storage),
+                    image.checksum)
+              : compute_checksum_file(block.spool_path, block.serialized_size,
+                                      image.checksum, stop_token);
       if (!checksum) {
         return checksum.error();
       }
@@ -1067,24 +1232,6 @@ write_file_impl(const std::filesystem::path &destination,
   }
   const auto file_size = file_size_result.value();
 
-  const auto path_is_available = [](const std::filesystem::path &path) {
-    std::error_code error;
-    const auto status = std::filesystem::symlink_status(path, error);
-    return (!error && status.type() == std::filesystem::file_type::not_found) ||
-           error == std::errc::no_such_file_or_directory;
-  };
-  if (!path_is_available(destination)) {
-    return make_error(ErrorCode::io_error,
-                      "Writer destination already exists or cannot be checked");
-  }
-  auto temporary = destination;
-  temporary += ".mmxisf-tmp";
-  if (!path_is_available(temporary)) {
-    return make_error(
-        ErrorCode::io_error,
-        "Writer temporary path already exists or cannot be checked");
-  }
-  TemporaryFileCleanup cleanup(temporary);
   std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
   if (!output) {
     return make_error(ErrorCode::io_error,
@@ -1122,11 +1269,17 @@ write_file_impl(const std::filesystem::path &destination,
       }
       padding -= count;
     }
-    const auto serialized =
-        prepared[index].storage.empty()
-            ? images[index].pixels
-            : std::span<const std::byte>(prepared[index].storage);
-    auto pixels_written = write_all(output, serialized, stop_token);
+    const auto &prepared_block = prepared[index];
+    auto pixels_written =
+        prepared_block.spool_path.empty()
+            ? write_all(
+                  output,
+                  prepared_block.storage.empty()
+                      ? images[index].pixels
+                      : std::span<const std::byte>(prepared_block.storage),
+                  stop_token)
+            : write_file_contents(output, prepared_block.spool_path,
+                                  prepared_block.serialized_size, stop_token);
     if (!pixels_written) {
       return pixels_written.error();
     }

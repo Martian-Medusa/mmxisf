@@ -76,6 +76,13 @@ Files that fit in one subblock retain the single-block representation. The
 writer checks cancellation between subblocks and emits the XISF `subblocks`
 descriptor only when more than one is required.
 
+Multi-subblock compressed bytes are staged in bounded sibling spool files and
+copied into the final temporary XISF only after the exact serialized size and
+header layout are known. This avoids retaining a complete compressed image in
+RAM in addition to the caller's source pixels and per-subblock scratch. Spools
+are removed after success, cancellation, or failure. A stale spool is never
+overwritten and causes an explicit I/O error.
+
 ## Multiple images and metadata
 
 Use the span overload to write several images and declarative metadata. A

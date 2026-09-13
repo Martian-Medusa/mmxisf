@@ -41,6 +41,8 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
 - large compressed images use deterministic, sample-aligned subblocks with
   caller-configurable byte/count limits, per-subblock shuffle scratch, and
   cancellation checkpoints;
+- multi-subblock serialized bytes use cleanup-guarded sibling spool files, so
+  block planning does not require a second full-image in-memory buffer;
 - decoded and serialized bytes have independent per-image and cumulative
   resource limits;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,

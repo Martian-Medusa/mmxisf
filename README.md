@@ -104,6 +104,11 @@ shuffle and SHA-1/256/512 checksums. Large compressed images use bounded,
 sample-aligned subblocks so codec/shuffle scratch does not scale to the complete
 image. Numeric/block Properties and references remain later profiles.
 
+The optional build-tree `mmxisf-writer-benchmark` exercises a deterministic
+73.5 MB RGB compression/checksum profile without committing a large fixture;
+its current local measurement method and limits are documented in
+[`docs/M6_WRITER_PERFORMANCE.md`](docs/M6_WRITER_PERFORMANCE.md).
+
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Decoded attachment bytes can be returned in an
 owning `RawImage` or written into a caller-owned span with cooperative

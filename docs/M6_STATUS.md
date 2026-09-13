@@ -27,6 +27,8 @@
 - Checked geometry arithmetic and finite header/image budgets before creating a
   file.
 - Chunked pixel delivery with cooperative cancellation.
+- Multi-subblock compressed output is staged through bounded sibling spool
+  files instead of retaining the complete serialized image in RAM.
 - A sibling temporary file is linked into a previously absent destination only
   after a successful flush. Existing destination and stale temporary paths are
   never overwritten; failed/cancelled writes remove incomplete temporary data.
@@ -80,13 +82,20 @@
   metadata API but its image API decodes only the first pair and then fails its
   reshape. This is recorded as LIMITED external-consumer evidence, not a PASS;
   native PixInsight validation remains required before release.
+- The repeatable 73,495,680-byte UInt8 RGB Zstandard+shuffle+SHA-256 benchmark
+  produced identical bytes in 5/5 runs, reached 250.986 MiB/s median writer
+  throughput, and used 125,009,920 bytes maximum RSS. File-backed spooling cut
+  peak RSS by 121,847,808 bytes versus the pre-spool observation and limits
+  overhead above the caller buffer to 49.13 MiB. See
+  [M6_WRITER_PERFORMANCE.md](M6_WRITER_PERFORMANCE.md); this is a local
+  regression gate, not a portable SLA.
 
 ## Still required for M6
 
 - Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
 - Expand caller-declared Properties beyond the current String/TimePoint direct
   profile to numeric and block-backed forms when required.
-- Measure representative compressed writer throughput and peak memory before
-  assigning a portable writer performance claim.
+- Repeat writer measurements on dedicated non-macOS hosts before assigning any
+  portable performance claim.
 - Add a sink abstraction after actual file-writer behavior establishes its
   ownership and failure requirements.

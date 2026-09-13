@@ -467,6 +467,23 @@ void test_compression_subblocks_round_trip() {
              decoded.value().pixels ==
                  std::vector<std::byte>(pixels.begin(), pixels.end()),
          "writer subblocks did not round trip exactly");
+  auto first_spool = first_path;
+  first_spool += ".mmxisf-block-0-tmp";
+  expect(!std::filesystem::exists(first_spool),
+         "successful writer left a compression spool");
+
+  const auto stale_path = output_path("mmxisf-writer-subblocks-stale.xisf");
+  auto stale_spool = stale_path;
+  stale_spool += ".mmxisf-block-0-tmp";
+  cleanup_paths.push_back(stale_spool);
+  {
+    std::ofstream stale(stale_spool, std::ios::binary);
+    stale << "keep";
+  }
+  auto stale = mmxisf::Writer::write_file(stale_path, image, writer_options);
+  expect(!stale && stale.error().code == mmxisf::ErrorCode::io_error &&
+             read_file(stale_spool) == std::vector<char>{'k', 'e', 'e', 'p'},
+         "writer overwrote a stale compression spool");
 }
 
 void test_rejection_and_cleanup() {

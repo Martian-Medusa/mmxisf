@@ -114,6 +114,10 @@ if(MMXISF_BUILD_TOOLS)
   add_executable(mmxisf_inspect tools/mmxisf_inspect.cpp)
   set_target_properties(mmxisf_inspect PROPERTIES OUTPUT_NAME "mmxisf-inspect")
   target_link_libraries(mmxisf_inspect PRIVATE mmxisf::mmxisf OpenSSL::Crypto)
+  add_executable(mmxisf_writer_benchmark tools/mmxisf_writer_benchmark.cpp)
+  set_target_properties(mmxisf_writer_benchmark
+    PROPERTIES OUTPUT_NAME "mmxisf-writer-benchmark")
+  target_link_libraries(mmxisf_writer_benchmark PRIVATE mmxisf::mmxisf)
 endif()
 
 if(MMXISF_BUILD_FUZZER)
