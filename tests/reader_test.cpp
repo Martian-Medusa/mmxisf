@@ -830,6 +830,46 @@ int main() {
            "zlib embedded block decompresses after Base64 decoding");
   }
 
+  const auto embedded_inline_property_path = write_fixture(
+      "mmxisf-m4-embedded-inline-property.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"base64\">AQ==</Data>"
+          "<Property id=\"Test:Vector\" type=\"F64Vector\" length=\"1\" "
+          "location=\"inline:base64\">AAAAAAAAAAA=</Property></Image>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_inline_property =
+      mmxisf::Reader::open_file(embedded_inline_property_path);
+  expect(embedded_inline_property.has_value(),
+         "inline Property block inside embedded Image remains inspectable");
+  if (embedded_inline_property) {
+    auto image = embedded_inline_property.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{std::byte{1}},
+           "inline Property bytes are not confused with embedded image bytes");
+    const auto &entries =
+        embedded_inline_property.value().document().metadata();
+    expect(!entries.empty() && entries[0].value_form ==
+                                   mmxisf::MetadataEntry::ValueForm::data_block,
+           "inline Property block form is retained inside embedded Image");
+  }
+
+  const auto embedded_direct_text_path = write_fixture(
+      "mmxisf-m4-embedded-direct-text.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"base64\">AQ==</Data>"
+          "not property data</Image>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_direct_text =
+      mmxisf::Reader::open_file(embedded_direct_text_path);
+  expect(!embedded_direct_text &&
+             embedded_direct_text.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "direct text outside embedded Data still fails closed");
+
   const std::vector<std::byte> shuffled_zlib_compressed{
       std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
       std::byte{0x66}, std::byte{0x65}, std::byte{0xe7}, std::byte{0xe4},
@@ -930,6 +970,93 @@ int main() {
       auto image = reader.value().read_image(0);
       expect(image && image.value().pixels == zlib_rgb_pixels, test.name);
     }
+  }
+
+  const std::vector<std::byte> zstd_rgb_compressed{
+      std::byte{0x28}, std::byte{0xb5}, std::byte{0x2f}, std::byte{0xfd},
+      std::byte{0x04}, std::byte{0x58}, std::byte{0x31}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
+      std::byte{0x04}, std::byte{0x05}, std::byte{0x06}, std::byte{0x9c},
+      std::byte{0xd0}, std::byte{0xe8}, std::byte{0x45}};
+  const auto zstd_path = write_fixture(
+      "mmxisf-m3-zstd.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" compression=\"zstd:6\" "
+          "location=\"attachment:1024:19\"/>") +
+          valid_metadata() + "</xisf>",
+      zstd_rgb_compressed);
+  auto zstd_reader = mmxisf::Reader::open_file(zstd_path);
+  expect(zstd_reader.has_value(), "Zstandard fixture opens");
+  if (zstd_reader) {
+    auto image = zstd_reader.value().read_image(0);
+    expect(image && image.value().pixels == zlib_rgb_pixels,
+           "Zstandard attachment decompresses to exact RGB bytes");
+  }
+  mmxisf::ReaderOptions invalid_zstd_window_options;
+  invalid_zstd_window_options.max_zstd_window_bytes = 1000;
+  auto invalid_zstd_window_reader =
+      mmxisf::Reader::open_file(zstd_path, invalid_zstd_window_options);
+  expect(invalid_zstd_window_reader.has_value(),
+         "invalid Zstandard window option does not affect inspection");
+  if (invalid_zstd_window_reader) {
+    auto image = invalid_zstd_window_reader.value().read_image(0);
+    expect(!image &&
+               image.error().code == mmxisf::ErrorCode::invalid_argument,
+           "invalid Zstandard window limit fails closed before decompression");
+  }
+
+  const std::vector<std::byte> shuffled_zstd_compressed{
+      std::byte{0x28}, std::byte{0xb5}, std::byte{0x2f}, std::byte{0xfd},
+      std::byte{0x04}, std::byte{0x58}, std::byte{0x61}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x01}, std::byte{0x03}, std::byte{0x05},
+      std::byte{0x07}, std::byte{0x09}, std::byte{0x0b}, std::byte{0x02},
+      std::byte{0x04}, std::byte{0x06}, std::byte{0x08}, std::byte{0x0a},
+      std::byte{0x0c}, std::byte{0x1c}, std::byte{0x02}, std::byte{0x08},
+      std::byte{0x7e}};
+  const auto shuffled_zstd_path = write_fixture(
+      "mmxisf-m3-zstd-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"RGB\" byteOrder=\"big\" "
+          "compression=\"zstd+sh:12:2\" "
+          "location=\"attachment:1024:25\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_zstd_compressed);
+  auto shuffled_zstd_reader = mmxisf::Reader::open_file(shuffled_zstd_path);
+  expect(shuffled_zstd_reader.has_value(), "Zstandard shuffle fixture opens");
+  if (shuffled_zstd_reader) {
+    auto image = shuffled_zstd_reader.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{
+                            std::byte{1}, std::byte{2}, std::byte{3},
+                            std::byte{4}, std::byte{5}, std::byte{6},
+                            std::byte{7}, std::byte{8}, std::byte{9},
+                            std::byte{10}, std::byte{11}, std::byte{12}},
+           "Zstandard byte shuffle reverses to exact UInt16 bytes");
+  }
+
+  auto invalid_zstd_bytes = zstd_rgb_compressed;
+  invalid_zstd_bytes[0] = std::byte{0};
+  const auto invalid_zstd_path = write_fixture(
+      "mmxisf-m3-invalid-zstd.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" compression=\"zstd:6\" "
+          "location=\"attachment:1024:19\"/>") +
+          valid_metadata() + "</xisf>",
+      invalid_zstd_bytes);
+  auto invalid_zstd_reader = mmxisf::Reader::open_file(invalid_zstd_path);
+  expect(invalid_zstd_reader.has_value(),
+         "corrupt Zstandard fixture remains inspectable");
+  if (invalid_zstd_reader) {
+    auto image = invalid_zstd_reader.value().read_image(0);
+    expect(!image &&
+               image.error().code == mmxisf::ErrorCode::invalid_block,
+           "corrupt Zstandard frame fails closed");
   }
 
   const std::vector<std::byte> shuffled_lz4_compressed{
@@ -1165,8 +1292,8 @@ int main() {
       "mmxisf-m3-ratio-limit.xisf",
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-          "<Image geometry=\"8193:1:1\" sampleFormat=\"UInt8\" "
-          "compression=\"zlib:8193\" "
+          "<Image geometry=\"65537:1:1\" sampleFormat=\"UInt8\" "
+          "compression=\"zlib:65537\" "
           "location=\"attachment:1024:1\"/>") +
           valid_metadata() + "</xisf>",
       {std::byte{0}});

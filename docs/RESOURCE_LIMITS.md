@@ -22,7 +22,8 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
-| decompression ratio | 8,192:1 | Secondary defense; decoded-byte cap remains authoritative |
+| decompression ratio | 65,536:1 | Measured current-producer sparse embedded RGB requires about 32,506:1; absolute decoded-byte and sample caps remain authoritative |
+| Zstandard window | 256 MiB | Bounds codec history allocation independently of decoded image size; configurable only as a power of two |
 | diagnostic records | 1,000 | Prevent error amplification |
 
 All byte constants are powers of two. The public API will expose named presets

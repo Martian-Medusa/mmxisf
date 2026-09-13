@@ -6,8 +6,9 @@
 ## Context
 
 Baseline XISF decoding requires strict XML 1.0 processing, zlib, LZ4/LZ4HC,
-byte shuffling, and SHA-1 checksum compatibility. PFI and public consumers need
-predictable cross-platform packaging without third-party types in the ABI.
+byte shuffling, and SHA-1 checksum compatibility. Current PixInsight-produced
+files additionally use Zstandard. PFI and public consumers need predictable
+cross-platform packaging without third-party types in the ABI.
 
 ## Decision
 
@@ -18,6 +19,7 @@ Use private adapters with the following leading candidates:
 | XML reader | Expat | strict SAX-style parsing, bounded domain construction |
 | zlib codec | zlib | normative/recommended implementation family |
 | LZ4/LZ4HC decoder | LZ4 | normative/recommended implementation family |
+| Zstandard decoder | zstd | current PixInsight interoperability; BSD-licensed bounded decoder API |
 | checksums | OpenSSL EVP | avoid implementing cryptographic primitives; covers required and stronger algorithms |
 
 Dependency policy:
@@ -32,11 +34,13 @@ Dependency policy:
 - version minimums are selected from tested security-supported releases during
   the spike, not guessed in this ADR.
 
-The selected dependency families have passed the library, installed-package,
+The original dependency families have passed the library, installed-package,
 and application-bundle gates locally, plus Linux, macOS, and Windows CI in run
 `34775853605`. This accepts the dependency and encapsulation policy, not a
 permanent version floor. Exact versions, hashes, licenses, and SBOM data remain
 release-artifact records and must be refreshed for each publication candidate.
+Zstandard follows the same private-adapter and installed-consumer gates; its
+cross-platform promotion remains pending until the corresponding CI run passes.
 
 ## Consequences
 

@@ -6,6 +6,7 @@
 #include <lz4.h>
 #include <openssl/evp.h>
 #include <zlib.h>
+#include <zstd.h>
 
 #include <algorithm>
 #include <array>
@@ -1581,6 +1582,14 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     decode_embedded_text(state, data);
     return;
   }
+  if (!state.element_stack.empty() &&
+      state.element_stack.back() == "Property" && !state.metadata.empty() &&
+      state.metadata.back().value_form ==
+          MetadataEntry::ValueForm::data_block) {
+    // Inline Property bytes belong to the unavailable block representation,
+    // not to the containing embedded Image's direct character data.
+    return;
+  }
   if (!state.text_metadata_index) {
     if (state.depth == 1 && !state.element_stack.empty() &&
         state.element_stack.back() == "xisf" &&
@@ -1793,7 +1802,7 @@ std::optional<std::uint64_t> bytes_per_sample(SampleFormat format) {
   return std::nullopt;
 }
 
-enum class CompressionCodec { none, zlib, lz4, lz4hc };
+enum class CompressionCodec { none, zlib, lz4, lz4hc, zstd };
 
 struct CompressionSubblock {
   std::uint64_t compressed_size{0};
@@ -1805,6 +1814,7 @@ struct CompressionPlan {
   bool byte_shuffled{false};
   std::uint64_t uncompressed_size{0};
   std::uint64_t item_size{1};
+  std::uint64_t max_zstd_window_bytes{0};
   std::vector<CompressionSubblock> subblocks;
 };
 
@@ -1924,6 +1934,7 @@ Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
   }
 
   CompressionPlan plan;
+  plan.max_zstd_window_bytes = options.max_zstd_window_bytes;
   if (tokens[0] == "zlib") {
     plan.codec = CompressionCodec::zlib;
   } else if (tokens[0] == "zlib+sh") {
@@ -1938,6 +1949,11 @@ Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
     plan.codec = CompressionCodec::lz4hc;
   } else if (tokens[0] == "lz4hc+sh") {
     plan.codec = CompressionCodec::lz4hc;
+    plan.byte_shuffled = true;
+  } else if (tokens[0] == "zstd") {
+    plan.codec = CompressionCodec::zstd;
+  } else if (tokens[0] == "zstd+sh") {
+    plan.codec = CompressionCodec::zstd;
     plan.byte_shuffled = true;
   } else {
     return make_error(ErrorCode::unsupported_feature,
@@ -2276,15 +2292,50 @@ Result<std::size_t> decompress_lz4(std::span<const std::byte> input,
   return static_cast<std::size_t>(produced);
 }
 
+Result<std::size_t> decompress_zstd(std::span<const std::byte> input,
+                                    std::span<std::byte> output,
+                                    std::uint64_t max_window_bytes) {
+  if (max_window_bytes < 1024 || !std::has_single_bit(max_window_bytes)) {
+    return make_error(
+        ErrorCode::invalid_argument,
+        "Zstandard window limit must be a power of two of at least 1024 bytes");
+  }
+  auto *context = ZSTD_createDCtx();
+  if (context == nullptr) {
+    return make_error(ErrorCode::internal_error,
+                      "Unable to initialize the Zstandard decoder");
+  }
+  const auto window_log =
+      static_cast<int>(std::bit_width(max_window_bytes) - 1U);
+  const auto configured =
+      ZSTD_DCtx_setParameter(context, ZSTD_d_windowLogMax, window_log);
+  if (ZSTD_isError(configured) != 0) {
+    ZSTD_freeDCtx(context);
+    return make_error(ErrorCode::invalid_argument,
+                      "Invalid Zstandard window limit");
+  }
+  const auto produced = ZSTD_decompressDCtx(
+      context, output.data(), output.size(), input.data(), input.size());
+  ZSTD_freeDCtx(context);
+  if (ZSTD_isError(produced) != 0 || produced != output.size()) {
+    return make_error(ErrorCode::invalid_block,
+                      "Invalid Zstandard frame or decompressed size mismatch");
+  }
+  return produced;
+}
+
 Result<std::size_t> decompress_subblock(CompressionCodec codec,
                                         std::span<const std::byte> input,
-                                        std::span<std::byte> output) {
+                                        std::span<std::byte> output,
+                                        std::uint64_t max_zstd_window_bytes) {
   switch (codec) {
   case CompressionCodec::zlib:
     return decompress_zlib(input, output);
   case CompressionCodec::lz4:
   case CompressionCodec::lz4hc:
     return decompress_lz4(input, output);
+  case CompressionCodec::zstd:
+    return decompress_zstd(input, output, max_zstd_window_bytes);
   case CompressionCodec::none:
     return make_error(ErrorCode::internal_error,
                       "Missing codec for compressed image block");
@@ -2377,7 +2428,8 @@ Result<std::size_t> decode_compressed_image(
     if (plan.compression.byte_shuffled) {
       shuffled.resize(uncompressed_size);
       auto decoded =
-          decompress_subblock(plan.compression.codec, input, shuffled);
+          decompress_subblock(plan.compression.codec, input, shuffled,
+                              plan.compression.max_zstd_window_bytes);
       if (!decoded) {
         return decoded.error();
       }
@@ -2388,7 +2440,9 @@ Result<std::size_t> decode_compressed_image(
         return unshuffled.error();
       }
     } else {
-      auto decoded = decompress_subblock(plan.compression.codec, input, output);
+      auto decoded = decompress_subblock(
+          plan.compression.codec, input, output,
+          plan.compression.max_zstd_window_bytes);
       if (!decoded) {
         return decoded.error();
       }

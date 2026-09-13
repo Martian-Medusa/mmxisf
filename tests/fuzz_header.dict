@@ -13,6 +13,8 @@
 "compression=\"zlib+sh:8:2\""
 "compression=\"lz4:8\""
 "compression=\"lz4hc+sh:8:2\""
+"compression=\"zstd:8\""
+"compression=\"zstd+sh:8:2\""
 "subblocks=\"8,8\""
 "orientation=\"0\""
 "orientation=\"flip\""

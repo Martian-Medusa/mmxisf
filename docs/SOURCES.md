@@ -28,6 +28,24 @@ is not vendored; the repository records derived requirements and hashes.
 These files establish PFI's current adapter needs; they are not XISF normative
 sources.
 
+## Private current-producer interoperability evidence
+
+- PixInsight 1.9.3 / XISF module 1.1.2 Linux resource `ar-src.xisf`, SHA-256
+  `30006e9afb5708cbe8e8d7a9f74f86c78994a799602d6e675a4cbc6f4297f946`:
+  embedded UInt8 RGB, `zstd`, inline and attached block-backed Properties.
+- PixInsight 1.9.3 / XISF module 1.1.2 Linux resource `psf-fit.xisf`, SHA-256
+  `0ad555e34e7ffc5ed0e9305ca53382537de6c075e9fe42ad886d2e67de1dccdf`:
+  attached UInt16 Gray, `zstd`.
+- PixInsight-produced `M106_RGB.xisf`, SHA-256
+  `2e288eb3d5efe06b5d4db1da121e0ce6a378d2caca5af52f83948a4615e51d1d`:
+  attached Float64 RGB with rich metadata.
+- PixInsight-produced `NGC2244_linear.xisf`, SHA-256
+  `9385cc12097e311ba566e639a299af4626b05dbb21ff8740824aaf74fd007f09`:
+  attached Float32 RGB with astrometric metadata blocks.
+
+These private files are used only as black-box inputs. They are not copied into
+the repository and do not broaden the normative specification baseline.
+
 ## Ecosystem reconnaissance
 
 An existing GPLv3+ C++ project already uses the `libXISF` name and is packaged

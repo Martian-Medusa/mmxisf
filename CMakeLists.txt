@@ -29,6 +29,7 @@ find_package(EXPAT 2.2 REQUIRED)
 find_package(LZ4 REQUIRED)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(ZLIB REQUIRED)
+find_package(ZSTD REQUIRED)
 
 add_library(mmxisf src/reader.cpp src/version.cpp)
 add_library(mmxisf::mmxisf ALIAS mmxisf)
@@ -42,7 +43,7 @@ target_include_directories(
 )
 target_link_libraries(
   mmxisf
-  PRIVATE EXPAT::EXPAT LZ4::LZ4 OpenSSL::Crypto ZLIB::ZLIB
+  PRIVATE EXPAT::EXPAT LZ4::LZ4 OpenSSL::Crypto ZLIB::ZLIB ZSTD::ZSTD
 )
 
 if(MMXISF_BUILD_TESTS OR MMXISF_BUILD_VIEWER)
@@ -100,7 +101,7 @@ endif()
 if(MMXISF_BUILD_TOOLS)
   add_executable(mmxisf_inspect tools/mmxisf_inspect.cpp)
   set_target_properties(mmxisf_inspect PROPERTIES OUTPUT_NAME "mmxisf-inspect")
-  target_link_libraries(mmxisf_inspect PRIVATE mmxisf::mmxisf)
+  target_link_libraries(mmxisf_inspect PRIVATE mmxisf::mmxisf OpenSSL::Crypto)
 endif()
 
 if(MMXISF_BUILD_FUZZER)
@@ -171,6 +172,7 @@ install(
 install(
   FILES
     cmake/FindLZ4.cmake
+    cmake/FindZSTD.cmake
     "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"

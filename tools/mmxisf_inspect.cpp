@@ -2,14 +2,44 @@
 
 #include "mmxisf/reader.hpp"
 
+#include <array>
 #include <cstdlib>
+#include <iomanip>
 #include <iostream>
+#include <openssl/evp.h>
+#include <span>
+#include <sstream>
 #include <string>
 
+namespace {
+
+std::string sha256(std::span<const std::byte> bytes) {
+  std::array<unsigned char, EVP_MAX_MD_SIZE> digest{};
+  unsigned int digest_size = 0;
+  if (EVP_Digest(bytes.data(), bytes.size(), digest.data(), &digest_size,
+                 EVP_sha256(), nullptr) != 1 ||
+      digest_size != 32) {
+    return {};
+  }
+  std::ostringstream encoded;
+  encoded << std::hex << std::setfill('0');
+  for (unsigned int index = 0; index < digest_size; ++index) {
+    encoded << std::setw(2) << static_cast<unsigned int>(digest[index]);
+  }
+  return encoded.str();
+}
+
+} // namespace
+
 int main(int argc, char **argv) {
-  const bool decode = argc == 3 && std::string(argv[1]) == "--decode";
+  const bool decode = argc == 3 &&
+                      (std::string(argv[1]) == "--decode" ||
+                       std::string(argv[1]) == "--decode-sha256");
+  const bool decode_sha256 =
+      decode && std::string(argv[1]) == "--decode-sha256";
   if ((!decode && argc != 2) || (argc == 3 && !decode)) {
-    std::cerr << "Usage: mmxisf-inspect [--decode] <file.xisf>\n";
+    std::cerr << "Usage: mmxisf-inspect [--decode|--decode-sha256] "
+                 "<file.xisf>\n";
     return EXIT_FAILURE;
   }
   auto result = mmxisf::Reader::open_file(argv[decode ? 2 : 1]);
@@ -64,8 +94,17 @@ int main(int argc, char **argv) {
       std::cout << "image[" << index
                 << "] decoded-bytes: " << pixels.value().pixels.size()
                 << " checksum: "
-                << mmxisf::to_string(pixels.value().checksum_verification)
-                << '\n';
+                << mmxisf::to_string(pixels.value().checksum_verification);
+      if (decode_sha256) {
+        const auto digest = sha256(pixels.value().pixels);
+        if (digest.empty()) {
+          std::cerr << "image[" << index
+                    << "] decode: unable to compute pixel SHA-256\n";
+          return EXIT_FAILURE;
+        }
+        std::cout << " pixel-sha256: " << digest;
+      }
+      std::cout << '\n';
     }
   }
   for (const auto &entry : document.metadata()) {

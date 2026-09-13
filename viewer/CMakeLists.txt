@@ -130,6 +130,45 @@ if(LZ4_LIBRARY MATCHES "\\.dylib$")
   )
 endif()
 
+if(ZSTD_LIBRARY MATCHES "\\.dylib$")
+  get_filename_component(MMXISF_ZSTD_REAL_PATH "${ZSTD_LIBRARY}" REALPATH)
+  execute_process(
+    COMMAND otool -D "${MMXISF_ZSTD_REAL_PATH}"
+    OUTPUT_VARIABLE MMXISF_ZSTD_ID_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE MMXISF_ZSTD_ID_RESULT
+  )
+  if(NOT MMXISF_ZSTD_ID_RESULT EQUAL 0)
+    message(FATAL_ERROR "Unable to inspect the Zstandard install name")
+  endif()
+  string(REPLACE "\n" ";" MMXISF_ZSTD_ID_LINES "${MMXISF_ZSTD_ID_OUTPUT}")
+  list(GET MMXISF_ZSTD_ID_LINES -1 MMXISF_ZSTD_INSTALL_NAME)
+  get_filename_component(MMXISF_ZSTD_BUNDLE_NAME
+                         "${MMXISF_ZSTD_INSTALL_NAME}" NAME)
+  set_target_properties(
+    mmxisf_viewer
+    PROPERTIES BUILD_RPATH "@executable_path/../Frameworks"
+  )
+  add_custom_command(
+    TARGET mmxisf_viewer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MMXISF_ZSTD_REAL_PATH}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_ZSTD_BUNDLE_NAME}"
+    COMMAND install_name_tool -id "@rpath/${MMXISF_ZSTD_BUNDLE_NAME}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_ZSTD_BUNDLE_NAME}"
+    COMMAND install_name_tool -change "${MMXISF_ZSTD_INSTALL_NAME}"
+            "@rpath/${MMXISF_ZSTD_BUNDLE_NAME}"
+            "$<TARGET_FILE:mmxisf_viewer>"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_ZSTD_BUNDLE_NAME}"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+    VERBATIM
+  )
+endif()
+
 if(OPENSSL_CRYPTO_LIBRARY MATCHES "\\.dylib$")
   get_filename_component(MMXISF_CRYPTO_REAL_PATH
                          "${OPENSSL_CRYPTO_LIBRARY}" REALPATH)

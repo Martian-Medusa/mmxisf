@@ -146,6 +146,14 @@ retain physical sample disposition and never apply the display transform. The
 PFI adapter remains isolated in the PFI repository and must preserve these
 descriptors rather than infer them.
 
+A subsequent current-producer checkpoint found Zstandard-compressed XISF from
+PixInsight 1.9.3/XISF module 1.1.2 and an embedded-image/inline-Property parser
+interaction. The implementation now treats Zstandard as an explicit PFI
+interoperability extension to the pinned 2017 baseline and preserves the
+inline block as unavailable metadata without confusing it with image text.
+Cross-platform CI and exact private-file decode evidence remain the promotion
+gate for this unit.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

@@ -40,6 +40,8 @@
     {"id":"compression.lz4-shuffle","section":"10.6.6","feature":"LZ4 plus byte shuffle","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},
     {"id":"compression.lz4hc","section":"10.6.7","feature":"LZ4HC-compatible decompression","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},
     {"id":"compression.lz4hc-shuffle","section":"10.6.8","feature":"LZ4HC plus byte shuffle","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},
+    {"id":"compression.zstd","section":"current PixInsight interoperability extension","feature":"Zstandard decompression","pfi":"REQUIRED","baselineDecoder":"DEFERRED","target":"0.2","note":"Observed in PixInsight 1.9.3 XISF module 1.1.2 files; outside the pinned 2017 specification baseline."},
+    {"id":"compression.zstd-shuffle","section":"current PixInsight interoperability extension","feature":"Zstandard plus byte shuffle","pfi":"REQUIRED","baselineDecoder":"DEFERRED","target":"0.2","note":"Supported for current producer compatibility without reclassifying the pinned baseline."},
     {"id":"compression.subblocks","section":"10.6","feature":"compression subblocks","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},
     {"id":"compression.unknown-codec","section":"10.6","feature":"unknown or lossy extension codec","pfi":"REJECT_EXPLICITLY","baselineDecoder":"REJECT_EXPLICITLY","target":"0.2"},
 

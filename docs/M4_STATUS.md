@@ -33,6 +33,9 @@
 - Image descriptors now expose the fixed serialized origin/traversal, nominal
   Gray/RGB/CIELab channel order, optional display orientation, and decoded
   checksum-verification status without transforming scientific pixels.
+- Inline Property blocks nested in an embedded Image are distinguished from the
+  Image's direct character data, so valid metadata does not trip the
+  outside-`Data` rejection rule.
 
 ## Evidence available now
 
@@ -66,6 +69,11 @@
 - All eight XISF 1.0 orientation values, absent versus explicit identity,
   invalid orientation rejection, channel-order mapping, and checksum provenance:
   PASS locally.
+- A private PixInsight 1.9.3/XISF module 1.1.2 embedded UInt8 RGB resource with
+  many inline and attached block-backed properties now passes metadata
+  inspection and full Zstandard decode. Its exact source and decoded-pixel
+  identities are recorded in `SOURCES.md` and `M3_PERFORMANCE.md`; bytes remain
+  outside the repository.
 
 ## Still required for M4
 

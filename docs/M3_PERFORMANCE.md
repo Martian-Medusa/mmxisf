@@ -28,10 +28,31 @@ time; peak RSS does not grow with the aggregate decoded size in this sequential
 CLI path. This is evidence for the bounded lifetime of per-image buffers, not a
 general memory ceiling for callers that retain multiple returned images.
 
+## Current PixInsight/Zstandard compatibility checkpoint
+
+The following rows are single warm-cache invocations of
+`mmxisf-inspect --decode-sha256`, not five-run medians or performance targets.
+They exercise files produced or distributed by current PixInsight versions and
+record exact decoded-pixel anchors for later differential comparison. All files
+are private local fixtures and remain outside the repository.
+
+| Fixture profile | Serialized bytes | Decoded bytes | Elapsed | Maximum RSS | Decoded pixel SHA-256 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 6064x4040 UInt8 RGB, embedded Zstandard block | 8,886,153 | 73,495,680 | 0.01 s | 75,890,688 bytes | `2e6d466e61a80051be89459e7d84a3eacf0a4a6d504c4d3871ac884be5d39a54` |
+| 8192x8192 UInt16 Gray, attached Zstandard block | 5,869,539 | 134,217,728 | 0.12 s | 276,545,536 bytes | `5941611e3d86462924c7451065a0296b05674f42469204804838a91f889f6875` |
+| 3699x5841 Float64 RGB, attached block | 518,910,448 | 518,540,616 | 0.41 s | 520,962,048 bytes | `64a8e4a6c9fc8907b236900bf9edb61a303abaf34973a6de50fe115a1c7d9807` |
+| 6217x4150 Float32 RGB, attached block | 309,997,280 | 309,606,600 | 0.21 s | 311,738,368 bytes | `1312421d1a8497245896b43a717a1d0b5a8f532f03bd6da774574c248f7b3196` |
+
+These measurements demonstrate successful decode and provide local regression
+anchors. They do not establish cold-cache behavior, cross-platform performance,
+or equivalence with PixInsight's decoded sample buffer. The unusually compact
+8192x8192 file also demonstrates why the independent absolute output limit and
+bounded Zstandard window remain necessary even when a valid input has a high
+decompression ratio.
+
 ## Remaining performance evidence
 
-- representative real RGB input;
 - representative zlib and LZ4 inputs from an independent producer;
 - cold-cache I/O separation from decode cost;
-- repeatable CI or dedicated-host thresholds before any SLA is stated.
-
+- repeatable current RGB/Zstandard measurements;
+- CI or dedicated-host thresholds before any SLA is stated.

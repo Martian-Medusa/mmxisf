@@ -30,7 +30,8 @@ struct ReaderOptions {
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_unused_space_bytes{64ULL * 1024ULL * 1024ULL};
   std::size_t max_compressed_subblocks{65'536};
-  std::uint64_t max_decompression_ratio{8'192};
+  std::uint64_t max_decompression_ratio{65'536};
+  std::uint64_t max_zstd_window_bytes{256ULL * 1024ULL * 1024ULL};
   std::size_t max_image_dimensions{8};
   std::uint64_t max_inspected_channels{64};
   std::uint64_t max_decoded_channels{16};
