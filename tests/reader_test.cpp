@@ -314,6 +314,68 @@ int main() {
     }
   }
 
+  struct NativeScalarOracleCase {
+    const char *name;
+    const char *sample_format;
+    const char *bounds;
+    std::size_t sample_size;
+    std::vector<std::byte> big_endian_bytes;
+  };
+  const std::array native_scalar_oracle_cases{
+      NativeScalarOracleCase{"uint8", "UInt8", "", 1,
+                             {std::byte{0x12}, std::byte{0x34}}},
+      NativeScalarOracleCase{
+          "uint16", "UInt16", "", 2,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
+           std::byte{0x04}}},
+      NativeScalarOracleCase{
+          "uint32", "UInt32", "", 4,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
+           std::byte{0x05}, std::byte{0x06}, std::byte{0x07},
+           std::byte{0x08}}},
+      NativeScalarOracleCase{
+          "float32", "Float32", " bounds=\"0:1\"", 4,
+          {std::byte{0x3f}, std::byte{0x80}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x3f}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x00}}},
+      NativeScalarOracleCase{
+          "float64", "Float64", " bounds=\"0:1\"", 8,
+          {std::byte{0x3f}, std::byte{0xf0}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x3f}, std::byte{0xe0}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+           std::byte{0x00}}},
+  };
+  for (const auto &test : native_scalar_oracle_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m2-native-oracle-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:1\" sampleFormat=\"") +
+            test.sample_format + "\" byteOrder=\"big\"" + test.bounds +
+            " location=\"attachment:1024:" +
+            std::to_string(test.big_endian_bytes.size()) + "\"/>" +
+            valid_metadata() + "</xisf>",
+        test.big_endian_bytes);
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      mmxisf::ImageReadOptions options;
+      options.byte_order = mmxisf::ByteOrderOutput::native;
+      auto image = result.value().read_image(0, options);
+      auto expected = test.big_endian_bytes;
+      if constexpr (std::endian::native == std::endian::little) {
+        for (std::size_t offset = 0; offset < expected.size();
+             offset += test.sample_size) {
+          std::reverse(expected.begin() + static_cast<std::ptrdiff_t>(offset),
+                       expected.begin() + static_cast<std::ptrdiff_t>(
+                                              offset + test.sample_size));
+        }
+      }
+      expect(image && image.value().pixels == expected, test.name);
+    }
+  }
+
   struct InspectOnlyScalarCase {
     const char *name;
     const char *sample_format;

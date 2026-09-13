@@ -42,6 +42,9 @@
 - Unit suite: 4/4 PASS, including a pure C++ preview test for Planar and Normal
   RGB channel indexing, big-endian UInt32, little-endian Float64, and RGB
   stretch sampling.
+- Hand-derived bitwise scalar oracle: PASS for UInt8, UInt16, UInt32, Float32,
+  and Float64 source-to-native conversion, including preservation of the exact
+  IEEE-754 byte patterns.
 - Existing private PixInsight corpus: 9/9 files and 11/11 uncompressed Float32
   Gray image attachments decode successfully with exact declared byte counts.
 - Deterministic ASan/UBSan mutation smoke: 20,000 cases PASS.
@@ -60,7 +63,7 @@
   exposes document summaries, image descriptors, XISF Properties, and FITS
   keywords with column headers, row count, scrolling, selectable cells, and
   full-value tooltips.
-- Human visibility/readability test of the revised metadata pane: PENDING.
+- Human visibility/readability test of the revised metadata pane: PASS.
 
 ## Still required to close M2
 
