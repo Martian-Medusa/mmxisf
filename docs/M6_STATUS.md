@@ -16,8 +16,8 @@
 - Required deterministic XISF creation time and creator application metadata.
 - Declarative direct metadata records for image-scoped Properties and FITS
   keywords plus XISF-unit Properties; raw XML is never accepted.
-- Direct Boolean, signed/unsigned integer through 128-bit, and real
-  floating-point Properties with lexical/range validation and exact text
+- Direct Boolean, signed/unsigned integer through 128-bit, real floating-point,
+  and complex Properties with lexical/range validation and exact text
   preservation.
 - Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
   and SHA-1/256/512 checksums over exact serialized attachment bytes.
@@ -71,11 +71,11 @@
   Its serialized SHA-256 is
   `e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8`.
 - A scalar metadata matrix covers every supported Boolean, signed/unsigned
-  integer, and real floating-point type/alias. Boundary values include Int8
+  integer, real, and complex type/alias. Boundary values include Int8
   minimum and UInt64 maximum; malformed floating syntax and UInt8 overflow fail
-  before file creation. Independent package `xisf` 0.9.7 returns the four
-  representative values through its public metadata API with exact types and
-  typed values.
+  before file creation. Independent package `xisf` 0.9.7 returns five
+  representative Boolean, integer, real, and complex values through its public
+  metadata API with exact types and typed values.
 - A five-image codec fixture covers all four writer codecs, shuffled and
   unshuffled paths, all three checksums, and an uncompressed checksummed block.
   `mmxisf` verifies each digest before decompression and recovers one exact pixel
@@ -101,7 +101,7 @@
 ## Still required for M6
 
 - Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
-- Add complex and block-backed vector/matrix Properties when required.
+- Add block-backed vector/matrix Properties when required.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.
 - Add a sink abstraction after actual file-writer behavior establishes its

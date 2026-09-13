@@ -45,7 +45,7 @@ struct MetadataWriteEntry {
   // Property identifier or FITS keyword name, depending on kind.
   std::string name;
   // The current direct-value profile accepts String, TimePoint, Boolean,
-  // signed/unsigned integer, and real floating-point Property types.
+  // signed/unsigned integer, real, and complex Property types.
   std::string type;
   std::string value;
   std::string comment;

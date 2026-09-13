@@ -385,7 +385,11 @@ void test_scalar_metadata_round_trip() {
       mmxisf::MetadataWriteEntry{.image_index = 0,
                                  .name = "Test:Floating",
                                  .type = "Float64",
-                                 .value = "-1.25e+02"}};
+                                 .value = "-1.25e+02"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:Complex",
+                                 .type = "Complex64",
+                                 .value = "( 1.5, -2e0 )"}};
   constexpr std::array<std::string_view, 18> aliases{
       "Int16",   "Short",   "Int32",  "Int",    "Int64",    "Int128",
       "UInt8",   "Byte",    "UInt16", "UShort", "UInt32",   "UInt",
@@ -395,6 +399,14 @@ void test_scalar_metadata_round_trip() {
                         .name = "Test:Alias" + std::to_string(index),
                         .type = std::string(aliases[index]),
                         .value = "0"});
+  }
+  constexpr std::array<std::string_view, 3> complex_aliases{
+      "Complex32", "Complex", "Complex128"};
+  for (std::size_t index = 0; index < complex_aliases.size(); ++index) {
+    metadata.push_back({.image_index = 0,
+                        .name = "Test:ComplexAlias" + std::to_string(index),
+                        .type = std::string(complex_aliases[index]),
+                        .value = "(0,0)"});
   }
   const auto path = output_path("mmxisf-writer-scalar-metadata.xisf");
   const std::span images(&image, 1);
@@ -746,6 +758,17 @@ void test_rejection_and_cleanup() {
   expect(!metadata_result && metadata_result.error().code ==
                                  mmxisf::ErrorCode::invalid_argument,
          "malformed writer scalar Property was accepted");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Value",
+                      .type = "Complex64",
+                      .value = "(1,2,3)"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("complex-syntax"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "malformed writer complex Property was accepted");
   invalid_metadata = {.kind = mmxisf::MetadataWriteKind::fits_keyword,
                       .image_index = 0,
                       .name = "bad key",

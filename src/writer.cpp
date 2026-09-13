@@ -407,6 +407,20 @@ bool is_valid_floating_point_value(std::string_view text) {
   return position == text.size();
 }
 
+bool is_valid_complex_value(std::string_view text) {
+  text = trim_xml_whitespace(text);
+  if (text.size() < 5 || text.front() != '(' || text.back() != ')') {
+    return false;
+  }
+  text.remove_prefix(1);
+  text.remove_suffix(1);
+  const auto separator = text.find(',');
+  return separator != std::string_view::npos &&
+         text.find(',', separator + 1) == std::string_view::npos &&
+         is_valid_floating_point_value(text.substr(0, separator)) &&
+         is_valid_floating_point_value(text.substr(separator + 1));
+}
+
 unsigned integer_bit_width(std::string_view type) {
   if (type == "Int8" || type == "UInt8" || type == "Byte")
     return 8;
@@ -443,13 +457,20 @@ bool is_valid_scalar_property(std::string_view type, std::string_view value) {
   }
   constexpr std::array<std::string_view, 6> floating_types{
       "Float32", "Float", "Float64", "Double", "Float128", "Quad"};
-  return std::find(floating_types.begin(), floating_types.end(), type) !=
-             floating_types.end() &&
-         is_valid_floating_point_value(value);
+  if (std::find(floating_types.begin(), floating_types.end(), type) !=
+      floating_types.end()) {
+    return is_valid_floating_point_value(value);
+  }
+  constexpr std::array<std::string_view, 4> complex_types{
+      "Complex32", "Complex64", "Complex", "Complex128"};
+  return std::find(complex_types.begin(), complex_types.end(), type) !=
+             complex_types.end() &&
+         is_valid_complex_value(value);
 }
 
 bool is_supported_scalar_property_type(std::string_view type) {
-  return is_valid_scalar_property(type, "0");
+  return is_valid_scalar_property(type, "0") ||
+         is_valid_scalar_property(type, "(0,0)");
 }
 
 Result<std::string> make_metadata_xml(const MetadataWriteEntry &entry) {

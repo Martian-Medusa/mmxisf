@@ -33,8 +33,8 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
   caller-configurable limits;
 - a declarative metadata record supports direct image String/TimePoint
   Properties and FITS keywords plus XISF-unit String/TimePoint Properties;
-- the same record supports direct Boolean, bounded signed/unsigned integer, and
-  real floating-point Properties while preserving valid lexical forms;
+- the same record supports direct Boolean, bounded signed/unsigned integer,
+  real, and complex Properties while preserving valid lexical forms;
 - metadata identifiers, scope, uniqueness, value budgets, time syntax, and XML
   text are validated before file creation; callers cannot inject raw XML;
 - per-image zlib, LZ4, LZ4HC, or Zstandard compression can apply XISF byte

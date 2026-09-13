@@ -8,8 +8,8 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - one or more attached two-dimensional Gray or RGB images;
 - Planar, little-endian UInt8, UInt16, UInt32, Float32, or Float64 pixels;
 - explicit finite increasing bounds for floating-point images;
-- direct image-scoped String, TimePoint, Boolean, signed/unsigned integer, and
-  real floating-point Properties;
+- direct image-scoped String, TimePoint, Boolean, signed/unsigned integer,
+  real, and complex Properties;
 - direct image-scoped FITS keywords;
 - direct XISF-unit Properties from the same profile;
 - zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
@@ -18,7 +18,7 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - fixed caller-supplied creation time and creator application.
 
 The current writer rejects big-endian and Normal/interleaved output,
-complex/vector/matrix or block-backed Properties, references, and raw XML.
+vector/matrix or block-backed Properties, references, and raw XML.
 Reader support for any other feature does not imply writer support.
 
 ## Minimal use
@@ -122,8 +122,9 @@ Direct scalar Properties support the XISF Boolean type; Int8/16/32/64/128 and
 UInt8/16/32/64/128 families and their standard aliases; and Float32/64/128
 families and aliases. Values retain their caller-provided lexical form after
 XML escaping, but must satisfy the reader's Boolean, integer range/base, or
-floating-point grammar before any file is created. No numeric value is silently
-clamped, rounded, reformatted, or inferred.
+floating-point grammar before any file is created. Complex32/64/128 and
+`Complex` use a parenthesized pair of valid real components. No numeric value is
+silently clamped, rounded, reformatted, or inferred.
 
 ## Failure and filesystem contract
 
