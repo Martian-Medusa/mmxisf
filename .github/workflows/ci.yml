@@ -12,15 +12,65 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            viewer: OFF
+          - os: macos-14
+            viewer: ON
+          - os: windows-latest
+            viewer: OFF
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Configure
-        run: cmake -S . -B build -DMMXISF_BUILD_TESTS=ON
+      - name: Install Expat (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
+      - name: Install Expat (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install expat
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix expat)" >> "$GITHUB_ENV"
+      - name: Install Expat (Windows)
+        if: runner.os == 'Windows'
+        run: vcpkg install expat:x64-windows
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        run: >-
+          cmake -S . -B build
+          -DMMXISF_BUILD_TESTS=ON
+          -DMMXISF_BUILD_VIEWER=${{ matrix.viewer }}
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: >-
+          cmake -S . -B build -A x64
+          -DMMXISF_BUILD_TESTS=ON
+          -DMMXISF_BUILD_VIEWER=OFF
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
       - name: Build
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
       - name: Install package
         run: cmake --install build --config Release --prefix install
+
+  fuzz-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+        run: >-
+          cmake -S . -B build-fuzz
+          -DMMXISF_BUILD_TESTS=OFF
+          -DMMXISF_BUILD_TOOLS=OFF
+          -DMMXISF_BUILD_FUZZ_SMOKE=ON
+          -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build-fuzz --parallel
+      - name: Run 20k sanitizer mutations
+        run: build-fuzz/mmxisf_fuzz_smoke

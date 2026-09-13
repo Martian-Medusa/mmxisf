@@ -56,7 +56,7 @@ set_target_properties(
   mmxisf_viewer
   PROPERTIES
     OUTPUT_NAME "mmXISF Viewer PoC"
-    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/artifacts"
+    RUNTIME_OUTPUT_DIRECTORY "${MMXISF_VIEWER_OUTPUT_DIR}"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in"
     MACOSX_BUNDLE_BUNDLE_NAME "mmXISF Viewer PoC"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.martianmedusa.mmxisf.viewer-poc"

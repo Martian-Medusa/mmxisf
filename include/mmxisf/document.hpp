@@ -40,6 +40,8 @@ struct ImageInfo {
   SampleFormat sample_format{SampleFormat::unsupported};
   std::string sample_format_name;
   std::string color_space;
+  std::optional<double> lower_bound;
+  std::optional<double> upper_bound;
   PixelStorage pixel_storage{PixelStorage::planar};
   ByteOrder byte_order{ByteOrder::little};
   BlockLocation block;

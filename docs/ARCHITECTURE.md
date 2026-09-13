@@ -35,16 +35,21 @@ documented.
 
 ## Public API shape
 
-The exact names are deferred to an ADR, but the API should support:
+The M1 pre-release API now supports:
 
-- `Reader::inspect(source, limits)` returning metadata and image descriptors
-  without decoding pixels;
-- `Reader::read_image(index, destination, options)` for caller-owned memory;
+- `Reader::open_file(path, limits)` and `Reader::open_source(source, limits)`
+  returning metadata and image descriptors without decoding pixels;
+- an injectable seekable `ByteSource` with stable lifetime;
+- `Reader::read_image_into(index, destination, stop_token)` for caller-owned
+  memory and a convenience owning `read_image` path;
+- bounded chunk reads with cooperative cancellation;
+
+Later milestones still need:
+
 - a bounded row/tile callback for low-copy analysis;
 - `Writer::write(document, image_sources, sink, options)` with deterministic
   options and an explicit provenance policy;
-- structured error codes with byte/XML context safe to show in PFI diagnostics;
-- injectable byte sources and sinks for files, memory, and tests.
+- injectable byte sinks for files, memory, and tests.
 
 Remote locations must not trigger network access. A future network resolver is
 an explicit opt-in consumer capability with scheme allowlists, budgets, cache,
@@ -61,9 +66,11 @@ offset types.
 ## Concurrency
 
 Parsed documents are immutable. Reader operations use per-call state and may run
-concurrently when the underlying byte source supports it. Global mutable codec
-or parser state is prohibited. Cancellation is cooperative at block and row/tile
-boundaries.
+concurrently when the underlying byte source supports it. The built-in file
+source serializes seek/read operations around one stable handle. Global mutable
+codec or parser state is prohibited. Cancellation is currently cooperative
+before each bounded source read; row/tile boundaries arrive with streaming
+pixel delivery.
 
 ## Compatibility and ABI
 

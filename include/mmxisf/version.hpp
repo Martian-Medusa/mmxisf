@@ -8,4 +8,4 @@ namespace mmxisf {
 
 [[nodiscard]] std::string_view version() noexcept;
 
-}  // namespace mmxisf
+} // namespace mmxisf

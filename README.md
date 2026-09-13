@@ -61,6 +61,22 @@ build/mmxisf-inspect path/to/image.xisf
 Normal configuration requires an installed Expat development package. No
 dependency is downloaded implicitly.
 
+The pre-release reader can also consume a caller-provided seekable
+`mmxisf::ByteSource`. Exact uncompressed attachment bytes can be returned in an
+owning `RawImage` or written into a caller-owned span with cooperative
+`std::stop_token` cancellation.
+
+For a local sanitizer mutation smoke:
+
+```sh
+cmake -S . -B build-fuzz-smoke \
+  -DMMXISF_BUILD_TESTS=OFF \
+  -DMMXISF_BUILD_TOOLS=OFF \
+  -DMMXISF_BUILD_FUZZ_SMOKE=ON
+cmake --build build-fuzz-smoke
+build-fuzz-smoke/mmxisf_fuzz_smoke
+```
+
 ## Build and run the macOS PoC viewer
 
 ```sh

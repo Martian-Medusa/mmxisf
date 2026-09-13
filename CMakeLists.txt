@@ -14,6 +14,14 @@ include(GNUInstallDirs)
 option(MMXISF_BUILD_TESTS "Build mmxisf tests" ${BUILD_TESTING})
 option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools" ON)
 option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
+option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
+option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)
+set(
+  MMXISF_VIEWER_OUTPUT_DIR
+  "${PROJECT_SOURCE_DIR}/artifacts"
+  CACHE PATH
+  "Output directory for the macOS PoC viewer bundle"
+)
 
 find_package(EXPAT 2.2 REQUIRED)
 
@@ -28,6 +36,19 @@ target_include_directories(
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 target_link_libraries(mmxisf PRIVATE EXPAT::EXPAT)
+
+if(MMXISF_BUILD_FUZZER OR MMXISF_BUILD_FUZZ_SMOKE)
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    message(FATAL_ERROR "MMXISF_BUILD_FUZZER currently requires Clang")
+  endif()
+  target_compile_options(
+    mmxisf
+    PRIVATE
+      -fsanitize=fuzzer-no-link,address,undefined
+      -fno-omit-frame-pointer
+  )
+  target_link_options(mmxisf INTERFACE -fsanitize=address,undefined)
+endif()
 
 set_target_properties(
   mmxisf
@@ -57,6 +78,34 @@ if(MMXISF_BUILD_TOOLS)
   add_executable(mmxisf_inspect tools/mmxisf_inspect.cpp)
   set_target_properties(mmxisf_inspect PROPERTIES OUTPUT_NAME "mmxisf-inspect")
   target_link_libraries(mmxisf_inspect PRIVATE mmxisf::mmxisf)
+endif()
+
+if(MMXISF_BUILD_FUZZER)
+  add_executable(mmxisf_fuzz_header tests/fuzz_header.cpp)
+  target_compile_options(
+    mmxisf_fuzz_header
+    PRIVATE
+      -fsanitize=fuzzer,address,undefined
+      -fno-omit-frame-pointer
+  )
+  target_link_options(
+    mmxisf_fuzz_header
+    PRIVATE -fsanitize=fuzzer,address,undefined
+  )
+  target_link_libraries(mmxisf_fuzz_header PRIVATE mmxisf::mmxisf)
+endif()
+
+if(MMXISF_BUILD_FUZZ_SMOKE)
+  add_executable(mmxisf_fuzz_smoke tests/fuzz_header.cpp)
+  target_compile_definitions(mmxisf_fuzz_smoke PRIVATE MMXISF_FUZZ_SMOKE_MAIN=1)
+  target_compile_options(
+    mmxisf_fuzz_smoke
+    PRIVATE
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer
+  )
+  target_link_options(mmxisf_fuzz_smoke PRIVATE -fsanitize=address,undefined)
+  target_link_libraries(mmxisf_fuzz_smoke PRIVATE mmxisf::mmxisf)
 endif()
 
 if(MMXISF_BUILD_VIEWER)

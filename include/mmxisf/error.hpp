@@ -19,6 +19,7 @@ enum class ErrorCode {
   invalid_xisf,
   unsupported_feature,
   invalid_block,
+  invalid_argument,
   overflow,
   cancelled,
   internal_error,

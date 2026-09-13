@@ -106,7 +106,10 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
     }
   }
   StretchRange range;
-  if (image.sample_format == mmxisf::SampleFormat::uint8) {
+  if (image.lower_bound && image.upper_bound) {
+    range.linear_low = *image.lower_bound;
+    range.linear_high = *image.upper_bound;
+  } else if (image.sample_format == mmxisf::SampleFormat::uint8) {
     range.linear_high = 255.0;
   } else if (image.sample_format == mmxisf::SampleFormat::uint16) {
     range.linear_high = 65535.0;
@@ -488,6 +491,12 @@ StretchRange calculate_stretch_range(const mmxisf::RawImage &image) {
         ns_string(image.sample_format_name), @"");
     add(scope, @"Image", @"colorSpace", @"Enum", ns_string(image.color_space),
         @"");
+    if (image.lower_bound && image.upper_bound) {
+      add(scope, @"Image", @"bounds", @"Range",
+          [NSString stringWithFormat:@"%.17g : %.17g", *image.lower_bound,
+                                     *image.upper_bound],
+          @"");
+    }
     add(scope, @"Image", @"pixelStorage", @"Enum",
         [NSString stringWithUTF8String:mmxisf::to_string(image.pixel_storage)],
         @"");

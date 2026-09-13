@@ -76,6 +76,12 @@ and rework from those gates. The viewer PoC itself is complete in its declared
 one-image Gray/uncompressed profile and does not add a new critical-path
 dependency.
 
+The second same-day checkpoint completed the stable `ByteSource`,
+caller-buffer, cancellation, and initial grammar-hardening work. A sanitizer
+mutation smoke passed 20,000 cases. The coverage-guided libFuzzer target is
+present, but this host's Command Line Tools does not include its runtime, so
+that evidence remains explicitly NOT_TESTED until run in a suitable CI image.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

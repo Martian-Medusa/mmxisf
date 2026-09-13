@@ -35,7 +35,12 @@ int main(int argc, char **argv) {
     std::cout << " sample=" << image.sample_format_name
               << " color=" << image.color_space
               << " storage=" << mmxisf::to_string(image.pixel_storage)
-              << " block=" << mmxisf::to_string(image.block.kind) << '\n';
+              << " block=" << mmxisf::to_string(image.block.kind);
+    if (image.lower_bound && image.upper_bound) {
+      std::cout << " bounds=" << *image.lower_bound << ':'
+                << *image.upper_bound;
+    }
+    std::cout << '\n';
   }
   for (const auto &entry : document.metadata()) {
     std::cout << (entry.image_index
