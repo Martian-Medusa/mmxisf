@@ -5,6 +5,7 @@
 
 #include <openssl/evp.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdlib>
@@ -284,6 +285,87 @@ void test_multi_image_scalar_round_trip() {
   }
 }
 
+void test_declared_metadata_round_trip() {
+  const std::array<std::byte, 8> pixels{
+      std::byte{0x01}, std::byte{0x00}, std::byte{0x02}, std::byte{0x00},
+      std::byte{0x03}, std::byte{0x00}, std::byte{0x04}, std::byte{0x00}};
+  const auto image = gray_image(pixels);
+  const std::array metadata{
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Instrument:Filter:Name",
+                                 .type = "String",
+                                 .value = "L<&\""},
+      mmxisf::MetadataWriteEntry{.kind =
+                                     mmxisf::MetadataWriteKind::fits_keyword,
+                                 .image_index = 0,
+                                 .name = "EXPTIME",
+                                 .value = "30.5",
+                                 .comment = "seconds & more"},
+      mmxisf::MetadataWriteEntry{.name = "XISF:CreatorModule",
+                                 .type = "String",
+                                 .value = "writer-test"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Observation:Time:Start",
+                                 .type = "TimePoint",
+                                 .value = "2026-09-14T01:02:03Z"}};
+  const auto first_path = output_path("mmxisf-writer-metadata-a.xisf");
+  const auto second_path = output_path("mmxisf-writer-metadata-b.xisf");
+  const std::span images(&image, 1);
+  auto first =
+      mmxisf::Writer::write_file(first_path, images, metadata, options());
+  auto second =
+      mmxisf::Writer::write_file(second_path, images, metadata, options());
+  expect(first.has_value() && second.has_value(),
+         "declared metadata writer failed");
+  expect(read_file(first_path) == read_file(second_path),
+         "declared metadata output is not deterministic");
+  const auto serialized = read_file(first_path);
+  expect(sha256(serialized) ==
+             "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+         "metadata writer deterministic external-oracle anchor changed");
+
+  auto opened = mmxisf::Reader::open_file(first_path);
+  expect(opened.has_value(), "metadata writer result did not reopen");
+  const auto &entries = opened.value().document().metadata();
+  const auto find_entry = [&](std::string_view name) {
+    return std::find_if(entries.begin(), entries.end(),
+                        [&](const auto &entry) { return entry.name == name; });
+  };
+  const auto filter = find_entry("Instrument:Filter:Name");
+  const auto exposure = find_entry("EXPTIME");
+  const auto module = find_entry("XISF:CreatorModule");
+  const auto observation = find_entry("Observation:Time:Start");
+  expect(filter != entries.end() &&
+             filter->kind == mmxisf::MetadataEntry::Kind::property &&
+             filter->scope == mmxisf::MetadataEntry::Scope::image &&
+             filter->image_index == 0 && filter->type == "String" &&
+             filter->value == "L<&\"" &&
+             filter->value_form ==
+                 mmxisf::MetadataEntry::ValueForm::character_data,
+         "image String Property did not round trip exactly");
+  expect(exposure != entries.end() &&
+             exposure->kind == mmxisf::MetadataEntry::Kind::fits_keyword &&
+             exposure->scope == mmxisf::MetadataEntry::Scope::image &&
+             exposure->value == "30.5" && exposure->comment == "seconds & more",
+         "image FITS keyword did not round trip exactly");
+  expect(module != entries.end() &&
+             module->scope == mmxisf::MetadataEntry::Scope::xisf_unit &&
+             module->value == "writer-test",
+         "XISF-unit String Property did not round trip exactly");
+  expect(observation != entries.end() && observation->type == "TimePoint" &&
+             observation->value == "2026-09-14T01:02:03Z" &&
+             observation->value_form ==
+                 mmxisf::MetadataEntry::ValueForm::attribute,
+         "image TimePoint Property did not round trip exactly");
+  expect(opened.value().document().metadata_bindings().size() == entries.size(),
+         "direct metadata binding count changed");
+  auto decoded = opened.value().read_image(0);
+  expect(decoded.has_value() &&
+             decoded.value().pixels ==
+                 std::vector<std::byte>(pixels.begin(), pixels.end()),
+         "metadata child elements changed image pixels");
+}
+
 void test_rejection_and_cleanup() {
   const std::array<std::byte, 8> pixels{};
   auto image = gray_image(pixels);
@@ -352,6 +434,135 @@ void test_rejection_and_cleanup() {
       output_path("mmxisf-writer-empty.xisf"), no_images, options());
   expect(!empty && empty.error().code == mmxisf::ErrorCode::invalid_argument,
          "writer accepted an empty image sequence");
+
+  const std::span images(&image, 1);
+  const auto metadata_path = [&](std::string_view suffix) {
+    return output_path(std::string("mmxisf-writer-metadata-") +
+                       std::string(suffix) + ".xisf");
+  };
+  auto invalid_metadata =
+      mmxisf::MetadataWriteEntry{.image_index = 1,
+                                 .name = "Instrument:Filter:Name",
+                                 .type = "String",
+                                 .value = "L"};
+  auto metadata_result = mmxisf::Writer::write_file(
+      metadata_path("index"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "out-of-range writer metadata image index was accepted");
+  invalid_metadata = {.kind = mmxisf::MetadataWriteKind::fits_keyword,
+                      .name = "EXPTIME",
+                      .value = "30",
+                      .comment = "seconds"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("fits-scope"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "XISF-unit FITS keyword was accepted");
+  invalid_metadata = {
+      .image_index = 0, .name = "bad-id", .type = "String", .value = "x"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-id"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "invalid writer Property identifier was accepted");
+  invalid_metadata = {
+      .image_index = 0, .name = "Test:Value", .type = "Float64", .value = "1"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("property-type"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::unsupported_feature,
+         "unsupported writer Property type was not explicit");
+  invalid_metadata = {.kind = mmxisf::MetadataWriteKind::fits_keyword,
+                      .image_index = 0,
+                      .name = "bad key",
+                      .value = "1",
+                      .comment = "invalid"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("fits-name"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "invalid writer FITS keyword name was accepted");
+  invalid_metadata = {.image_index = 0,
+                      .name = "Observation:Time:Start",
+                      .type = "TimePoint",
+                      .value = "2026-02-30T00:00:00Z"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("time"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "invalid writer TimePoint was accepted");
+  invalid_metadata = {.name = "Custom:Unit", .type = "String", .value = "x"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("unit-namespace"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "non-XISF unit Property was accepted");
+  invalid_metadata = {.name = "XISF:CreationTime",
+                      .type = "TimePoint",
+                      .value = "2026-09-14T00:00:00Z"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("reserved"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "reserved writer Property was accepted");
+  std::array duplicate_metadata{mmxisf::MetadataWriteEntry{.image_index = 0,
+                                                           .name = "Test:Value",
+                                                           .type = "String",
+                                                           .value = "a"},
+                                mmxisf::MetadataWriteEntry{.image_index = 0,
+                                                           .name = "Test:Value",
+                                                           .type = "String",
+                                                           .value = "b"}};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("duplicate"), images, duplicate_metadata, options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "duplicate writer Property identifier was accepted");
+  auto metadata_options = options();
+  metadata_options.max_metadata_entries = 2;
+  invalid_metadata = {
+      .image_index = 0, .name = "Test:Value", .type = "String", .value = "x"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("limit"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      metadata_options);
+  expect(!metadata_result &&
+             metadata_result.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer metadata-count budget was not enforced");
+  metadata_options = options();
+  metadata_options.max_metadata_value_bytes = 0;
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("value-limit"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      metadata_options);
+  expect(!metadata_result &&
+             metadata_result.error().code == mmxisf::ErrorCode::resource_limit,
+         "writer metadata-value budget was not enforced");
+  invalid_metadata.value = std::string("bad") + static_cast<char>(0xff);
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("utf8"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "invalid writer metadata UTF-8 was accepted");
   image = gray_image(pixels);
   image.pixels = image.pixels.first(6);
   auto wrong_size = mmxisf::Writer::write_file(
@@ -436,6 +647,7 @@ int main() {
     test_deterministic_gray_round_trip();
     test_rgb_little_endian_round_trip();
     test_multi_image_scalar_round_trip();
+    test_declared_metadata_round_trip();
     test_rejection_and_cleanup();
     std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;

@@ -206,6 +206,39 @@ void check_multi_writer_fixture(const std::filesystem::path &path) {
   }
 }
 
+void check_metadata_writer_fixture(const std::filesystem::path &path) {
+  auto bytes = load_base64(path);
+  expect(sha256_hex(bytes) ==
+             "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+         "metadata writer fixture identity changed");
+  auto opened = mmxisf::Reader::open_source(
+      std::make_shared<MemorySource>(std::move(bytes)));
+  expect(opened.has_value(), "metadata writer fixture did not open");
+  const auto &document = opened.value().document();
+  expect(document.images().size() == 1 && document.metadata().size() == 6 &&
+             document.metadata_bindings().size() == 6,
+         "metadata writer fixture shape changed");
+  const auto find_entry = [&](std::string_view name) {
+    return std::find_if(document.metadata().begin(), document.metadata().end(),
+                        [&](const auto &entry) { return entry.name == name; });
+  };
+  const auto filter = find_entry("Instrument:Filter:Name");
+  const auto exposure = find_entry("EXPTIME");
+  const auto module = find_entry("XISF:CreatorModule");
+  expect(filter != document.metadata().end() && filter->value == "L<&\"" &&
+             exposure != document.metadata().end() &&
+             exposure->value == "30.5" &&
+             exposure->comment == "seconds & more" &&
+             module != document.metadata().end() &&
+             module->scope == mmxisf::MetadataEntry::Scope::xisf_unit,
+         "metadata writer fixture values changed");
+  auto decoded = opened.value().read_image(0);
+  expect(decoded.has_value() && sha256_hex(decoded.value().pixels) ==
+                                    "ea99f710d9d0b8ba192295c969a63ed7ce8fc5743d"
+                                    "a20d2057fa2b6d2c404bfb",
+         "metadata writer fixture pixels changed");
+}
+
 } // namespace
 
 int main() {
@@ -273,6 +306,7 @@ int main() {
                     fixture.pixel_sha256);
     }
     check_multi_writer_fixture(root / "mmxisf-writer-multi-scalars.xisf.b64");
+    check_metadata_writer_fixture(root / "mmxisf-writer-metadata.xisf.b64");
     std::cout << "PASS: independent producer and consumer interop matrix\n";
     return 0;
   } catch (const std::exception &exception) {

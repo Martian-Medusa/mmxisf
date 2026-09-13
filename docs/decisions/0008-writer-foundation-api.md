@@ -31,6 +31,10 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
   or Float64 Gray/RGB images; floats require finite increasing bounds;
 - image count, per-image bytes, and cumulative image bytes have independent
   caller-configurable limits;
+- a declarative metadata record supports direct image String/TimePoint
+  Properties and FITS keywords plus XISF-unit String/TimePoint Properties;
+- metadata identifiers, scope, uniqueness, value budgets, time syntax, and XML
+  text are validated before file creation; callers cannot inject raw XML;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,
   arithmetic, and resource budgets are validated before file creation;
 - output is written to a sibling temporary path and renamed only after all
@@ -51,6 +55,7 @@ multi-image PFI-scalar Gray/RGB round trips without claiming a general writer.
 The original single-image byte hash remains stable. An independent consumer
 preserved all four types in the multi-image oracle but did not honor a
 big-endian writer probe, so big-endian output fails explicitly until broader
-external evidence is available. Compression, checksums, arbitrary metadata,
-caller-provided sinks, and replacement policy are follow-up gates. Unsupported
-requests fail explicitly instead of being coerced into the narrow profile.
+external evidence is available. Numeric and block-backed Properties,
+references, compression, checksums, caller-provided sinks, and replacement
+policy are follow-up gates. Unsupported requests fail explicitly instead of
+being coerced into the narrow profile.

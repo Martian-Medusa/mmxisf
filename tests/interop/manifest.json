@@ -122,6 +122,18 @@
       "expectedArtifact": "Independent public-API read: four images with shapes 2x2x1, 1x2x1, 1x1x3, and 1x1x1; dtypes uint8, uint32, float32, and float64; values [0,127,128,255], [1,2309737967], [0.5,1,-1], and [0.5] exact; serialized SHA-256 c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba"
     },
     {
+      "id": "mmxisf-writer-metadata",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-metadata.xisf.b64"},
+      "sha256": "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
+      "generationProcedure": "Invoke the metadata Writer::write_file overload with one little-endian Planar UInt16 Gray image, image-scoped String and TimePoint Properties, one FITS keyword, one XISF-unit String Property, fixed provenance, and escaped text anchored in tests/writer_test.cpp.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.declared-metadata", "writer.deterministic", "metadata.string-timepoint", "metadata.fits-keyword", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "Independent public-API read: exact 2x2x1 uint16 pixels; image String and TimePoint Properties preserved; FITS EXPTIME value/comment preserved; XISF-unit Property preserved; serialized SHA-256 e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8"
+    },
+    {
       "id": "mmxisf-writer-rgb-u16",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-rgb-u16.xisf.b64"},
       "sha256": "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",

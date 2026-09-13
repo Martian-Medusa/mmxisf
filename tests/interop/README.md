@@ -38,3 +38,9 @@ public API and returned the exact source values, dtypes, geometries, Planar
 storage, little-endian order, and floating-point bounds. The fixture is also a
 fuzz seed and its file and per-image pixel hashes are asserted in compiled
 tests.
+
+The `mmxisf-writer-metadata` fixture covers deterministic direct metadata
+serialization without exposing raw XML: image-scoped String and TimePoint
+Properties, an image FITS keyword, and an XISF-unit String Property. The same
+independent consumer preserved the exact Property values, FITS value/comment,
+scope split, and UInt16 pixels through its public metadata and image APIs.

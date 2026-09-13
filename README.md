@@ -63,6 +63,7 @@ milestone. They remain candidates for later conformance work.
 - [M3 progress](docs/M3_STATUS.md)
 - [M4 progress](docs/M4_STATUS.md)
 - [M6 writer progress](docs/M6_STATUS.md)
+- [Writer API](docs/WRITER.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector
@@ -95,8 +96,10 @@ Float64 samples. Floating-point images require explicit finite bounds; all
 images borrow immutable pixel spans for the duration of the call. Equivalent
 inputs produce byte-identical files. Existing destinations are not overwritten,
 per-image and cumulative resource limits and arithmetic are checked before file
-creation, and cancellation removes incomplete temporary output. Compression
-and arbitrary caller-declared metadata are not yet accepted by the writer API.
+creation, and cancellation removes incomplete temporary output. A declarative
+metadata overload writes image-scoped String/TimePoint Properties and FITS
+keywords plus XISF-unit String/TimePoint Properties without accepting raw XML.
+Numeric/block Properties, references, and compression remain later profiles.
 
 The pre-release reader can also consume a caller-provided seekable
 `mmxisf::ByteSource`. Decoded attachment bytes can be returned in an

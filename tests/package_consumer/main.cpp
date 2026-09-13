@@ -15,6 +15,7 @@ int main() {
   mmxisf::RawImage image;
   mmxisf::RawPropertyBlock property;
   mmxisf::ImageWriteView write_image;
+  mmxisf::MetadataWriteEntry write_metadata;
   mmxisf::WriterOptions writer_options;
   mmxisf::WriteSummary write_summary;
   return options.max_header_bytes > 0 && options.max_encoded_block_bytes > 0 &&
@@ -38,7 +39,10 @@ int main() {
                  write_image.pixel_storage == mmxisf::PixelStorage::planar &&
                  writer_options.attachment_alignment == 4096 &&
                  writer_options.max_images == 64 &&
+                 writer_options.max_metadata_entries == 4096 &&
+                 writer_options.max_metadata_value_bytes > 0 &&
                  writer_options.max_cumulative_image_bytes > 0 &&
+                 write_metadata.kind == mmxisf::MetadataWriteKind::property &&
                  write_summary.image_block.kind == mmxisf::BlockKind::unknown &&
                  write_summary.image_blocks.empty() &&
                  std::string_view(mmxisf::version()) == "0.1.0"

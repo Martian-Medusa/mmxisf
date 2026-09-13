@@ -14,6 +14,9 @@
 - Required finite increasing bounds for floating-point images, plus explicit
   per-image, image-count, and cumulative decoded-byte budgets.
 - Required deterministic XISF creation time and creator application metadata.
+- Declarative direct metadata records for image-scoped String/TimePoint
+  Properties and FITS keywords plus XISF-unit String/TimePoint Properties;
+  raw XML is never accepted.
 - Canonical XML field order, XML 1.0 UTF-8 validation/escaping, fixed zero
   padding, power-of-two attachment alignment, and fixed-point block planning.
 - Checked geometry arithmetic and finite header/image budgets before creating a
@@ -53,11 +56,17 @@
   documented public API. The committed Base64 fixture has SHA-256
   `c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba`;
   compiled tests assert its file identity and all per-image pixel hashes.
+- A separate deterministic metadata fixture preserves XML-sensitive String
+  text, a canonical TimePoint, a FITS value/comment pair, XISF-unit scope, and
+  exact UInt16 pixels in both `mmxisf` and independent package `xisf` 0.9.7.
+  Its serialized SHA-256 is
+  `e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8`.
 
 ## Still required for M6
 
 - Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
-- Add caller-declared metadata.
+- Expand caller-declared Properties beyond the current String/TimePoint direct
+  profile to numeric and block-backed forms when required.
 - Add requested compression/shuffle/checksum output profiles.
 - Add a sink abstraction after actual file-writer behavior establishes its
   ownership and failure requirements.

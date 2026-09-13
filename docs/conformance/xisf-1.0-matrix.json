@@ -84,6 +84,7 @@
     {"id":"metadata.reference","section":"11.13","feature":"UID references without chaining","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3"},
 
     {"id":"writer.baseline-monolithic","section":"7.1","feature":"one or more attached planar PFI-scalar Gray/RGB images","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"},
+    {"id":"writer.declared-metadata","section":"8.4, 11.1, 11.6","feature":"validated direct String/TimePoint Properties and FITS keywords","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"},
     {"id":"writer.deterministic","section":"product requirement","feature":"byte-deterministic output with volatile metadata fixed","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"}
   ]
 }

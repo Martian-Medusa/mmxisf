@@ -179,8 +179,10 @@ for one or more UInt8/16/32 and Float32/64 Gray/RGB images, with explicit
 floating-point bounds and provenance, checked per-image/cumulative budgets,
 cancellation, non-overwrite commit behavior, and exact self-round-trips. The
 committed multi-image oracle passed an independent public-API read with exact
-types, shapes, bounds, and values. Arbitrary metadata and compressed/checksummed
-writer profiles remain open.
+types, shapes, bounds, and values. A following declarative metadata slice adds
+direct String/TimePoint Properties and FITS keywords with independent-consumer
+evidence. Numeric/block metadata and compressed/checksummed writer profiles
+remain open.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external

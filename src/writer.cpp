@@ -10,6 +10,7 @@
 #include <limits>
 #include <string_view>
 #include <system_error>
+#include <unordered_set>
 
 namespace mmxisf {
 namespace {
@@ -187,6 +188,71 @@ Result<std::string> escape_xml(std::string_view input, bool attribute) {
   return output;
 }
 
+bool is_valid_fits_keyword_name(std::string_view value) {
+  return !value.empty() && value.size() <= 8 &&
+         std::all_of(value.begin(), value.end(), [](char character) {
+           return (character >= 'A' && character <= 'Z') ||
+                  (character >= '0' && character <= '9') || character == '_' ||
+                  character == '-';
+         });
+}
+
+bool is_valid_property_identifier(std::string_view value) {
+  const auto is_start = [](char character) {
+    return character == '_' || (character >= 'A' && character <= 'Z') ||
+           (character >= 'a' && character <= 'z');
+  };
+  const auto is_continue = [&](char character) {
+    return is_start(character) || (character >= '0' && character <= '9');
+  };
+  if (value.empty()) {
+    return false;
+  }
+  bool expect_start = true;
+  for (const auto character : value) {
+    if (character == ':') {
+      if (expect_start) {
+        return false;
+      }
+      expect_start = true;
+      continue;
+    }
+    if (expect_start ? !is_start(character) : !is_continue(character)) {
+      return false;
+    }
+    expect_start = false;
+  }
+  return !expect_start;
+}
+
+Result<std::string> make_metadata_xml(const MetadataWriteEntry &entry) {
+  auto escaped_name = escape_xml(entry.name, true);
+  auto escaped_value = escape_xml(
+      entry.value,
+      entry.type != "String" || entry.kind == MetadataWriteKind::fits_keyword);
+  if (!escaped_name) {
+    return escaped_name.error();
+  }
+  if (!escaped_value) {
+    return escaped_value.error();
+  }
+  if (entry.kind == MetadataWriteKind::fits_keyword) {
+    auto escaped_comment = escape_xml(entry.comment, true);
+    if (!escaped_comment) {
+      return escaped_comment.error();
+    }
+    return "<FITSKeyword name=\"" + escaped_name.value() + "\" value=\"" +
+           escaped_value.value() + "\" comment=\"" + escaped_comment.value() +
+           "\"/>";
+  }
+  if (entry.type == "String") {
+    return "<Property id=\"" + escaped_name.value() + "\" type=\"String\">" +
+           escaped_value.value() + "</Property>";
+  }
+  return "<Property id=\"" + escaped_name.value() +
+         "\" type=\"TimePoint\" value=\"" + escaped_value.value() + "\"/>";
+}
+
 std::pair<std::string_view, std::uint64_t>
 sample_format_description(SampleFormat format) {
   switch (format) {
@@ -223,6 +289,7 @@ Result<std::string> format_bound(double value) {
 }
 
 Result<std::string> make_header(std::span<const ImageWriteView> images,
+                                std::span<const MetadataWriteEntry> metadata,
                                 const WriterOptions &options,
                                 std::span<const BlockLocation> image_blocks) {
   auto escaped_creator = escape_xml(options.creator_application, false);
@@ -263,13 +330,40 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
     }
     header +=
         " location=\"attachment:" + std::to_string(image_blocks[index].offset) +
-        ':' + std::to_string(image_blocks[index].size) + "\"/>";
+        ':' + std::to_string(image_blocks[index].size) + "\"";
+    bool has_metadata = false;
+    for (const auto &entry : metadata) {
+      if (entry.image_index != index) {
+        continue;
+      }
+      if (!has_metadata) {
+        header += '>';
+        has_metadata = true;
+      }
+      auto serialized = make_metadata_xml(entry);
+      if (!serialized) {
+        return serialized.error();
+      }
+      header += serialized.value();
+    }
+    header += has_metadata ? "</Image>" : "/>";
   }
   header += "<Metadata><Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
             "value=\"" +
             options.creation_time + "\"/>";
   header += "<Property id=\"XISF:CreatorApplication\" type=\"String\">" +
-            escaped_creator.value() + "</Property></Metadata></xisf>";
+            escaped_creator.value() + "</Property>";
+  for (const auto &entry : metadata) {
+    if (entry.image_index) {
+      continue;
+    }
+    auto serialized = make_metadata_xml(entry);
+    if (!serialized) {
+      return serialized.error();
+    }
+    header += serialized.value();
+  }
+  header += "</Metadata></xisf>";
   return header;
 }
 
@@ -312,12 +406,20 @@ Result<WriteSummary>
 Writer::write_file(const std::filesystem::path &destination,
                    const ImageWriteView &image, const WriterOptions &options,
                    std::stop_token stop_token) {
-  return write_file(destination, std::span(&image, 1), options, stop_token);
+  return write_file(destination, std::span(&image, 1), {}, options, stop_token);
 }
 
 Result<WriteSummary>
 Writer::write_file(const std::filesystem::path &destination,
                    std::span<const ImageWriteView> images,
+                   const WriterOptions &options, std::stop_token stop_token) {
+  return write_file(destination, images, {}, options, stop_token);
+}
+
+Result<WriteSummary>
+Writer::write_file(const std::filesystem::path &destination,
+                   std::span<const ImageWriteView> images,
+                   std::span<const MetadataWriteEntry> metadata,
                    const WriterOptions &options, std::stop_token stop_token) {
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "XISF write was cancelled");
@@ -334,6 +436,11 @@ Writer::write_file(const std::filesystem::path &destination,
     return make_error(ErrorCode::resource_limit,
                       "Writer image count exceeds its budget");
   }
+  if (options.max_metadata_entries < 2 ||
+      metadata.size() > options.max_metadata_entries - 2) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer metadata count exceeds its budget");
+  }
   if (!is_power_of_two(options.attachment_alignment) ||
       options.attachment_alignment < 16 ||
       options.attachment_alignment > 1024U * 1024U) {
@@ -348,6 +455,81 @@ Writer::write_file(const std::filesystem::path &destination,
   if (options.creator_application.empty()) {
     return make_error(ErrorCode::invalid_argument,
                       "Writer creator application cannot be empty");
+  }
+  if (options.creator_application.size() > options.max_metadata_value_bytes) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer creator application exceeds metadata budget");
+  }
+
+  std::unordered_set<std::string> unit_property_ids{"XISF:CreationTime",
+                                                    "XISF:CreatorApplication"};
+  std::vector<std::unordered_set<std::string>> image_property_ids(
+      images.size());
+  for (const auto &entry : metadata) {
+    if (entry.kind != MetadataWriteKind::property &&
+        entry.kind != MetadataWriteKind::fits_keyword) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer metadata kind is invalid");
+    }
+    if (entry.image_index && *entry.image_index >= images.size()) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer metadata image index is out of range");
+    }
+    if (entry.value.size() > options.max_metadata_value_bytes ||
+        entry.comment.size() > options.max_metadata_value_bytes) {
+      return make_error(ErrorCode::resource_limit,
+                        "Writer metadata value exceeds its byte budget");
+    }
+    if (entry.kind == MetadataWriteKind::fits_keyword) {
+      if (!entry.image_index) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer FITS keywords require an image index");
+      }
+      if (!entry.type.empty()) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer FITS keywords cannot declare a type");
+      }
+      if (!is_valid_fits_keyword_name(entry.name)) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer FITS keyword name has invalid syntax");
+      }
+    } else {
+      if (!is_valid_property_identifier(entry.name)) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer Property identifier has invalid syntax");
+      }
+      if (entry.type != "String" && entry.type != "TimePoint") {
+        return make_error(
+            ErrorCode::unsupported_feature,
+            "Writer metadata supports String and TimePoint Properties");
+      }
+      if (!entry.comment.empty()) {
+        return make_error(ErrorCode::invalid_argument,
+                          "Writer Properties cannot declare a FITS comment");
+      }
+      if (entry.type == "TimePoint" && !is_canonical_utc_time(entry.value)) {
+        return make_error(
+            ErrorCode::invalid_argument,
+            "Writer TimePoint values must be YYYY-MM-DDTHH:MM:SSZ");
+      }
+      auto &property_ids = entry.image_index
+                               ? image_property_ids[*entry.image_index]
+                               : unit_property_ids;
+      if (!entry.image_index && !entry.name.starts_with("XISF:")) {
+        return make_error(
+            ErrorCode::invalid_argument,
+            "Writer XISF-unit Property identifiers require XISF namespace");
+      }
+      if (!property_ids.emplace(entry.name).second) {
+        return make_error(
+            ErrorCode::invalid_argument,
+            "Writer Property identifiers must be unique per association");
+      }
+    }
+    auto serialized = make_metadata_xml(entry);
+    if (!serialized) {
+      return serialized.error();
+    }
   }
 
   std::vector<std::uint64_t> pixel_sizes;
@@ -449,7 +631,7 @@ Writer::write_file(const std::filesystem::path &destination,
   std::string header;
   bool layout_stable = false;
   for (unsigned iteration = 0; iteration < 4; ++iteration) {
-    auto candidate = make_header(images, options, image_blocks);
+    auto candidate = make_header(images, metadata, options, image_blocks);
     if (!candidate) {
       return candidate.error();
     }
