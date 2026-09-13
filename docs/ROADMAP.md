@@ -82,6 +82,12 @@ mutation smoke passed 20,000 cases. The coverage-guided libFuzzer target is
 present, but this host's Command Line Tools does not include its runtime, so
 that evidence remains explicitly NOT_TESTED until run in a suitable CI image.
 
+The third checkpoint established a complete Linux, Windows, and macOS CI PASS,
+including the installed-package consumer and the AppKit viewer build. The
+coverage-guided harness is now wired to Linux Clang CI with a minimal valid
+seed, a format dictionary, a bounded 20,000-run campaign, and failure-artifact
+retention. Its result is recorded separately after that CI run completes.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

@@ -2,7 +2,7 @@
 
 - Started: 2026-09-13
 - Checkpoint: 2026-09-13
-- Status: LOCAL_MACOS_PASS / CROSS_PLATFORM_IN_PROGRESS
+- Status: LOCAL_MACOS_PASS / CROSS_PLATFORM_PASS / M1_IN_PROGRESS
 - Library version: 0.1.0 (pre-release API)
 
 ## Implemented at this checkpoint
@@ -97,6 +97,20 @@ fixes separately:
 The follow-up selects the runner's installed Xcode 26.3 explicitly. Attempt 2
 remains partial evidence and is not counted as cross-platform PASS.
 
+### Cross-platform CI attempt 3
+
+GitHub Actions run `34769511851` on commit `7d721f8` is the first complete
+cross-platform PASS:
+
+- Ubuntu build, tests, install, and installed-package consumer: PASS.
+- Linux Clang ASan/UBSan 20,000-case deterministic mutation smoke: PASS.
+- Windows build, tests, install, and installed-package consumer: PASS.
+- macOS 15 / Xcode 26.3 library, viewer, tests, install, and installed-package
+  consumer: PASS.
+
+This closes the cross-platform build/package gate. M1 remains in progress for
+the deeper grammar/boundary matrix and coverage-guided fuzz evidence.
+
 Private astronomy files were read locally and were not copied into this
 repository or its generated bundle.
 
@@ -120,8 +134,6 @@ repository or its generated bundle.
   Image, Property, and FITSKeyword placement/mandatory-attribute rules.
 - Run the prepared coverage-guided fuzz target on a Clang toolchain that ships
   libFuzzer and retain a minimized regression corpus for every finding.
-- Run the prepared CI and verify build/package consumption on Linux and Windows
-  before claiming M1 as cross-platform complete.
 - Revisit the source contract after the first codec/checksum implementation;
   do not freeze ABI or 0.1 API names before that evidence.
 

@@ -87,9 +87,31 @@ jobs:
           cmake -S . -B build-fuzz
           -DMMXISF_BUILD_TESTS=OFF
           -DMMXISF_BUILD_TOOLS=OFF
+          -DMMXISF_BUILD_FUZZER=ON
           -DMMXISF_BUILD_FUZZ_SMOKE=ON
           -DCMAKE_BUILD_TYPE=Debug
       - name: Build
         run: cmake --build build-fuzz --parallel
       - name: Run 20k sanitizer mutations
         run: build-fuzz/mmxisf_fuzz_smoke
+      - name: Prepare coverage-guided seed corpus
+        run: |
+          mkdir -p build-fuzz/corpus build-fuzz/artifacts
+          base64 --decode tests/fuzz_seed.xisf.b64 > build-fuzz/corpus/minimal.xisf
+      - name: Run 20k coverage-guided mutations
+        run: >-
+          build-fuzz/mmxisf_fuzz_header
+          -runs=20000
+          -max_len=1048576
+          -timeout=10
+          -dict=tests/fuzz_header.dict
+          -artifact_prefix=build-fuzz/artifacts/
+          build-fuzz/corpus
+      - name: Retain libFuzzer failure artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libfuzzer-failure
+          path: build-fuzz/artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
