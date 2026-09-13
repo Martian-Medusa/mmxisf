@@ -121,6 +121,13 @@ std::string valid_metadata() {
          "</Metadata>";
 }
 
+std::string short_metadata() {
+  return "<Metadata>"
+         "<Property id=\"XISF:CreationTime\" type=\"TimePoint\">t</Property>"
+         "<Property id=\"XISF:CreatorApplication\" type=\"String\">a</Property>"
+         "</Metadata>";
+}
+
 std::string valid_xml(std::string_view image_attributes = {}) {
   return std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>") +
          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">" +
@@ -372,6 +379,44 @@ int main() {
              limited_metadata.error().code == mmxisf::ErrorCode::resource_limit,
          "metadata value budget is enforced");
 
+  struct MetadataValueCase {
+    const char *name;
+    const char *element;
+    bool accepted;
+  };
+  const std::array metadata_value_cases{
+      MetadataValueCase{"text-at-limit",
+                        "<Property id=\"p\" type=\"String\">abcd</Property>",
+                        true},
+      MetadataValueCase{"text-over-limit",
+                        "<Property id=\"p\" type=\"String\">abcde</Property>",
+                        false},
+      MetadataValueCase{"attribute-at-limit",
+                        "<Property id=\"p\" type=\"String\" value=\"abcd\"/>",
+                        true},
+      MetadataValueCase{"attribute-over-limit",
+                        "<Property id=\"p\" type=\"String\" value=\"abcde\"/>",
+                        false},
+      MetadataValueCase{
+          "fits-attribute-over-limit",
+          "<FITSKeyword name=\"TEST\" value=\"abcde\" comment=\"\"/>",
+          false},
+  };
+  for (const auto &test : metadata_value_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-metadata-limit-") + test.name + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\">") +
+            test.element + short_metadata() + "</xisf>");
+    mmxisf::ReaderOptions options;
+    options.max_metadata_value_bytes = 4;
+    auto result = mmxisf::Reader::open_file(path, options);
+    expect(test.accepted ? result.has_value()
+                         : (!result && result.error().code ==
+                                           mmxisf::ErrorCode::resource_limit),
+           test.name);
+  }
+
   mmxisf::ReaderOptions tiny_header_limit;
   tiny_header_limit.max_header_bytes = 8;
   auto limited_header =
@@ -499,6 +544,81 @@ int main() {
   expect(!bad_attachment &&
              bad_attachment.error().code == mmxisf::ErrorCode::invalid_block,
          "attachment overlapping the header is rejected");
+
+  struct AttachmentBoundaryCase {
+    const char *name;
+    const char *location;
+  };
+  const std::array attachment_boundary_cases{
+      AttachmentBoundaryCase{"zero-size", "attachment:1024:0"},
+      AttachmentBoundaryCase{"offset-at-eof", "attachment:1025:1"},
+      AttachmentBoundaryCase{"maximum-offset",
+                             "attachment:18446744073709551615:1"},
+      AttachmentBoundaryCase{"maximum-size",
+                             "attachment:1024:18446744073709551615"},
+  };
+  for (const auto &test : attachment_boundary_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-attachment-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"Gray\" location=\"") +
+            test.location + "\"/>" + valid_metadata() + "</xisf>",
+        {std::byte{0}});
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_block,
+           test.name);
+  }
+
+  struct GeometryOverflowCase {
+    const char *name;
+    const char *geometry;
+    const char *sample_format;
+  };
+  const std::array geometry_overflow_cases{
+      GeometryOverflowCase{"width-times-height",
+                           "18446744073709551615:2:1", "UInt8"},
+      GeometryOverflowCase{"two-large-axes", "4294967296:4294967296:1",
+                           "UInt8"},
+      GeometryOverflowCase{"sample-byte-count", "9223372036854775808:1:1",
+                           "UInt16"},
+  };
+  for (const auto &test : geometry_overflow_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-overflow-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"") +
+            test.geometry + "\" sampleFormat=\"" + test.sample_format +
+            "\" colorSpace=\"Gray\" location=\"attachment:1024:1\"/>" +
+            valid_metadata() + "</xisf>",
+        {std::byte{0}});
+    auto result = mmxisf::Reader::open_file(path);
+    expect(result.has_value(), test.name);
+    if (result) {
+      auto image = result.value().read_image(0);
+      expect(!image && image.error().code == mmxisf::ErrorCode::overflow,
+             test.name);
+    }
+  }
+
+  const auto short_attachment_path = write_fixture(
+      "mmxisf-attachment-size-mismatch.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:2:1\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"Gray\" location=\"attachment:1024:7\"/>") +
+          valid_metadata() + "</xisf>",
+      std::vector<std::byte>(7, std::byte{0}));
+  auto short_attachment = mmxisf::Reader::open_file(short_attachment_path);
+  expect(short_attachment.has_value(),
+         "in-range attachment remains inspectable before typed decode");
+  if (short_attachment) {
+    auto image = short_attachment.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::invalid_block,
+           "attachment size must match geometry at typed decode");
+  }
 
   const auto bad_property_path = write_fixture(
       "mmxisf-property-attributes.xisf",

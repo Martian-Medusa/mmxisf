@@ -1,4 +1,5 @@
 /build/
+/build-*/
 /artifacts/
 /out/
 /coverage/

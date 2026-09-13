@@ -32,10 +32,12 @@
 
 - CMake Release build: PASS.
 - CTest: 3/3 PASS (`version`, `reader`, planning consistency).
-- Synthetic reader coverage (63 checks): valid preamble/XML/metadata/raw pixels, DOCTYPE
-  rejection, invalid root/namespace/core grammar, mandatory attributes,
-  preamble and block ranges, every exposed resource-limit class, cancellation,
-  caller buffers, partial ByteSource reads, and fail-closed compressed decode.
+- Synthetic reader coverage (80 checks): valid preamble/XML/metadata/raw pixels,
+  DOCTYPE rejection, invalid root/namespace/core grammar, mandatory attributes,
+  preamble and block ranges, exact/over-limit text and attribute metadata
+  values, checked geometry arithmetic, every exposed resource-limit class,
+  cancellation, caller buffers, partial ByteSource reads, and fail-closed
+  compressed decode.
 - Pinned-spec spot audit: PASS for Image geometry/channel semantics, optional
   `colorSpace="Gray"` default, case-sensitive `Planar`/`Normal` storage values,
   floating-point bounds, mandatory Metadata properties, Metadata uniqueness,
@@ -170,3 +172,12 @@ Floating-point bounds are now parsed as finite increasing ranges, including
 valid signed/whitespace forms, and propagated to the viewer's linear display
 range. The same spec audit corrected the optional Gray color-space default and
 the canonical case-sensitive pixel-storage literals.
+
+## Third implementation checkpoint
+
+The boundary-matrix pass fixed a resource-policy inconsistency: the per-value
+metadata budget now applies before copying both XML `value` attributes and
+element character data. Table-driven tests cover exact-limit and one-byte-over
+values, zero/EOF/maximum attachment ranges, attachment-size mismatch, and
+overflow in axis, sample-count, and byte-count multiplication. Release,
+warning-clean, and ASan/UBSan test builds pass locally.

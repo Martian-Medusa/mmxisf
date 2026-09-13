@@ -507,6 +507,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                  name + " is missing a mandatory attribute", name);
       return;
     }
+    if (value && value->size() > state.options.max_metadata_value_bytes) {
+      state.fail(ErrorCode::resource_limit,
+                 "Metadata value exceeds the inspection limit", name,
+                 "value");
+      return;
+    }
     if (name == "Property" && parent == "Metadata") {
       if (!identity->starts_with("XISF:")) {
         state.fail(ErrorCode::invalid_xisf,
