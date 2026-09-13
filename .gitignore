@@ -1,4 +1,5 @@
 /build/
+/artifacts/
 /out/
 /coverage/
 /fuzz-corpus/

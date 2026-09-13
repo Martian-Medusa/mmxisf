@@ -4,4 +4,6 @@
 
 #include <cstdlib>
 
-int main() { return mmxisf::version() == "0.0.0" ? EXIT_SUCCESS : EXIT_FAILURE; }
+int main() {
+  return mmxisf::version() == "0.1.0" ? EXIT_SUCCESS : EXIT_FAILURE;
+}

@@ -5,8 +5,10 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: planning and build scaffold only. No XISF file can be read or written
-> yet. The repository version is intentionally `0.0.0`.
+> Status: M1 is in progress. Version `0.1.0` parses bounded monolithic XISF 1.0
+> headers and inspects image descriptors, properties, and FITS keywords. A
+> narrow, fail-closed raw attachment path powers the macOS viewer PoC. This is
+> not yet a general XISF decoder.
 
 ## Why the public name is not `libXISF`
 
@@ -44,18 +46,37 @@ milestone. They remain candidates for later conformance work.
 - [Resource limits](docs/RESOURCE_LIMITS.md)
 - [Fixture policy](docs/FIXTURE_POLICY.md)
 - [Accelerated M0 status](docs/M0_STATUS.md)
+- [M1 parser/viewer checkpoint](docs/M1_STATUS.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
-## Build the scaffold
+## Build the library and inspector
 
 ```sh
 cmake -S . -B build -DMMXISF_BUILD_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
+build/mmxisf-inspect path/to/image.xisf
 ```
 
-The scaffold proves only that the standalone package shape compiles. It is not
-format-support evidence.
+Normal configuration requires an installed Expat development package. No
+dependency is downloaded implicitly.
+
+## Build and run the macOS PoC viewer
+
+```sh
+cmake -S . -B build \
+  -DMMXISF_BUILD_TESTS=ON \
+  -DMMXISF_BUILD_VIEWER=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+open "artifacts/mmXISF Viewer PoC.app"
+```
+
+The optional AppKit target is macOS-only and does not enter the standalone
+library. The generated local bundle embeds Expat. Its current preview scope is
+the first uncompressed local Gray attachment with UInt8, UInt16, or Float32
+samples. The metadata inspector can still open a broader set of headers, while
+unsupported image decoding fails closed.
 
 ## License
 

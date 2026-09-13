@@ -10,7 +10,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | XML nesting depth | 64 | Prevent pathological recursion |
 | XML nodes | 250,000 | Bound CPU and model construction |
 | attributes per element | 256 | Bound attribute scanning and duplicates |
-| single text node | 64 MiB | Permit embedded blocks under a separate encoded budget |
+| inspected Property text value | 8 MiB | Preserve large processing history while bounding copies |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects | 100,000 | Preserve large legitimate metadata sets with a hard bound |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |

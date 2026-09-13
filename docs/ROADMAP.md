@@ -59,6 +59,23 @@ availability of test fixtures, are:
 | Public read/write beta | 7-10 weeks total | 2026-11-01 to 2026-11-22 |
 | Supported monolithic 1.0 | 11-15 weeks total | 2026-11-29 to 2026-12-27 |
 
+### 2026-09-13 M1 checkpoint
+
+The first M1 implementation session delivered the bounded preamble/XML parser,
+document/image metadata model, CLI inspector, a narrow raw attachment reader,
+and a working macOS viewer PoC. Nine private PFI-corpus headers passed and one
+large Float32 frame was opened and stretched natively. M1 remains open for
+systematic boundary tests, grammar closure, ByteSource/cancellation work,
+sanitizers/fuzz entry, and non-macOS package verification.
+
+This result makes the original 2-4 working-day M1 calendar target conservative,
+but it is too early to apply the same multiplier to codec, checksum, pixel
+parity, and interoperability gates. Use the remainder of the first-week scope
+to close M1 hardening and begin M2 fixtures; rebaseline after recording defects
+and rework from those gates. The viewer PoC itself is complete in its declared
+one-image Gray/uncompressed profile and does not add a new critical-path
+dependency.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

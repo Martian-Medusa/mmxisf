@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <memory>
+#include <vector>
+
+#include "mmxisf/document.hpp"
+#include "mmxisf/result.hpp"
+
+namespace mmxisf {
+
+struct ReaderOptions {
+  std::uint32_t max_header_bytes{16U * 1024U * 1024U};
+  std::size_t max_xml_depth{64};
+  std::size_t max_xml_nodes{250'000};
+  std::size_t max_attributes_per_element{256};
+  std::size_t max_images{64};
+  std::size_t max_metadata_entries{100'000};
+  std::size_t max_metadata_value_bytes{8U * 1024U * 1024U};
+  std::size_t max_image_axes{8};
+  std::uint64_t max_inspected_channels{64};
+  std::uint64_t max_decoded_channels{16};
+  std::uint64_t max_samples_per_image{536'870'912};
+  std::uint64_t max_decoded_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
+};
+
+struct RawImage {
+  std::uint64_t width{0};
+  std::uint64_t height{0};
+  std::uint64_t channels{0};
+  SampleFormat sample_format{SampleFormat::unsupported};
+  PixelStorage pixel_storage{PixelStorage::planar};
+  ByteOrder byte_order{ByteOrder::little};
+  std::vector<std::byte> pixels;
+};
+
+class Reader {
+public:
+  Reader(Reader &&) noexcept;
+  Reader &operator=(Reader &&) noexcept;
+  ~Reader();
+
+  Reader(const Reader &) = delete;
+  Reader &operator=(const Reader &) = delete;
+
+  [[nodiscard]] static Result<Reader>
+  open_file(const std::filesystem::path &path, ReaderOptions options = {});
+
+  [[nodiscard]] const Document &document() const noexcept;
+
+  // M1 PoC read path: exact, uncompressed local attachment bytes only.
+  [[nodiscard]] Result<RawImage> read_image(std::size_t image_index) const;
+
+private:
+  struct Impl;
+  explicit Reader(std::unique_ptr<Impl> impl);
+  std::unique_ptr<Impl> impl_;
+};
+
+} // namespace mmxisf
