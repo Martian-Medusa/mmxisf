@@ -23,7 +23,9 @@ int main(int argc, char **argv) {
             << "file-bytes: " << document.file_size() << "\n"
             << "header-bytes: " << document.header_length() << "\n"
             << "images: " << document.images().size() << "\n"
-            << "metadata: " << document.metadata().size() << "\n";
+            << "metadata: " << document.metadata().size() << "\n"
+            << "metadata-bindings: " << document.metadata_bindings().size()
+            << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     std::cout << "image[" << index << "]: id=\"" << image.id << "\" geometry=";
@@ -88,6 +90,17 @@ int main(int argc, char **argv) {
       std::cout << "\tcolumns=" << *entry.columns;
     }
     std::cout << '\n';
+  }
+  for (const auto &binding : document.metadata_bindings()) {
+    std::cout << "binding\tmetadata[" << binding.metadata_index << "]\t"
+              << (binding.scope == mmxisf::MetadataBinding::Scope::image
+                      ? "Image"
+                      : "XISF unit");
+    if (binding.image_index) {
+      std::cout << '[' << *binding.image_index << ']';
+    }
+    std::cout << '\t' << (binding.by_reference ? "Reference" : "Direct")
+              << '\n';
   }
   return EXIT_SUCCESS;
 }

@@ -16,6 +16,9 @@
   adapter boundary.
 - The inspector and macOS viewer expose scope and value form; block-backed
   properties show their location instead of being presented as decoded text.
+- Ordered metadata bindings resolve forward `Reference` elements to shared
+  Property/FITSKeyword entries while preserving lexical scope, duplicates, and
+  direct-versus-reference provenance.
 - Malformed numeric property extents and malformed block locations fail closed.
 
 ## Evidence available now
@@ -27,14 +30,16 @@
   PASS locally.
 - XISF-unit String character data and lexical scope: PASS locally.
 - Malformed vector extent rejection: PASS locally.
+- Interleaved direct FITS keywords and repeated forward references retain exact
+  image-binding order: PASS locally.
+- A FITS keyword reference targeting XISF-unit metadata is rejected: PASS
+  locally.
 - Release unit suite and macOS viewer build: PASS locally.
 
 ## Still required for M4
 
 - Complete type-specific Property grammar for scalar, complex, String,
   TimePoint, vector, and matrix serializations.
-- Resolve `Reference` associations without losing their original lexical
-  provenance.
 - Define and test the PFI-facing metadata projection, including conservative
   FITS raw/stripped handling and duplicate-keyword order.
 - Exercise the metadata parity matrix against independently produced files and

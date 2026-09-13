@@ -22,6 +22,7 @@
 #include <sstream>
 #include <string_view>
 #include <system_error>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -317,6 +318,14 @@ struct AttachedRange {
   std::uint64_t size{0};
 };
 
+struct MetadataBindingEvent {
+  std::optional<std::size_t> metadata_index;
+  std::string reference;
+  MetadataBinding::Scope scope{MetadataBinding::Scope::xisf_unit};
+  std::optional<std::size_t> image_index;
+  bool by_reference{false};
+};
+
 struct XmlBuilder {
   enum class EmbeddedEncoding { none, base64, hex };
 
@@ -341,6 +350,8 @@ struct XmlBuilder {
   bool saw_creator_application{false};
   std::unordered_set<std::string> core_uids;
   std::vector<std::string> references;
+  std::unordered_map<std::string, std::size_t> metadata_uids;
+  std::vector<MetadataBindingEvent> metadata_binding_events;
   std::optional<std::size_t> embedded_image_index;
   EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
   std::array<unsigned char, 4> base64_quartet{};
@@ -579,6 +590,22 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
       state.references.emplace_back(*reference);
+      if ((parent == "Image" && state.current_image()) ||
+          parent == "Metadata") {
+        if (state.metadata_binding_events.size() >=
+            state.options.max_metadata_entries) {
+          state.fail(ErrorCode::resource_limit,
+                     "Metadata binding limit exceeded", name);
+          return;
+        }
+        MetadataBindingEvent event;
+        event.reference = std::string(*reference);
+        event.scope = parent == "Image" ? MetadataBinding::Scope::image
+                                         : MetadataBinding::Scope::xisf_unit;
+        event.image_index = state.current_image();
+        event.by_reference = true;
+        state.metadata_binding_events.push_back(std::move(event));
+      }
     } else if (uid) {
       if (!is_valid_unique_id(*uid)) {
         state.fail(ErrorCode::invalid_xisf,
@@ -898,9 +925,28 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         !parse_extent("columns", entry.columns)) {
       return;
     }
+    const auto metadata_index = state.metadata.size();
+    if (!entry.uid.empty()) {
+      state.metadata_uids.emplace(entry.uid, metadata_index);
+    }
     state.metadata.push_back(std::move(entry));
+    if (state.metadata.back().scope != MetadataEntry::Scope::standalone) {
+      if (state.metadata_binding_events.size() >=
+          state.options.max_metadata_entries) {
+        state.fail(ErrorCode::resource_limit,
+                   "Metadata binding limit exceeded", name);
+        return;
+      }
+      MetadataBindingEvent event;
+      event.metadata_index = metadata_index;
+      event.scope = state.metadata.back().scope == MetadataEntry::Scope::image
+                        ? MetadataBinding::Scope::image
+                        : MetadataBinding::Scope::xisf_unit;
+      event.image_index = state.metadata.back().image_index;
+      state.metadata_binding_events.push_back(std::move(event));
+    }
     if (name == "Property" && !value && !location) {
-      state.text_metadata_index = state.metadata.size() - 1;
+      state.text_metadata_index = metadata_index;
     }
   }
 }
@@ -1071,6 +1117,35 @@ Result<ParsedHeader> parse_header(std::string_view xml,
                         "Reference points to an undefined core element uid");
     }
   }
+  std::vector<MetadataBinding> metadata_bindings;
+  metadata_bindings.reserve(state.metadata_binding_events.size());
+  for (const auto &event : state.metadata_binding_events) {
+    auto metadata_index = event.metadata_index;
+    if (!metadata_index) {
+      const auto target = state.metadata_uids.find(event.reference);
+      if (target == state.metadata_uids.end()) {
+        continue;
+      }
+      metadata_index = target->second;
+    }
+    if (*metadata_index >= state.metadata.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Metadata binding index is outside the document");
+    }
+    if (event.scope == MetadataBinding::Scope::xisf_unit &&
+        state.metadata[*metadata_index].kind ==
+            MetadataEntry::Kind::fits_keyword) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "FITSKeyword references can only associate keywords with images");
+    }
+    MetadataBinding binding;
+    binding.metadata_index = *metadata_index;
+    binding.scope = event.scope;
+    binding.image_index = event.image_index;
+    binding.by_reference = event.by_reference;
+    metadata_bindings.push_back(std::move(binding));
+  }
   const auto header_end = 16ULL + static_cast<std::uint64_t>(header_length);
   std::sort(state.attached_ranges.begin(), state.attached_ranges.end(),
             [](const AttachedRange &left, const AttachedRange &right) {
@@ -1090,7 +1165,8 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     previous_end = range.offset + range.size;
   }
   Document document(std::move(state.version), std::move(state.images),
-                    std::move(state.metadata), file_size, header_length);
+                    std::move(state.metadata), file_size, header_length,
+                    std::move(metadata_bindings));
   return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
                       std::move(state.attached_ranges)};
 }

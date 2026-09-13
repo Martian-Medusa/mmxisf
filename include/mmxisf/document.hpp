@@ -54,6 +54,15 @@ struct MetadataEntry {
   std::optional<std::uint64_t> columns;
 };
 
+struct MetadataBinding {
+  enum class Scope { xisf_unit, image };
+
+  std::size_t metadata_index{0};
+  Scope scope{Scope::xisf_unit};
+  std::optional<std::size_t> image_index;
+  bool by_reference{false};
+};
+
 struct ImageInfo {
   std::string id;
   std::vector<std::uint64_t> geometry;
@@ -75,10 +84,12 @@ public:
   Document() = default;
   Document(std::string version, std::vector<ImageInfo> images,
            std::vector<MetadataEntry> metadata, std::uint64_t file_size,
-           std::uint32_t header_length)
+           std::uint32_t header_length,
+           std::vector<MetadataBinding> metadata_bindings = {})
       : version_(std::move(version)), images_(std::move(images)),
         metadata_(std::move(metadata)), file_size_(file_size),
-        header_length_(header_length) {}
+        header_length_(header_length),
+        metadata_bindings_(std::move(metadata_bindings)) {}
 
   [[nodiscard]] const std::string &version() const noexcept { return version_; }
   [[nodiscard]] const std::vector<ImageInfo> &images() const noexcept {
@@ -86,6 +97,10 @@ public:
   }
   [[nodiscard]] const std::vector<MetadataEntry> &metadata() const noexcept {
     return metadata_;
+  }
+  [[nodiscard]] const std::vector<MetadataBinding> &
+  metadata_bindings() const noexcept {
+    return metadata_bindings_;
   }
   [[nodiscard]] std::uint64_t file_size() const noexcept { return file_size_; }
   [[nodiscard]] std::uint32_t header_length() const noexcept {
@@ -98,6 +113,7 @@ private:
   std::vector<MetadataEntry> metadata_;
   std::uint64_t file_size_{0};
   std::uint32_t header_length_{0};
+  std::vector<MetadataBinding> metadata_bindings_;
 };
 
 [[nodiscard]] const char *to_string(SampleFormat format) noexcept;

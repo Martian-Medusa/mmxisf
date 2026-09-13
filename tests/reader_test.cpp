@@ -1380,6 +1380,61 @@ int main() {
   expect(forward_reference.has_value(),
          "forward Reference to a core uid is accepted");
 
+  const auto ordered_metadata_bindings_path = write_fixture(
+      "mmxisf-ordered-metadata-bindings.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"path(pixels.bin)\">"
+          "<FITSKeyword name=\"HISTORY\" value=\"\" comment=\"first\"/>"
+          "<Reference ref=\"shared_filter\"/>"
+          "<FITSKeyword name=\"HISTORY\" value=\"\" comment=\"last\"/>"
+          "<Reference ref=\"shared_filter\"/>"
+          "</Image>"
+          "<FITSKeyword uid=\"shared_filter\" name=\"FILTER\" "
+          "value=\"'L'\" comment=\"shared\"/>") +
+          valid_metadata() + "</xisf>");
+  auto ordered_metadata_bindings =
+      mmxisf::Reader::open_file(ordered_metadata_bindings_path);
+  expect(ordered_metadata_bindings.has_value(),
+         "forward metadata references are resolved");
+  if (ordered_metadata_bindings) {
+    const auto &document = ordered_metadata_bindings.value().document();
+    const auto &bindings = document.metadata_bindings();
+    expect(bindings.size() == 6,
+           "direct and referenced metadata bindings are retained");
+    expect(bindings[0].metadata_index == 0 && !bindings[0].by_reference &&
+               bindings[0].image_index == 0 &&
+               bindings[1].metadata_index == 2 &&
+               bindings[1].by_reference &&
+               bindings[2].metadata_index == 1 &&
+               !bindings[2].by_reference &&
+               bindings[3].metadata_index == 2 &&
+               bindings[3].by_reference,
+           "image metadata binding order and duplicate references are exact");
+    expect(document.metadata()[2].scope ==
+                   mmxisf::MetadataEntry::Scope::standalone &&
+               document.metadata()[2].uid == "shared_filter",
+           "resolved metadata retains standalone lexical provenance");
+  }
+
+  const auto invalid_unit_fits_binding_path = write_fixture(
+      "mmxisf-invalid-unit-fits-binding.xisf",
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<FITSKeyword uid=\"shared\" name=\"FILTER\" value=\"'L'\" "
+      "comment=\"shared\"/>"
+      "<Metadata><Reference ref=\"shared\"/>"
+      "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
+      "value=\"2026-09-13T00:00:00Z\"/>"
+      "<Property id=\"XISF:CreatorApplication\" type=\"String\">test"
+      "</Property></Metadata></xisf>");
+  auto invalid_unit_fits_binding =
+      mmxisf::Reader::open_file(invalid_unit_fits_binding_path);
+  expect(!invalid_unit_fits_binding &&
+             invalid_unit_fits_binding.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "FITSKeyword cannot be associated with XISF-unit metadata");
+
   struct InvalidUidCase {
     const char *name;
     const char *uid;

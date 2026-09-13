@@ -484,14 +484,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
           @"");
     }
   }
-  for (const auto &entry : document.metadata()) {
-    NSString *scope = @"Standalone";
-    if (entry.scope == mmxisf::MetadataEntry::Scope::xisf_unit) {
-      scope = @"XISF unit";
-    } else if (entry.scope == mmxisf::MetadataEntry::Scope::image &&
-               entry.image_index) {
-      scope = [NSString stringWithFormat:@"Image %lu", *entry.image_index];
-    }
+  const auto add_metadata = [&](const mmxisf::MetadataEntry &entry,
+                                NSString *scope, bool by_reference) {
     NSString *type = ns_string(entry.type);
     if (entry.kind == mmxisf::MetadataEntry::Kind::property) {
       type = [NSString
@@ -502,10 +496,42 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
                               mmxisf::MetadataEntry::ValueForm::data_block
                           ? ns_string(entry.block.raw)
                           : display_string(entry.value);
-    add(scope,
+    NSString *kind =
         entry.kind == mmxisf::MetadataEntry::Kind::property ? @"Property"
-                                                            : @"FITS",
+                                                            : @"FITS";
+    if (by_reference) {
+      kind = [kind stringByAppendingString:@" · Reference"];
+    }
+    add(scope, kind,
         ns_string(entry.name), type, value, ns_string(entry.comment));
+  };
+  std::vector<bool> bound_metadata(document.metadata().size(), false);
+  for (const auto &binding : document.metadata_bindings()) {
+    if (binding.metadata_index >= document.metadata().size()) {
+      continue;
+    }
+    NSString *scope = @"XISF unit";
+    if (binding.scope == mmxisf::MetadataBinding::Scope::image &&
+        binding.image_index) {
+      scope = [NSString stringWithFormat:@"Image %lu", *binding.image_index];
+    }
+    add_metadata(document.metadata()[binding.metadata_index], scope,
+                 binding.by_reference);
+    bound_metadata[binding.metadata_index] = true;
+  }
+  for (std::size_t index = 0; index < document.metadata().size(); ++index) {
+    if (bound_metadata[index]) {
+      continue;
+    }
+    const auto &entry = document.metadata()[index];
+    NSString *scope = @"Standalone";
+    if (entry.scope == mmxisf::MetadataEntry::Scope::xisf_unit) {
+      scope = @"XISF unit";
+    } else if (entry.scope == mmxisf::MetadataEntry::Scope::image &&
+               entry.image_index) {
+      scope = [NSString stringWithFormat:@"Image %lu", *entry.image_index];
+    }
+    add_metadata(entry, scope, false);
   }
   rows_ = [rows copy];
 }
