@@ -162,14 +162,14 @@ cancellation machinery. This closes the library-side prerequisite for the
 PixInsight WCS vectors and matrices observed in the private corpus; semantic WCS
 projection and native parity remain PFI-owned acceptance gates.
 
-An independent-producer checkpoint then generated five redistributable files
+An independent-producer checkpoint then generated nine redistributable files
 through the documented public `XISF.write` API of package `xisf` 0.9.7 without
 inspecting its implementation. Exact-byte tests now cover zlib/LZ4/LZ4HC/
-Zstandard plus shuffle for UInt16 Gray and Zstandard plus shuffle for Float32
-RGB on every CI platform. This closes M3's external codec-fixture gate and
-partially closes M2's independent pixel matrix. It also found and fixed a
-narrow XML declaration spelling incompatibility; other scalar/storage/endian
-profiles and repeatable performance remain open.
+Zstandard plus shuffle across UInt8, UInt16, UInt32, Float32, Float64, Gray, and
+RGB on every CI platform. This closes M3's external codec-fixture gate and the
+scalar/color families of M2's independent pixel matrix. It also found and fixed
+a narrow XML declaration spelling incompatibility; Normal/interleaved,
+big-endian, and repeatable performance evidence remain open.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external

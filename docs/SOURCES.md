@@ -48,7 +48,7 @@ the repository and do not broaden the normative specification baseline.
 
 ## Redistributable independent-producer evidence
 
-Five compact fixtures under `tests/interop` were generated from Martian
+Nine compact fixtures under `tests/interop` were generated from Martian
 Medusa-owned deterministic numeric arrays by invoking only the documented
 public `XISF.write` API of PyPI package `xisf` 0.9.7. The upstream source archive
 SHA-256 is

@@ -5,8 +5,9 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete; M2 implementation has a first committed independent-
-> producer pixel matrix; M3 codec interoperability is accepted for that matrix
+> Status: M1 is complete; M2 implementation has an independent-producer scalar
+> and color matrix, with storage/endian combinations still partial; M3 codec
+> interoperability is accepted for that matrix
 > with performance acceptance still pending; M4 is in progress and the first
 > M5 integration prerequisites are implemented. Version
 > `0.1.0` parses bounded

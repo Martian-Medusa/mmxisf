@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -137,59 +136,13 @@ std::string sha256_hex(std::span<const std::byte> bytes) {
   return output.str();
 }
 
-void append_u16_le(std::vector<std::byte> &output, std::uint16_t value) {
-  output.push_back(static_cast<std::byte>(value & 0xffU));
-  output.push_back(static_cast<std::byte>((value >> 8U) & 0xffU));
-}
-
-void append_f32_le(std::vector<std::byte> &output, float value) {
-  const auto bits = std::bit_cast<std::uint32_t>(value);
-  output.push_back(static_cast<std::byte>(bits & 0xffU));
-  output.push_back(static_cast<std::byte>((bits >> 8U) & 0xffU));
-  output.push_back(static_cast<std::byte>((bits >> 16U) & 0xffU));
-  output.push_back(static_cast<std::byte>((bits >> 24U) & 0xffU));
-}
-
-std::vector<std::byte> expected_gray() {
-  std::vector<std::byte> result;
-  result.reserve(257U * 193U * 2U);
-  for (std::uint32_t y = 0; y < 193; ++y) {
-    for (std::uint32_t x = 0; x < 257; ++x) {
-      const auto value =
-          static_cast<std::uint16_t>(((x % 17U) + 17U * (y % 13U)) * 257U);
-      append_u16_le(result, value);
-    }
-  }
-  return result;
-}
-
-std::vector<std::byte> expected_rgb() {
-  std::vector<std::byte> result;
-  result.reserve(257U * 193U * 3U * 4U);
-  for (std::uint32_t channel = 0; channel < 3; ++channel) {
-    for (std::uint32_t y = 0; y < 193; ++y) {
-      for (std::uint32_t x = 0; x < 257; ++x) {
-        double source = 0;
-        if (channel == 0) {
-          source = static_cast<double>(x % 11U) / 10.0;
-        } else if (channel == 1) {
-          source = static_cast<double>(y % 7U) / 6.0;
-        } else {
-          source = static_cast<double>((x + y) % 9U) / 8.0;
-        }
-        append_f32_le(result, static_cast<float>(source));
-      }
-    }
-  }
-  return result;
-}
-
 void check_fixture(const std::filesystem::path &path,
                    std::string_view expected_source_sha256,
                    std::string_view expected_compression,
                    mmxisf::SampleFormat expected_format,
                    std::string_view expected_color,
-                   const std::vector<std::byte> &expected_pixels) {
+                   std::size_t expected_pixel_bytes,
+                   std::string_view expected_pixel_sha256) {
   auto bytes = load_base64(path);
   expect(sha256_hex(bytes) == expected_source_sha256,
          "independent-producer fixture identity changed");
@@ -216,7 +169,9 @@ void check_fixture(const std::filesystem::path &path,
          "independent fixture codec changed");
   auto decoded = opened.value().read_image(0);
   expect(decoded.has_value(), "independent fixture did not decode");
-  expect(decoded.value().pixels == expected_pixels,
+  expect(decoded.value().pixels.size() == expected_pixel_bytes,
+         "independent fixture decoded byte count changed");
+  expect(sha256_hex(decoded.value().pixels) == expected_pixel_sha256,
          "independent fixture decoded bytes differ from the source array");
 }
 
@@ -226,36 +181,58 @@ int main() {
   try {
     const auto root =
         std::filesystem::path(MMXISF_TEST_SOURCE_DIR) / "tests" / "interop";
-    const auto gray = expected_gray();
-    struct GrayFixture {
+    struct Fixture {
       std::string_view name;
-      std::string_view sha256;
+      std::string_view source_sha256;
       std::string_view compression;
+      mmxisf::SampleFormat sample_format;
+      std::string_view color_space;
+      std::size_t pixel_bytes;
+      std::string_view pixel_sha256;
     };
-    for (const auto &fixture :
-         std::array<GrayFixture, 4>{{{"gray-u16-zlib-sh.xisf.b64",
-                                      "7a5e97af8cb10c57ba787892df9c8050a080a3e4"
-                                      "332612937c3f86343501e8f3",
-                                      "zlib+sh"},
-                                     {"gray-u16-lz4-sh.xisf.b64",
-                                      "0f1e521e612a9574c1761af9fe41b6acc825c837"
-                                      "aa6c1162cc8e89e918f344ee",
-                                      "lz4+sh"},
-                                     {"gray-u16-lz4hc-sh.xisf.b64",
-                                      "f33b9cc8f397ef4d8b333b9754d72bfa88795052"
-                                      "335a23daafc661b113873131",
-                                      "lz4hc+sh"},
-                                     {"gray-u16-zstd-sh.xisf.b64",
-                                      "8c86271006085159be06906ebe05a26cebfc86cc"
-                                      "4bc10a54dd669ca96e2afa13",
-                                      "zstd+sh"}}}) {
-      check_fixture(root / fixture.name, fixture.sha256, fixture.compression,
-                    mmxisf::SampleFormat::uint16, "Gray", gray);
+    const auto fixtures = std::array<Fixture, 9>{
+        {{"gray-u8-zstd-sh.xisf.b64",
+          "97b1d65ed17d088a694661be3879fe93152ed7d8fed59222552ca5a12d5365b8",
+          "zstd+sh", mmxisf::SampleFormat::uint8, "Gray", 49601,
+          "f21988f7824386f4b0a53b95426645e7ceb1834d96461f89e3fde32a3f988f69"},
+         {"gray-u16-zlib-sh.xisf.b64",
+          "7a5e97af8cb10c57ba787892df9c8050a080a3e4332612937c3f86343501e8f3",
+          "zlib+sh", mmxisf::SampleFormat::uint16, "Gray", 99202,
+          "6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"},
+         {"gray-u16-lz4-sh.xisf.b64",
+          "0f1e521e612a9574c1761af9fe41b6acc825c837aa6c1162cc8e89e918f344ee",
+          "lz4+sh", mmxisf::SampleFormat::uint16, "Gray", 99202,
+          "6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"},
+         {"gray-u16-lz4hc-sh.xisf.b64",
+          "f33b9cc8f397ef4d8b333b9754d72bfa88795052335a23daafc661b113873131",
+          "lz4hc+sh", mmxisf::SampleFormat::uint16, "Gray", 99202,
+          "6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"},
+         {"gray-u16-zstd-sh.xisf.b64",
+          "8c86271006085159be06906ebe05a26cebfc86cc4bc10a54dd669ca96e2afa13",
+          "zstd+sh", mmxisf::SampleFormat::uint16, "Gray", 99202,
+          "6ae7190a5d6d9af4daad32c0ef92c700256f05218cb3c92660cac9655b41891f"},
+         {"gray-u32-zstd-sh.xisf.b64",
+          "66460230fc2001b2f870dfe9b64846ddb54e74912cc1f90734f11128c41fc33b",
+          "zstd+sh", mmxisf::SampleFormat::uint32, "Gray", 198404,
+          "34e34706460891117d9f761f9d7ce4b7a8e40b469a460ce0aa7711aa6e45bcbd"},
+         {"gray-f64-zstd-sh.xisf.b64",
+          "a929d29e24c9610b256c392b0176ff80deb17d62ab39d6e23a2321da9ef53a42",
+          "zstd+sh", mmxisf::SampleFormat::float64, "Gray", 396808,
+          "a996274b34f96bdede2d99c6c1bfa89e7f07a4c6b1029ecb9bae58cd9bad2cd0"},
+         {"rgb-u8-zstd-sh.xisf.b64",
+          "d560db890bd9ed8b5599ee540cfaa4361a1a0f85cce430186ac71214d3585389",
+          "zstd+sh", mmxisf::SampleFormat::uint8, "RGB", 148803,
+          "8599597f09b871909284f89662d45f001843b4495cee6404410c7e8b81d518bf"},
+         {"rgb-f32-zstd-sh.xisf.b64",
+          "f47f4530345ab1e43e320351458f574a39f283a3211ee597ce062410ab0a66d0",
+          "zstd+sh", mmxisf::SampleFormat::float32, "RGB", 595212,
+          "0132a60d85d32dc98a67944988fdf1276d597e52dd3bedfd0e13fb50eb311475"}}};
+    for (const auto &fixture : fixtures) {
+      check_fixture(root / fixture.name, fixture.source_sha256,
+                    fixture.compression, fixture.sample_format,
+                    fixture.color_space, fixture.pixel_bytes,
+                    fixture.pixel_sha256);
     }
-    check_fixture(
-        root / "rgb-f32-zstd-sh.xisf.b64",
-        "f47f4530345ab1e43e320351458f574a39f283a3211ee597ce062410ab0a66d0",
-        "zstd+sh", mmxisf::SampleFormat::float32, "RGB", expected_rgb());
     std::cout << "PASS: independent producer pixel and codec matrix\n";
     return 0;
   } catch (const std::exception &exception) {

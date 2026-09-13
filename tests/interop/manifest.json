@@ -2,6 +2,54 @@
   "schema": "mmxisf.fixture-manifest/1.0.0",
   "fixtures": [
     {
+      "id": "third-party-gray-u8-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u8-zstd-sh.xisf.b64"},
+      "sha256": "97b1d65ed17d088a694661be3879fe93152ed7d8fed59222552ca5a12d5365b8",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on a Martian Medusa UInt8 Gray modular-ramp array with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.uint8", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "49601 decoded bytes; SHA-256 f21988f7824386f4b0a53b95426645e7ceb1834d96461f89e3fde32a3f988f69"
+    },
+    {
+      "id": "third-party-gray-u32-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u32-zstd-sh.xisf.b64"},
+      "sha256": "66460230fc2001b2f870dfe9b64846ddb54e74912cc1f90734f11128c41fc33b",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on a Martian Medusa UInt32 Gray modular-ramp array with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.uint32", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "198404 decoded bytes; SHA-256 34e34706460891117d9f761f9d7ce4b7a8e40b469a460ce0aa7711aa6e45bcbd"
+    },
+    {
+      "id": "third-party-gray-f64-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-f64-zstd-sh.xisf.b64"},
+      "sha256": "a929d29e24c9610b256c392b0176ff80deb17d62ab39d6e23a2321da9ef53a42",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on a Martian Medusa Float64 Gray bounded-gradient array with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.float64", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "396808 decoded bytes; SHA-256 a996274b34f96bdede2d99c6c1bfa89e7f07a4c6b1029ecb9bae58cd9bad2cd0"
+    },
+    {
+      "id": "third-party-rgb-u8-zstd-sh",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/rgb-u8-zstd-sh.xisf.b64"},
+      "sha256": "d560db890bd9ed8b5599ee540cfaa4361a1a0f85cce430186ac71214d3585389",
+      "origin": "THIRD_PARTY",
+      "generator": {"name": "PyPI xisf", "version": "0.9.7"},
+      "generationProcedure": "Invoke the documented public XISF.write API on a Martian Medusa UInt8 RGB modular-ramp array with codec=zstd and shuffle=true; no implementation source inspected.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned deterministic numeric input and generated test artifact; no third-party image content."},
+      "conformanceRows": ["compression.zstd-shuffle", "image.uint8", "image.rgb", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "148803 decoded bytes; SHA-256 8599597f09b871909284f89662d45f001843b4495cee6404410c7e8b81d518bf"
+    },
+    {
       "id": "third-party-gray-u16-zlib-sh",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/gray-u16-zlib-sh.xisf.b64"},
       "sha256": "7a5e97af8cb10c57ba787892df9c8050a080a3e4332612937c3f86343501e8f3",

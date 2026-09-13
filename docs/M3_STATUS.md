@@ -86,9 +86,8 @@
   Windows, installed-package consumers, deterministic 20,000-case sanitizer
   mutation, and coverage-guided 20,000-run libFuzzer gates.
 - A committed independent-producer matrix decodes exact externally serialized
-  zlib+sh, LZ4+sh, LZ4HC+sh, and Zstandard+sh blocks. The test reconstructs the
-  source UInt16 Gray and Float32 RGB arrays without the generator and compares
-  every output byte.
+  zlib+sh, LZ4+sh, LZ4HC+sh, and Zstandard+sh blocks. It verifies every required
+  scalar family and both Gray and RGB through exact decoded-byte identities.
 
 ## Still required to close M3
 
