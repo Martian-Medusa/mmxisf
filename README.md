@@ -61,6 +61,10 @@ build/mmxisf-inspect path/to/image.xisf
 Normal configuration requires an installed Expat development package. No
 dependency is downloaded implicitly.
 
+The public API requires C++20 library support for `std::span` and
+`std::stop_token`. The macOS CI baseline therefore uses macOS 15 with a current
+Xcode toolchain; Xcode 15.4's standard library is insufficient for this API.
+
 The CI package gate also configures and runs the independent
 `tests/package_consumer` project against the installed CMake package rather
 than the source tree.

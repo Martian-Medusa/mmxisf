@@ -15,13 +15,13 @@ jobs:
         include:
           - os: ubuntu-latest
             viewer: OFF
-          - os: macos-14
+          - os: macos-15
             viewer: ON
           - os: windows-latest
             viewer: OFF
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Expat (Ubuntu)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
@@ -73,7 +73,7 @@ jobs:
   fuzz-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev
       - name: Configure

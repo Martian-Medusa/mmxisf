@@ -11,6 +11,7 @@
 #include <cstring>
 #include <fstream>
 #include <limits>
+#include <locale>
 #include <mutex>
 #include <new>
 #include <optional>
@@ -92,11 +93,14 @@ Result<std::pair<double, double>> parse_bounds(std::string_view text) {
     if (token.empty()) {
       return false;
     }
-    const auto parsed =
-        std::from_chars(token.data(), token.data() + token.size(), value,
-                        std::chars_format::general);
-    return parsed.ec == std::errc{} &&
-           parsed.ptr == token.data() + token.size() && std::isfinite(value);
+    std::istringstream input{std::string(token)};
+    input.imbue(std::locale::classic());
+    input >> std::noskipws >> value;
+    if (input.fail()) {
+      return false;
+    }
+    return input.peek() == std::char_traits<char>::eof() &&
+           std::isfinite(value);
   };
   double lower = 0;
   double upper = 0;

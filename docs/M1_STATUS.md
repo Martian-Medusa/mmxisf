@@ -64,7 +64,24 @@
 - Full coverage-guided libFuzzer harness: IMPLEMENTED, but NOT_TESTED locally;
   Apple Command Line Tools on this host lacks `libclang_rt.fuzzer_osx.a`.
 - Linux/macOS/Windows dependency-aware CI and Linux sanitizer-smoke jobs:
-  PREPARED, NOT_RUN because no remote publication/push is authorized.
+  ACTIVE in the private GitHub repository.
+
+### Cross-platform CI attempt 1
+
+GitHub Actions run `34769084877` on commit `5a1c71c` provided the first external
+platform evidence:
+
+- Ubuntu build, tests, install, and installed-package consumer: PASS.
+- Linux Clang ASan/UBSan 20,000-case mutation smoke: PASS.
+- macOS 14 / Xcode 15.4 build: FAIL because that standard library lacks
+  `std::stop_token` and floating-point `std::from_chars`.
+- Windows build: PASS; reader test: FAIL at process teardown with an open-file
+  cleanup failure consistent with Windows file-sharing semantics.
+
+The follow-up changes select the current macOS/Xcode baseline, remove the
+floating-point `from_chars` dependency, and defer fixture deletion until all
+stable reader handles have been released. This failed attempt remains recorded
+separately and is not counted as cross-platform PASS.
 
 Private astronomy files were read locally and were not copied into this
 repository or its generated bundle.

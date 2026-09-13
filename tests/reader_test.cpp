@@ -18,6 +18,17 @@
 namespace {
 
 int failures = 0;
+std::vector<std::filesystem::path> fixture_paths;
+
+class FixtureCleanup {
+public:
+  ~FixtureCleanup() {
+    for (const auto &path : fixture_paths) {
+      std::error_code ignored;
+      std::filesystem::remove(path, ignored);
+    }
+  }
+};
 
 class MemoryByteSource final : public mmxisf::ByteSource {
 public:
@@ -84,6 +95,7 @@ std::filesystem::path write_fixture(const std::string &name,
                                     const std::vector<std::byte> &pixels = {},
                                     std::size_t attachment_offset = 1024) {
   const auto path = std::filesystem::temp_directory_path() / name;
+  fixture_paths.push_back(path);
   std::ofstream output(path, std::ios::binary | std::ios::trunc);
   output.write("XISF0100", 8);
   write_u32_le(output, static_cast<std::uint32_t>(xml.size()));
@@ -134,6 +146,7 @@ std::vector<std::byte> read_bytes(const std::filesystem::path &path) {
 std::filesystem::path write_bytes(const std::string &name,
                                   const std::vector<std::byte> &bytes) {
   const auto path = std::filesystem::temp_directory_path() / name;
+  fixture_paths.push_back(path);
   std::ofstream output(path, std::ios::binary | std::ios::trunc);
   output.write(reinterpret_cast<const char *>(bytes.data()),
                static_cast<std::streamsize>(bytes.size()));
@@ -143,6 +156,7 @@ std::filesystem::path write_bytes(const std::string &name,
 } // namespace
 
 int main() {
+  FixtureCleanup cleanup;
   const std::vector<std::byte> pixels{
       std::byte{0x01}, std::byte{0x00}, std::byte{0x02}, std::byte{0x00},
       std::byte{0x03}, std::byte{0x00}, std::byte{0x04}, std::byte{0x00}};
@@ -579,30 +593,5 @@ int main() {
            "compressed image decode fails closed in M1");
   }
 
-  std::filesystem::remove(valid_path);
-  std::filesystem::remove(bad_signature_path);
-  std::filesystem::remove(reserved_path);
-  std::filesystem::remove(oversized_header_path);
-  std::filesystem::remove(short_file_path);
-  std::filesystem::remove(default_image_attributes_path);
-  std::filesystem::remove(doctype_path);
-  std::filesystem::remove(bad_root_path);
-  std::filesystem::remove(no_namespace_path);
-  std::filesystem::remove(missing_metadata_path);
-  std::filesystem::remove(duplicate_metadata_path);
-  std::filesystem::remove(missing_metadata_property_path);
-  std::filesystem::remove(wrong_metadata_type_path);
-  std::filesystem::remove(string_creation_time_path);
-  std::filesystem::remove(bad_storage_path);
-  std::filesystem::remove(duplicate_attribute_path);
-  std::filesystem::remove(bad_attachment_path);
-  std::filesystem::remove(bad_property_path);
-  std::filesystem::remove(bad_fits_parent_path);
-  std::filesystem::remove(float_without_bounds_path);
-  std::filesystem::remove(invalid_bounds_path);
-  std::filesystem::remove(spaced_bounds_path);
-  std::filesystem::remove(inline_image_path);
-  std::filesystem::remove(one_dimensional_path);
-  std::filesystem::remove(compressed_path);
   return failures == 0 ? 0 : 1;
 }
