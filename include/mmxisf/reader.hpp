@@ -44,6 +44,14 @@ struct RawImage {
   std::vector<std::byte> pixels;
 };
 
+enum class PixelStorageOutput { source, planar, normal };
+enum class ByteOrderOutput { source, native };
+
+struct ImageReadOptions {
+  PixelStorageOutput pixel_storage{PixelStorageOutput::source};
+  ByteOrderOutput byte_order{ByteOrderOutput::source};
+};
+
 class Reader {
 public:
   Reader(Reader &&) noexcept;
@@ -67,8 +75,15 @@ public:
   // no implicit endian or layout conversion is performed.
   [[nodiscard]] Result<RawImage>
   read_image(std::size_t image_index, std::stop_token stop_token = {}) const;
+  [[nodiscard]] Result<RawImage>
+  read_image(std::size_t image_index, ImageReadOptions read_options,
+             std::stop_token stop_token = {}) const;
   [[nodiscard]] Result<std::size_t>
   read_image_into(std::size_t image_index, std::span<std::byte> destination,
+                  std::stop_token stop_token = {}) const;
+  [[nodiscard]] Result<std::size_t>
+  read_image_into(std::size_t image_index, std::span<std::byte> destination,
+                  ImageReadOptions read_options,
                   std::stop_token stop_token = {}) const;
 
 private:

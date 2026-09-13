@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -386,6 +387,117 @@ int main() {
     }
   }
 
+  const std::vector<std::byte> big_endian_planar_rgb{
+      std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
+      std::byte{0x05}, std::byte{0x06}, std::byte{0x07}, std::byte{0x08},
+      std::byte{0x09}, std::byte{0x0a}, std::byte{0x0b}, std::byte{0x0c}};
+  const auto transformed_rgb_path = write_fixture(
+      "mmxisf-m2-transformed-rgb.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"RGB\" pixelStorage=\"Planar\" byteOrder=\"big\" "
+          "location=\"attachment:1024:12\"/>") +
+          valid_metadata() + "</xisf>",
+      big_endian_planar_rgb);
+  auto transformed_rgb_reader =
+      mmxisf::Reader::open_file(transformed_rgb_path);
+  expect(transformed_rgb_reader.has_value(),
+         "transform fixture opens for typed delivery");
+  if (transformed_rgb_reader) {
+    mmxisf::ImageReadOptions options;
+    options.pixel_storage = mmxisf::PixelStorageOutput::normal;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto transformed = transformed_rgb_reader.value().read_image(0, options);
+    expect(transformed.has_value(),
+           "Planar big-endian RGB transforms to Normal native order");
+    if (transformed) {
+      std::vector<std::byte> expected;
+      const std::array<std::uint16_t, 6> values{0x0102, 0x0506, 0x090a,
+                                                0x0304, 0x0708, 0x0b0c};
+      for (const auto value : values) {
+        if constexpr (std::endian::native == std::endian::little) {
+          expected.push_back(static_cast<std::byte>(value & 0xffU));
+          expected.push_back(static_cast<std::byte>(value >> 8U));
+        } else {
+          expected.push_back(static_cast<std::byte>(value >> 8U));
+          expected.push_back(static_cast<std::byte>(value & 0xffU));
+        }
+      }
+      expect(transformed.value().pixels == expected,
+             "layout and endian transform preserves every UInt16 value");
+      expect(transformed.value().pixel_storage ==
+                     mmxisf::PixelStorage::normal &&
+                 transformed.value().byte_order ==
+                     (std::endian::native == std::endian::little
+                          ? mmxisf::ByteOrder::little
+                          : mmxisf::ByteOrder::big),
+             "transformed image describes its output representation");
+      std::vector<std::byte> destination(expected.size() + 2,
+                                         std::byte{0x7f});
+      auto into = transformed_rgb_reader.value().read_image_into(
+          0, destination, options);
+      expect(into && into.value() == expected.size() &&
+                 std::equal(expected.begin(), expected.end(),
+                            destination.begin()) &&
+                 destination[expected.size()] == std::byte{0x7f},
+             "caller-owned transformed delivery writes only the image span");
+    }
+  }
+
+  const auto native_endian_path = write_fixture(
+      "mmxisf-m2-native-endian.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt16\" "
+          "byteOrder=\"big\" location=\"attachment:1024:2\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x12}, std::byte{0x34}});
+  auto native_endian_reader = mmxisf::Reader::open_file(native_endian_path);
+  expect(native_endian_reader.has_value(), "native-endian fixture opens");
+  if (native_endian_reader) {
+    mmxisf::ImageReadOptions options;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto image = native_endian_reader.value().read_image(0, options);
+    const std::vector<std::byte> expected =
+        std::endian::native == std::endian::little
+            ? std::vector<std::byte>{std::byte{0x34}, std::byte{0x12}}
+            : std::vector<std::byte>{std::byte{0x12}, std::byte{0x34}};
+    expect(image && image.value().pixels == expected,
+           "native-endian conversion works without a layout transform");
+  }
+
+  const auto normal_to_planar_path = write_fixture(
+      "mmxisf-m2-normal-to-planar.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" pixelStorage=\"Normal\" "
+          "location=\"attachment:1024:6\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{10}, std::byte{30}, std::byte{50}, std::byte{20},
+       std::byte{40}, std::byte{60}});
+  auto normal_to_planar = mmxisf::Reader::open_file(normal_to_planar_path);
+  expect(normal_to_planar.has_value(), "Normal RGB transform fixture opens");
+  if (normal_to_planar) {
+    mmxisf::ImageReadOptions options;
+    options.pixel_storage = mmxisf::PixelStorageOutput::planar;
+    auto transformed = normal_to_planar.value().read_image(0, options);
+    expect(transformed &&
+               transformed.value().pixels ==
+                   std::vector<std::byte>{
+                       std::byte{10}, std::byte{20}, std::byte{30},
+                       std::byte{40}, std::byte{50}, std::byte{60}},
+           "Normal UInt8 RGB transforms to Planar without channel loss");
+
+    options.pixel_storage =
+        static_cast<mmxisf::PixelStorageOutput>(0xffU);
+    auto invalid_options = normal_to_planar.value().read_image(0, options);
+    expect(!invalid_options && invalid_options.error().code ==
+                                   mmxisf::ErrorCode::invalid_argument,
+           "invalid pixel-storage output option fails closed");
+  }
+
   const std::array invalid_color_channel_cases{
       std::pair{"RGB", "2"}, std::pair{"CIELab", "2"}};
   for (const auto &[color_space, channel_count] :
@@ -451,6 +563,17 @@ int main() {
       expect(into && into.value() == test.expected.size() &&
                  destination == test.expected,
              test.name);
+      if (std::string_view(test.name) == "base64-rgb") {
+        mmxisf::ImageReadOptions options;
+        options.pixel_storage = mmxisf::PixelStorageOutput::normal;
+        auto transformed = result.value().read_image(0, options);
+        expect(transformed &&
+                   transformed.value().pixels ==
+                       std::vector<std::byte>{
+                           std::byte{0x00}, std::byte{0x02}, std::byte{0x04},
+                           std::byte{0x01}, std::byte{0x03}, std::byte{0x05}},
+               "embedded Planar RGB transforms to Normal order");
+      }
     }
   }
 

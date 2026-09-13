@@ -42,6 +42,8 @@ The M1 pre-release API now supports:
 - an injectable seekable `ByteSource` with stable lifetime;
 - `Reader::read_image_into(index, destination, stop_token)` for caller-owned
   memory and a convenience owning `read_image` path;
+- explicit `ImageReadOptions` for source-preserving or native-endian output and
+  source/Planar/Normal layout, without sample-type conversion;
 - bounded chunk reads with cooperative cancellation;
 
 Later milestones still need:
@@ -61,7 +63,8 @@ Every read operation accepts a policy object with finite defaults for XML bytes,
 element count/depth, images, metadata items, dimensions, total decoded bytes,
 single-block bytes, decompression ratio, and diagnostic detail. Library code
 uses checked multiplication/addition before conversions to `size_t` or stream
-offset types.
+offset types. Attachment layout transforms use at most an 8 MiB staging buffer;
+they do not allocate a second full decoded frame.
 
 ## Concurrency
 

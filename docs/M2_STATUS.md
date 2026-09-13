@@ -17,6 +17,10 @@
   are preserved and ignored by the preview.
 - The reader preserves the serialized byte order and Planar/Normal layout; it
   performs no silent conversion or precision loss.
+- Callers can explicitly request native-endian and Planar or Normal output.
+  Combined endian/layout transformation preserves the scalar type and uses a
+  bounded 8 MiB staging buffer for attachments; caller-owned delivery writes
+  directly to the requested destination representation.
 - Embedded Image blocks decode incrementally from whitespace-tolerant Base64 or
   lowercase hexadecimal `Data` content. Invalid characters, incomplete or
   noncanonical padding, duplicate/missing Data children, nested elements, and

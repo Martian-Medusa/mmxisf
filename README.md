@@ -80,6 +80,12 @@ owning `RawImage` or written into a caller-owned span with cooperative
 `std::stop_token` cancellation. Embedded image blocks support whitespace-tolerant
 Base64 and the specification's lowercase hexadecimal encoding.
 
+By default pixel reads preserve the serialized byte order and Planar/Normal
+layout exactly. Callers can pass `ImageReadOptions` to request native byte order
+and either layout explicitly. No sample type or precision conversion is
+performed, and attachment layout conversion uses bounded scratch memory rather
+than a second full-frame buffer.
+
 The inspector's optional `--decode` mode validates every declared image block
 and reports the exact decoded byte count. It does not convert endian, storage
 layout, color, or sample precision.

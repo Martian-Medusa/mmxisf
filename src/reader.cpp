@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <charconv>
 #include <cmath>
 #include <cstring>
@@ -1036,6 +1037,8 @@ struct ImageReadPlan {
   const ImageInfo *image{nullptr};
   const std::vector<std::byte> *embedded_block{nullptr};
   std::uint64_t channels{0};
+  std::uint64_t sample_count{0};
+  std::uint64_t sample_size{0};
   std::uint64_t expected_bytes{0};
 };
 
@@ -1120,7 +1123,177 @@ Result<ImageReadPlan> plan_image_read(const Document &document,
   if (image.block.kind == BlockKind::embedded) {
     embedded_block = &embedded_blocks[image_index];
   }
-  return ImageReadPlan{&image, embedded_block, channels, expected_bytes};
+  return ImageReadPlan{&image, embedded_block, channels, sample_count,
+                       *sample_size, expected_bytes};
+}
+
+Result<PixelStorage>
+resolve_pixel_storage(const ImageReadPlan &plan,
+                      PixelStorageOutput requested_storage) {
+  switch (requested_storage) {
+  case PixelStorageOutput::source:
+    return plan.image->pixel_storage;
+  case PixelStorageOutput::planar:
+    return PixelStorage::planar;
+  case PixelStorageOutput::normal:
+    return PixelStorage::normal;
+  }
+  return make_error(ErrorCode::invalid_argument,
+                    "Invalid output pixel-storage option");
+}
+
+Result<ByteOrder> resolve_byte_order(const ImageReadPlan &plan,
+                                     ByteOrderOutput requested_order) {
+  switch (requested_order) {
+  case ByteOrderOutput::source:
+    return plan.image->byte_order;
+  case ByteOrderOutput::native:
+    if constexpr (std::endian::native == std::endian::little) {
+      return ByteOrder::little;
+    } else if constexpr (std::endian::native == std::endian::big) {
+      return ByteOrder::big;
+    } else {
+      return make_error(ErrorCode::unsupported_feature,
+                        "Mixed-endian hosts are not supported");
+    }
+  }
+  return make_error(ErrorCode::invalid_argument,
+                    "Invalid output byte-order option");
+}
+
+Result<std::size_t>
+read_serialized_chunk(const ByteSource &source, const ImageReadPlan &plan,
+                      std::size_t block_offset,
+                      std::span<std::byte> destination,
+                      std::stop_token stop_token, std::size_t image_index) {
+  if (plan.embedded_block != nullptr) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    std::copy_n(plan.embedded_block->data() + block_offset, destination.size(),
+                destination.data());
+    return destination.size();
+  }
+  std::size_t total = 0;
+  while (total < destination.size()) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto output = destination.subspan(total);
+    auto read = source.read_at(plan.image->block.offset + block_offset + total,
+                               output);
+    if (!read) {
+      auto error = read.error();
+      if (!error.image_index) {
+        error.image_index = image_index;
+      }
+      return error;
+    }
+    if (read.value() == 0 || read.value() > output.size()) {
+      Error error = make_error(ErrorCode::io_error,
+                               "ByteSource returned an invalid short read");
+      error.image_index = image_index;
+      return error;
+    }
+    total += read.value();
+  }
+  return total;
+}
+
+Result<std::size_t>
+copy_serialized_image(const ByteSource &source, const ImageReadPlan &plan,
+                      std::span<std::byte> destination,
+                      std::stop_token stop_token, std::size_t image_index) {
+  constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
+  const auto expected = static_cast<std::size_t>(plan.expected_bytes);
+  std::size_t total = 0;
+  while (total < expected) {
+    const auto chunk = std::min(kReadChunkBytes, expected - total);
+    auto read = read_serialized_chunk(source, plan, total,
+                                      destination.subspan(total, chunk),
+                                      stop_token, image_index);
+    if (!read) {
+      return read.error();
+    }
+    total += read.value();
+  }
+  return total;
+}
+
+Result<std::size_t>
+transform_pixel_storage(const ByteSource &source, const ImageReadPlan &plan,
+                        std::span<std::byte> destination,
+                        PixelStorage output_storage,
+                        ByteOrder output_byte_order,
+                        std::stop_token stop_token,
+                        std::size_t image_index) {
+  constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
+  const auto sample_size = static_cast<std::size_t>(plan.sample_size);
+  const auto maximum_chunk_samples = kReadChunkBytes / sample_size;
+  std::vector<std::byte> staging(
+      std::min<std::size_t>(static_cast<std::size_t>(plan.expected_bytes),
+                            maximum_chunk_samples * sample_size));
+  const auto pixel_count = plan.sample_count / plan.channels;
+  std::uint64_t source_sample = 0;
+  while (source_sample < plan.sample_count) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto chunk_samples = std::min<std::uint64_t>(
+        maximum_chunk_samples, plan.sample_count - source_sample);
+    const auto chunk_bytes =
+        static_cast<std::size_t>(chunk_samples * plan.sample_size);
+    auto read = read_serialized_chunk(
+        source, plan, static_cast<std::size_t>(source_sample * plan.sample_size),
+        std::span(staging).first(chunk_bytes), stop_token, image_index);
+    if (!read) {
+      return read.error();
+    }
+    for (std::uint64_t local_sample = 0; local_sample < chunk_samples;
+         ++local_sample) {
+      const auto source_index = source_sample + local_sample;
+      const auto channel =
+          plan.image->pixel_storage == PixelStorage::planar
+              ? source_index / pixel_count
+              : source_index % plan.channels;
+      const auto pixel = plan.image->pixel_storage == PixelStorage::planar
+                             ? source_index % pixel_count
+                             : source_index / plan.channels;
+      const auto output_index = output_storage == PixelStorage::planar
+                                    ? channel * pixel_count + pixel
+                                    : pixel * plan.channels + channel;
+      const auto input_offset =
+          static_cast<std::size_t>(local_sample * plan.sample_size);
+      const auto output_offset =
+          static_cast<std::size_t>(output_index * plan.sample_size);
+      for (std::size_t byte = 0; byte < sample_size; ++byte) {
+        const auto input_byte =
+            plan.image->byte_order == output_byte_order
+                ? byte
+                : sample_size - byte - 1;
+        destination[output_offset + byte] = staging[input_offset + input_byte];
+      }
+    }
+    source_sample += chunk_samples;
+  }
+  return static_cast<std::size_t>(plan.expected_bytes);
+}
+
+Result<std::size_t>
+swap_byte_order_in_place(std::span<std::byte> destination,
+                         std::size_t sample_size,
+                         std::stop_token stop_token) {
+  constexpr std::size_t kSamplesPerCancellationCheck = 1U << 20U;
+  const auto sample_count = destination.size() / sample_size;
+  for (std::size_t sample = 0; sample < sample_count; ++sample) {
+    if (sample % kSamplesPerCancellationCheck == 0 &&
+        stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto begin = destination.begin() + sample * sample_size;
+    std::reverse(begin, begin + sample_size);
+  }
+  return destination.size();
 }
 
 } // namespace
@@ -1233,6 +1406,12 @@ const Document &Reader::document() const noexcept { return impl_->document; }
 
 Result<RawImage> Reader::read_image(std::size_t image_index,
                                     std::stop_token stop_token) const {
+  return read_image(image_index, ImageReadOptions{}, stop_token);
+}
+
+Result<RawImage> Reader::read_image(std::size_t image_index,
+                                    ImageReadOptions read_options,
+                                    std::stop_token stop_token) const {
   try {
     auto plan = plan_image_read(impl_->document, impl_->options,
                                 impl_->embedded_blocks, image_index);
@@ -1242,6 +1421,16 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
     if (stop_token.stop_requested()) {
       return make_error(ErrorCode::cancelled, "Image read was cancelled");
     }
+    auto output_storage =
+        resolve_pixel_storage(plan.value(), read_options.pixel_storage);
+    if (!output_storage) {
+      return output_storage.error();
+    }
+    auto output_byte_order =
+        resolve_byte_order(plan.value(), read_options.byte_order);
+    if (!output_byte_order) {
+      return output_byte_order.error();
+    }
     RawImage result;
     result.width = plan.value().image->geometry[0];
     result.height = plan.value().image->geometry[1];
@@ -1249,10 +1438,11 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
     result.sample_format = plan.value().image->sample_format;
     result.lower_bound = plan.value().image->lower_bound;
     result.upper_bound = plan.value().image->upper_bound;
-    result.pixel_storage = plan.value().image->pixel_storage;
-    result.byte_order = plan.value().image->byte_order;
+    result.pixel_storage = output_storage.value();
+    result.byte_order = output_byte_order.value();
     result.pixels.resize(static_cast<std::size_t>(plan.value().expected_bytes));
-    auto read = read_image_into(image_index, result.pixels, stop_token);
+    auto read =
+        read_image_into(image_index, result.pixels, read_options, stop_token);
     if (!read) {
       return read.error();
     }
@@ -1270,6 +1460,15 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
 Result<std::size_t> Reader::read_image_into(std::size_t image_index,
                                             std::span<std::byte> destination,
                                             std::stop_token stop_token) const {
+  return read_image_into(image_index, destination, ImageReadOptions{},
+                         stop_token);
+}
+
+Result<std::size_t>
+Reader::read_image_into(std::size_t image_index,
+                        std::span<std::byte> destination,
+                        ImageReadOptions read_options,
+                        std::stop_token stop_token) const {
   try {
     auto plan = plan_image_read(impl_->document, impl_->options,
                                 impl_->embedded_blocks, image_index);
@@ -1281,52 +1480,37 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
       return make_error(ErrorCode::invalid_argument,
                         "Destination buffer is smaller than the image block");
     }
-    constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
-    std::size_t total = 0;
-    if (plan.value().embedded_block != nullptr) {
-      while (total < expected) {
-        if (stop_token.stop_requested()) {
-          return make_error(ErrorCode::cancelled,
-                            "Image read was cancelled");
-        }
-        const auto chunk = std::min(kReadChunkBytes, expected - total);
-        std::copy_n(plan.value().embedded_block->data() + total, chunk,
-                    destination.data() + total);
-        total += chunk;
-      }
-      return total;
+    auto output_storage =
+        resolve_pixel_storage(plan.value(), read_options.pixel_storage);
+    if (!output_storage) {
+      return output_storage.error();
     }
-    while (total < expected) {
-      if (stop_token.stop_requested()) {
-        return make_error(ErrorCode::cancelled, "Image read was cancelled");
-      }
-      const auto chunk = std::min(kReadChunkBytes, expected - total);
-      std::size_t chunk_read = 0;
-      while (chunk_read < chunk) {
-        if (stop_token.stop_requested()) {
-          return make_error(ErrorCode::cancelled, "Image read was cancelled");
-        }
-        const auto output = destination.subspan(total, chunk - chunk_read);
-        auto read = impl_->source->read_at(
-            plan.value().image->block.offset + total, output);
-        if (!read) {
-          auto error = read.error();
-          if (!error.image_index) {
-            error.image_index = image_index;
-          }
-          return error;
-        }
-        if (read.value() == 0 || read.value() > output.size()) {
-          Error error = make_error(ErrorCode::io_error,
-                                   "ByteSource returned an invalid short read");
-          error.image_index = image_index;
-          return error;
-        }
-        total += read.value();
-        chunk_read += read.value();
-      }
+    auto output_byte_order =
+        resolve_byte_order(plan.value(), read_options.byte_order);
+    if (!output_byte_order) {
+      return output_byte_order.error();
     }
-    return total;
+    auto output = destination.first(expected);
+    if (output_storage.value() != plan.value().image->pixel_storage) {
+      return transform_pixel_storage(
+          *impl_->source, plan.value(), output, output_storage.value(),
+          output_byte_order.value(), stop_token, image_index);
+    }
+    auto copied = copy_serialized_image(*impl_->source, plan.value(), output,
+                                        stop_token, image_index);
+    if (!copied) {
+      return copied.error();
+    }
+    if (plan.value().sample_size > 1 &&
+        output_byte_order.value() != plan.value().image->byte_order) {
+      return swap_byte_order_in_place(
+          output, static_cast<std::size_t>(plan.value().sample_size),
+          stop_token);
+    }
+    return copied.value();
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Memory allocation failed while transforming image");
   } catch (const std::exception &exception) {
     return make_error(ErrorCode::internal_error,
                       std::string("Unexpected image buffer read failure: ") +
