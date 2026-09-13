@@ -47,6 +47,34 @@ PFI initially supports exactly one image description per input file. The
 library should enumerate multiple images correctly, while the PFI adapter keeps
 the existing fail-closed policy until PFI intentionally changes it.
 
+## Metadata projection
+
+For the selected image index, the PFI adapter iterates
+`Document::metadata_bindings()` in order and selects image-scope bindings with
+that exact index. `metadata_index` identifies the immutable source entry.
+Repeated FITS bindings remain repeated and in order; a reference is not copied
+or rewritten into a synthetic direct entry.
+
+The adapter projects fields as follows:
+
+| PFI field | mmxisf source | Rule |
+| --- | --- | --- |
+| XISF property id | `MetadataEntry::name` | exact, case-sensitive |
+| XISF property value | `MetadataEntry::value` | only attribute or character-data forms accepted initially |
+| FITS name | `MetadataEntry::name` | exact validated name |
+| FITS raw value | `MetadataEntry::value` | exact XML-decoded attribute text, including quotes |
+| FITS stripped value | adapter-derived | apply the existing PFI policy; retain raw value beside it |
+| comment | `MetadataEntry::comment` | exact; absence is not fabricated |
+| provenance | entry scope plus binding | retain direct/reference and source image index |
+
+Block-backed properties remain explicit but unavailable to the initial PFI
+projection until the library implements their typed decoding. An unsupported
+form must produce a diagnostic/unavailable state, never an empty substitute.
+
+Before any pixel read, the adapter checks `Document::images().size()`. A count
+other than one returns PFI's existing unsupported-multi-image result while the
+same file remains fully inspectable through the standalone API and viewer.
+
 ## Minimum metadata parity set
 
 The current PFI reader consumes the following XISF properties when present:

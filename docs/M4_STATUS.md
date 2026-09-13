@@ -44,6 +44,9 @@
   negative structural-form matrix: PASS locally.
 - Invalid Property identifiers, invalid FITS names, and duplicate image
   Property identifiers: PASS locally.
+- Synthetic two-image input preserves two image descriptors, distinct ordered
+  bindings, and equal Property identifiers in separate image scopes: PASS
+  locally. PFI's one-image rejection remains adapter-owned and documented.
 - Metadata inspection with the new scope/value/binding model: 9/9 private local
   PixInsight corpus files PASS; files remain outside the repository.
 - Release unit suite and macOS viewer build: PASS locally.
@@ -52,8 +55,8 @@
 
 - Validate scalar, complex, Boolean, and TimePoint lexical value syntax without
   coercing the preserved source representation.
-- Define and test the PFI-facing metadata projection, including conservative
-  FITS raw/stripped handling and duplicate-keyword order.
+- Implement the documented PFI-facing projection in the later PFI adapter and
+  compare its conservative FITS stripping with the current host result.
 - Exercise the metadata parity matrix against independently produced files and
   the local non-redistributed PFI corpus.
 - Record an explicit PFI multi-image accept/reject result for each input while

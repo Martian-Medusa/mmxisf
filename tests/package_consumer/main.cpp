@@ -9,9 +9,12 @@
 int main() {
   mmxisf::ReaderOptions options;
   mmxisf::ImageReadOptions read_options;
+  mmxisf::MetadataBinding binding;
   return options.max_header_bytes > 0 &&
                  options.max_encoded_block_bytes > 0 &&
                  options.max_unused_space_bytes > 0 &&
+                 binding.scope == mmxisf::MetadataBinding::Scope::xisf_unit &&
+                 !binding.by_reference &&
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&

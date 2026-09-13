@@ -279,6 +279,34 @@ int main() {
                  mmxisf::ErrorCode::invalid_xisf,
          "malformed Property extent is rejected");
 
+  const auto multi_image_metadata_path = write_fixture(
+      "mmxisf-multi-image-metadata.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image id=\"first\" geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"path(first.bin)\">"
+          "<Property id=\"Instrument:Filter:Name\" type=\"String\">L"
+          "</Property></Image>"
+          "<Image id=\"second\" geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"path(second.bin)\">"
+          "<Property id=\"Instrument:Filter:Name\" type=\"String\">R"
+          "</Property></Image>") +
+          valid_metadata() + "</xisf>");
+  auto multi_image_metadata =
+      mmxisf::Reader::open_file(multi_image_metadata_path);
+  expect(multi_image_metadata.has_value(),
+         "standalone reader enumerates multi-image metadata");
+  if (multi_image_metadata) {
+    const auto &document = multi_image_metadata.value().document();
+    expect(document.images().size() == 2 &&
+               document.metadata_bindings().size() == 4,
+           "two images and their metadata bindings remain distinct");
+    expect(document.metadata_bindings()[0].image_index == 0 &&
+               document.metadata_bindings()[1].image_index == 1 &&
+               document.metadata()[0].name == document.metadata()[1].name,
+           "equal Property identifiers remain valid across different images");
+  }
+
   auto memory_source =
       std::make_shared<MemoryByteSource>(read_bytes(valid_path));
   auto source_reader = mmxisf::Reader::open_source(memory_source);
