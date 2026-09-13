@@ -2,7 +2,7 @@
 
 - Started: 2026-09-13
 - Checkpoint: 2026-09-13
-- Status: LOCAL_MACOS_PASS / CROSS_PLATFORM_PASS / M1_IN_PROGRESS
+- Status: M1_PASS / CROSS_PLATFORM_PASS / M2_VIEWER_POC_PASS
 - Library version: 0.1.0 (pre-release API)
 
 ## Implemented at this checkpoint
@@ -145,14 +145,13 @@ repository or its generated bundle.
   distribution.
 - The reader API is pre-1.0 and has no ABI stability promise.
 
-## Remaining M1 closure work
+## Post-M1 carry-forward gates
 
-- Complete table-driven boundary coverage for remaining XML text, attachment,
-  and checked-arithmetic combinations.
-- Continue XISF grammar validation beyond the implemented root, Metadata,
-  Image, Property, and FITSKeyword placement/mandatory-attribute rules.
+- Extend element-specific grammar validation alongside the corresponding M2-M4
+  block, image, and ancillary-metadata implementations. M1 covers the common
+  core identity rules and its declared inspection profile.
 - Retain a minimized regression corpus for every future fuzzing finding and
-  add longer scheduled campaigns before a public support claim.
+  add longer scheduled campaigns in M8 before a public support claim.
 - Revisit the source contract after the first codec/checksum implementation;
   do not freeze ABI or 0.1 API names before that evidence.
 
@@ -193,3 +192,17 @@ cannot define `uid`, resolves forward references after parsing, and rejects
 dangling targets. The hardened parser retains 9/9 local PixInsight corpus
 compatibility and passes Release, warning-clean, ASan/UBSan, and deterministic
 20,000-case mutation gates locally.
+
+## M1 closure
+
+M1 closed on 2026-09-13 at commit `4d03df1`. GitHub Actions run `34770579928`
+passed the complete Linux, Windows, macOS/viewer, installed-package-consumer,
+deterministic sanitizer mutation, and coverage-guided libFuzzer matrix. The M1
+implementation commit interval was 1 hour 16 minutes 22 seconds from `7798f85`
+to `4d03df1`; including the repository/M0 foundation, the commit interval was
+2 hours 21 minutes 10 seconds. These are checkpoint intervals, not human-effort
+equivalents.
+
+The milestone satisfies the declared `0.1` inspection deliverable. It does not
+claim codec/checksum support, complete XISF grammar coverage, public ABI
+stability, or a production-ready distributable viewer.

@@ -5,10 +5,10 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is in progress. Version `0.1.0` parses bounded monolithic XISF 1.0
+> Status: M1 is complete. Version `0.1.0` parses bounded monolithic XISF 1.0
 > headers and inspects image descriptors, properties, and FITS keywords. A
 > narrow, fail-closed raw attachment path powers the macOS viewer PoC. This is
-> not yet a general XISF decoder.
+> still a pre-release inspection profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
 

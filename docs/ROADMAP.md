@@ -48,8 +48,7 @@ This strongly reduces planning overhead, but parser correctness, dependency
 spikes, fuzzing and independent interoperability evidence will not scale at the
 same rate.
 
-Active AI-first calendar targets, assuming sustained autonomous work and prompt
-availability of test fixtures, are:
+The initial AI-first calendar targets after M0 were:
 
 | Outcome | Revised calendar target | Planning window from 2026-09-13 |
 | --- | ---: | --- |
@@ -89,6 +88,31 @@ seed, a format dictionary, a bounded 20,000-run campaign, and failure-artifact
 retention. Its first run passed under ASan/UBSan with 3,035 coverage points,
 6,330 features, and a generated 72-unit corpus. Longer continuous campaigns
 remain a pre-publication hardening gate.
+
+The final same-day M1 passes expanded the synthetic reader matrix to 94 checks,
+closed metadata-value, attachment-range, checked-arithmetic, XML-declaration,
+root-content, `uid`, and `Reference` boundaries, and retained 9/9 PixInsight
+corpus compatibility. M1 closed at commit `4d03df1` after a 1 hour 16 minute 22
+second implementation commit interval. The original 2-4 working-day M1 target
+was therefore conservative even after hardening and cross-platform rework.
+
+### AI-first rebaseline after M1 closure
+
+These are now the active calendar targets, assuming sustained autonomous work,
+available fixtures, and prompt manual native-PFI validation where required:
+
+| Outcome | Active calendar target | Planning window from 2026-09-13 |
+| --- | ---: | --- |
+| M2 raw blocks and PFI scalar pixel profile | 1-2 working days | 2026-09-14 to 2026-09-15 |
+| M3 codecs, shuffle, checksums, and budgets | 2-4 additional working days | 2026-09-16 to 2026-09-21 |
+| M4/M5 PFI-ready parity path | 1.5-3 weeks total | 2026-09-24 to 2026-10-04 |
+| Public read/write beta | 4-7 weeks total | 2026-10-11 to 2026-11-01 |
+| Supported monolithic 1.0 | 7-11 weeks total | 2026-11-01 to 2026-11-29 |
+
+Confidence in the M2/M3 range is moderate; the first independent pixel oracle,
+compressed corpus, and checksum/shuffle defect rate are the next rebaseline
+gate. Native PixInsight acceptance remains serial and manual because UI
+automation is intentionally excluded from this project workflow.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
