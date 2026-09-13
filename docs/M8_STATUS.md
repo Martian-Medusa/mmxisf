@@ -17,6 +17,12 @@
   path.
 - Installed packages include Apache-2.0 `LICENSE`, `NOTICE`, `SECURITY.md`, and
   `THIRD_PARTY_NOTICES.md`.
+- A checked SPDX 2.3 source-dependency SBOM names all five direct libraries,
+  their declared licenses, and dependency relationships. A CTest gate ties its
+  project version to CMake and rejects missing dependency licenses.
+- A separate CI job produces the Git source archive twice, requires byte
+  identity, computes SHA-256, and retains the archive/checksum for 14 days
+  without creating a tag or release.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
 
@@ -33,7 +39,8 @@
 ## Still required for public beta
 
 - Complete and record the first static/shared cross-platform CI matrix.
-- Add automated source archives and a reproducible dependency/SBOM artifact.
+- Extend the source-dependency SBOM with resolved binary package versions in
+  release builds.
 - Run longer continuous fuzz campaigns and preserve any minimized regressions.
 - Complete API reference and contribution/release documentation.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer

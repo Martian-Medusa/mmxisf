@@ -85,7 +85,12 @@ The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
 library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static
 consumers. Both forms install the Apache-2.0 license, notices, security policy,
-and dependency notices under `share/mmxisf`.
+dependency notices, and the validated SPDX 2.3 source-dependency SBOM under
+`share/mmxisf`.
+
+Each CI revision also creates the source archive twice, requires byte identity,
+and retains one archive plus its SHA-256 as a short-lived workflow artifact.
+This is release rehearsal only; no tag or public release is created.
 
 The public API requires C++20 library support for `std::span` and
 `std::stop_token`. The macOS CI baseline therefore uses macOS 15 with Xcode

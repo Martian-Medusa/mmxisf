@@ -1,0 +1,96 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "mmxisf-0.1.0-source-dependencies",
+  "documentNamespace": "https://github.com/Martian-Medusa/mmxisf/spdx/source-dependencies-0.1.0",
+  "creationInfo": {
+    "created": "2026-09-14T00:00:00Z",
+    "creators": ["Organization: Martian Medusa"]
+  },
+  "documentDescribes": ["SPDXRef-Package-mmxisf"],
+  "packages": [
+    {
+      "name": "mmxisf",
+      "SPDXID": "SPDXRef-Package-mmxisf",
+      "versionInfo": "0.1.0",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "Copyright 2026 Martian Medusa"
+    },
+    {
+      "name": "Expat",
+      "SPDXID": "SPDXRef-Package-Expat",
+      "downloadLocation": "https://github.com/libexpat/libexpat",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "zlib",
+      "SPDXID": "SPDXRef-Package-zlib",
+      "downloadLocation": "https://github.com/madler/zlib",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "LZ4",
+      "SPDXID": "SPDXRef-Package-LZ4",
+      "downloadLocation": "https://github.com/lz4/lz4",
+      "filesAnalyzed": false,
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "Zstandard",
+      "SPDXID": "SPDXRef-Package-Zstandard",
+      "downloadLocation": "https://github.com/facebook/zstd",
+      "filesAnalyzed": false,
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "OpenSSL",
+      "SPDXID": "SPDXRef-Package-OpenSSL",
+      "downloadLocation": "https://github.com/openssl/openssl",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION"
+    }
+  ],
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-Package-mmxisf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-Expat"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-mmxisf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-zlib"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-mmxisf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-LZ4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-mmxisf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-Zstandard"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-mmxisf",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-OpenSSL"
+    }
+  ]
+}

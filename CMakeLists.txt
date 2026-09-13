@@ -117,6 +117,14 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePlanning.cmake
   )
+  add_test(
+    NAME mmxisf.sbom
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSbom.cmake
+  )
 endif()
 
 if(MMXISF_BUILD_TOOLS)
@@ -191,6 +199,10 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(
   FILES LICENSE NOTICE SECURITY.md THIRD_PARTY_NOTICES.md
   DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf"
+)
+install(
+  FILES sbom/source-dependencies.spdx.json
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom"
 )
 install(
   EXPORT mmxisfTargets
