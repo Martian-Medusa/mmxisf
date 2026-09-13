@@ -353,10 +353,144 @@ int main() {
   if (default_image_attributes) {
     const auto &image = default_image_attributes.value().document().images()[0];
     expect(image.color_space == "Gray", "missing colorSpace defaults to Gray");
+    expect(!image.orientation,
+           "missing orientation remains explicitly absent");
+    expect(image.pixel_origin == mmxisf::PixelOrigin::top_left,
+           "XISF pixel origin is explicit");
+    expect(image.pixel_traversal ==
+               mmxisf::PixelTraversal::top_to_bottom_left_to_right,
+           "XISF pixel traversal is explicit");
+    expect(image.nominal_channel_order ==
+               mmxisf::NominalChannelOrder::gray_then_alpha,
+           "Gray nominal channel order is explicit");
     expect(image.pixel_storage == mmxisf::PixelStorage::normal,
            "canonical Normal pixelStorage is preserved");
     expect(!image.lower_bound && !image.upper_bound,
            "absent integer bounds remain explicitly absent");
+    auto decoded = default_image_attributes.value().read_image(0);
+    expect(decoded.has_value(), "default-semantics image decodes");
+    if (decoded) {
+      expect(!decoded.value().orientation,
+             "absent orientation propagates to decoded pixels");
+      expect(decoded.value().pixel_origin == mmxisf::PixelOrigin::top_left,
+             "decoded pixel origin is explicit");
+      expect(decoded.value().pixel_traversal ==
+                 mmxisf::PixelTraversal::top_to_bottom_left_to_right,
+             "decoded pixel traversal is explicit");
+      expect(decoded.value().nominal_channel_order ==
+                 mmxisf::NominalChannelOrder::gray_then_alpha,
+             "decoded Gray channel order is explicit");
+      expect(decoded.value().checksum_verification ==
+                 mmxisf::ChecksumVerification::not_declared,
+             "absent checksum is explicit on decoded pixels");
+    }
+  }
+
+  struct OrientationCase {
+    const char *serialized;
+    mmxisf::ImageOrientation expected;
+  };
+  const std::array orientation_cases{
+      OrientationCase{"0", mmxisf::ImageOrientation::identity},
+      OrientationCase{"flip", mmxisf::ImageOrientation::flip},
+      OrientationCase{"90", mmxisf::ImageOrientation::rotate_90},
+      OrientationCase{"90;flip", mmxisf::ImageOrientation::rotate_90_flip},
+      OrientationCase{"-90", mmxisf::ImageOrientation::rotate_minus_90},
+      OrientationCase{"-90;flip",
+                      mmxisf::ImageOrientation::rotate_minus_90_flip},
+      OrientationCase{"180", mmxisf::ImageOrientation::rotate_180},
+      OrientationCase{"180;flip",
+                      mmxisf::ImageOrientation::rotate_180_flip}};
+  const std::vector<std::byte> asymmetric_pixels{std::byte{0x12},
+                                                 std::byte{0x34}};
+  for (std::size_t index = 0; index < orientation_cases.size(); ++index) {
+    const auto &test = orientation_cases[index];
+    const auto path = write_fixture(
+        "mmxisf-orientation-" + std::to_string(index) + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:1\" sampleFormat=\"UInt8\" "
+            "orientation=\"") +
+            test.serialized + "\" location=\"attachment:1024:2\"/>" +
+            valid_metadata() + "</xisf>",
+        asymmetric_pixels);
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), "valid Image orientation is accepted");
+    if (reader) {
+      const auto &info = reader.value().document().images()[0];
+      expect(info.orientation == test.expected,
+             "Image orientation is preserved");
+      expect(std::string(mmxisf::to_string(*info.orientation)) ==
+                 test.serialized,
+             "Image orientation has a lossless string representation");
+      auto decoded = reader.value().read_image(0);
+      expect(decoded.has_value(), "oriented image decodes");
+      if (decoded) {
+        expect(decoded.value().orientation == test.expected,
+               "Image orientation propagates to decoded pixels");
+        expect(decoded.value().pixels == asymmetric_pixels,
+               "scientific decode does not apply display orientation");
+      }
+    }
+  }
+
+  const auto invalid_orientation_path = write_fixture(
+      "mmxisf-invalid-orientation.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "orientation=\"vertical\" location=\"attachment:1024:1\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x00}});
+  auto invalid_orientation =
+      mmxisf::Reader::open_file(invalid_orientation_path);
+  expect(!invalid_orientation &&
+             invalid_orientation.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "invalid Image orientation is rejected");
+
+  struct ChannelOrderCase {
+    const char *name;
+    const char *color_space;
+    std::uint64_t channels;
+    mmxisf::NominalChannelOrder expected;
+  };
+  const std::array channel_order_cases{
+      ChannelOrderCase{"gray", "Gray", 1,
+                       mmxisf::NominalChannelOrder::gray_then_alpha},
+      ChannelOrderCase{
+          "rgb", "RGB", 3,
+          mmxisf::NominalChannelOrder::red_green_blue_then_alpha},
+      ChannelOrderCase{"cielab", "CIELab", 3,
+                       mmxisf::NominalChannelOrder::cie_l_a_b_then_alpha}};
+  for (const auto &test : channel_order_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-channel-order-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"1:1:") +
+            std::to_string(test.channels) + "\" sampleFormat=\"UInt8\" " +
+            "colorSpace=\"" + test.color_space +
+            "\" location=\"attachment:1024:" +
+            std::to_string(test.channels) + "\"/>" + valid_metadata() +
+            "</xisf>",
+        std::vector<std::byte>(static_cast<std::size_t>(test.channels),
+                               std::byte{0}));
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), "supported color-space descriptor opens");
+    if (reader) {
+      expect(reader.value().document().images()[0].nominal_channel_order ==
+                 test.expected,
+             "nominal channel order follows colorSpace");
+      if (std::string_view(test.color_space) != "CIELab") {
+        auto decoded = reader.value().read_image(0);
+        expect(decoded.has_value(), "supported color space decodes");
+        if (decoded) {
+          expect(decoded.value().nominal_channel_order == test.expected,
+                 "nominal channel order propagates to decoded pixels");
+        }
+      }
+    }
   }
 
   struct ScalarDecodeCase {
@@ -912,6 +1046,11 @@ int main() {
     if (reader) {
       auto image = reader.value().read_image(0);
       expect(image && image.value().pixels == zlib_rgb_pixels, test.name);
+      if (image) {
+        expect(image.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified,
+               "successful declared checksum is explicit");
+      }
     }
   }
 

@@ -37,8 +37,17 @@ int main(int argc, char **argv) {
     }
     std::cout << " sample=" << image.sample_format_name
               << " color=" << image.color_space
+              << " channels="
+              << mmxisf::to_string(image.nominal_channel_order)
+              << " origin=" << mmxisf::to_string(image.pixel_origin)
+              << " traversal=" << mmxisf::to_string(image.pixel_traversal)
               << " storage=" << mmxisf::to_string(image.pixel_storage)
               << " block=" << mmxisf::to_string(image.block.kind);
+    if (image.orientation) {
+      std::cout << " orientation=" << mmxisf::to_string(*image.orientation);
+    } else {
+      std::cout << " orientation=absent";
+    }
     if (image.lower_bound && image.upper_bound) {
       std::cout << " bounds=" << *image.lower_bound << ':'
                 << *image.upper_bound;
@@ -54,6 +63,8 @@ int main(int argc, char **argv) {
       }
       std::cout << "image[" << index
                 << "] decoded-bytes: " << pixels.value().pixels.size()
+                << " checksum: "
+                << mmxisf::to_string(pixels.value().checksum_verification)
                 << '\n';
     }
   }

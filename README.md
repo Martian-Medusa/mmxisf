@@ -5,8 +5,9 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete, the M2 implementation is complete with independent
-> interoperability acceptance still pending, and M3 is in progress. Version
+> Status: M1 is complete; M2 and M3 implementation are complete with external
+> interoperability acceptance still pending; M4 is in progress and the first
+> M5 integration prerequisites are implemented. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
@@ -93,6 +94,12 @@ layout exactly. Callers can pass `ImageReadOptions` to request native byte order
 and either layout explicitly. No sample type or precision conversion is
 performed, and attachment layout conversion uses bounded scratch memory rather
 than a second full-frame buffer.
+
+Image descriptors and owning reads explicitly report the serialized top-left,
+top-to-bottom/left-to-right coordinate convention, nominal channel order, and
+optional XISF display orientation. Scientific reads never apply that display
+transform. A successful owning read also distinguishes a verified declared
+checksum from an image with no checksum declaration.
 
 The inspector's optional `--decode` mode validates every declared image block
 and reports the exact decoded byte count. It does not convert endian, storage

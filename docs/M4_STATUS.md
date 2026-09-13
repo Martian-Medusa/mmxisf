@@ -30,6 +30,9 @@
   bounded linear scans without coercing or rewriting their source text.
 - Integer properties additionally enforce exact declared-width ranges through
   128 bits, including full-width prefixed two's-complement bit patterns.
+- Image descriptors now expose the fixed serialized origin/traversal, nominal
+  Gray/RGB/CIELab channel order, optional display orientation, and decoded
+  checksum-verification status without transforming scientific pixels.
 
 ## Evidence available now
 
@@ -60,6 +63,9 @@
   zones: PASS locally.
 - Deterministic and coverage-guided fuzz seed corpora include valid Boolean,
   integer, floating-point, complex, and TimePoint Property values.
+- All eight XISF 1.0 orientation values, absent versus explicit identity,
+  invalid orientation rejection, channel-order mapping, and checksum provenance:
+  PASS locally.
 
 ## Still required for M4
 

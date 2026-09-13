@@ -23,11 +23,18 @@ The adapter must preserve:
 
 - image count and explicit selection/rejection of multi-image input;
 - width, height, channel count, sample type, bounds, and channel order;
-- top-left/top-down XISF pixel orientation, separately from FITS and GUI frames;
+- the serialized top-left, top-to-bottom/left-to-right coordinate convention,
+  separately from the optional display `orientation` and from FITS/GUI frames;
 - XISF property identifiers and values;
 - FITS keyword name, raw/stripped value, and comment;
 - file identity, checksum result, library version, and decoding options;
 - unavailable/invalid/ambiguous states without zero or guessed substitutes.
+
+`ImageInfo` and `RawImage` now carry the serialized origin/traversal, nominal
+channel order, and optional orientation as closed enums. The adapter must retain
+these values as provenance. It must not apply the optional display transform to
+PFI's scientific pixel plane. A returned owning image reports whether a
+declared checksum was verified; checksum failure never returns pixels.
 
 ## Adoption sequence
 

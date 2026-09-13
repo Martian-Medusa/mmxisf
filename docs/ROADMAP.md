@@ -139,6 +139,13 @@ Property structure, identifiers, scalar syntax, integer ranges, and common ISO
 available to the documented PFI projection. Independent-producer parity and
 the later PFI adapter remain the milestone's external evidence gates.
 
+The first M5 prerequisite slice makes serialized pixel origin/traversal,
+nominal Gray/RGB/CIELab channel order, optional display orientation, and
+successful checksum verification explicit in the public API. Scientific reads
+retain physical sample disposition and never apply the display transform. The
+PFI adapter remains isolated in the PFI repository and must preserve these
+descriptors rather than infer them.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

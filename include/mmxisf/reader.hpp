@@ -16,6 +16,8 @@
 
 namespace mmxisf {
 
+enum class ChecksumVerification { not_declared, verified };
+
 struct ReaderOptions {
   std::uint32_t max_header_bytes{16U * 1024U * 1024U};
   std::size_t max_xml_depth{64};
@@ -41,12 +43,23 @@ struct RawImage {
   std::uint64_t height{0};
   std::uint64_t channels{0};
   SampleFormat sample_format{SampleFormat::unsupported};
+  std::optional<ImageOrientation> orientation;
+  PixelOrigin pixel_origin{PixelOrigin::top_left};
+  PixelTraversal pixel_traversal{
+      PixelTraversal::top_to_bottom_left_to_right};
+  NominalChannelOrder nominal_channel_order{
+      NominalChannelOrder::gray_then_alpha};
   std::optional<double> lower_bound;
   std::optional<double> upper_bound;
   PixelStorage pixel_storage{PixelStorage::planar};
   ByteOrder byte_order{ByteOrder::little};
+  ChecksumVerification checksum_verification{
+      ChecksumVerification::not_declared};
   std::vector<std::byte> pixels;
 };
+
+[[nodiscard]] const char *
+to_string(ChecksumVerification verification) noexcept;
 
 enum class PixelStorageOutput { source, planar, normal };
 enum class ByteOrderOutput { source, native };

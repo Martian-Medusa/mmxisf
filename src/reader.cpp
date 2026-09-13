@@ -1228,6 +1228,37 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                  "geometry");
       return;
     }
+    if (image.color_space == "RGB") {
+      image.nominal_channel_order =
+          NominalChannelOrder::red_green_blue_then_alpha;
+    } else if (image.color_space == "CIELab") {
+      image.nominal_channel_order =
+          NominalChannelOrder::cie_l_a_b_then_alpha;
+    }
+    const auto orientation = attribute(attributes, "orientation");
+    if (orientation) {
+      if (*orientation == "0") {
+        image.orientation = ImageOrientation::identity;
+      } else if (*orientation == "flip") {
+        image.orientation = ImageOrientation::flip;
+      } else if (*orientation == "90") {
+        image.orientation = ImageOrientation::rotate_90;
+      } else if (*orientation == "90;flip") {
+        image.orientation = ImageOrientation::rotate_90_flip;
+      } else if (*orientation == "-90") {
+        image.orientation = ImageOrientation::rotate_minus_90;
+      } else if (*orientation == "-90;flip") {
+        image.orientation = ImageOrientation::rotate_minus_90_flip;
+      } else if (*orientation == "180") {
+        image.orientation = ImageOrientation::rotate_180;
+      } else if (*orientation == "180;flip") {
+        image.orientation = ImageOrientation::rotate_180_flip;
+      } else {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Invalid Image orientation value", name, "orientation");
+        return;
+      }
+    }
     image.id = std::string(attribute(attributes, "id").value_or(""));
     const auto pixel_storage =
         attribute(attributes, "pixelStorage").value_or("Planar");
@@ -2678,6 +2709,11 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
     result.height = plan.value().image->geometry[1];
     result.channels = plan.value().channels;
     result.sample_format = plan.value().image->sample_format;
+    result.orientation = plan.value().image->orientation;
+    result.pixel_origin = plan.value().image->pixel_origin;
+    result.pixel_traversal = plan.value().image->pixel_traversal;
+    result.nominal_channel_order =
+        plan.value().image->nominal_channel_order;
     result.lower_bound = plan.value().image->lower_bound;
     result.upper_bound = plan.value().image->upper_bound;
     result.pixel_storage = output_storage.value();
@@ -2687,6 +2723,9 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
         read_image_into(image_index, result.pixels, read_options, stop_token);
     if (!read) {
       return read.error();
+    }
+    if (!plan.value().image->checksum.empty()) {
+      result.checksum_verification = ChecksumVerification::verified;
     }
     return result;
   } catch (const std::bad_alloc &) {
@@ -2888,6 +2927,61 @@ const char *to_string(BlockKind kind) noexcept {
     return "Unknown";
   }
   return "Unknown";
+}
+
+const char *to_string(ImageOrientation orientation) noexcept {
+  switch (orientation) {
+  case ImageOrientation::identity:
+    return "0";
+  case ImageOrientation::flip:
+    return "flip";
+  case ImageOrientation::rotate_90:
+    return "90";
+  case ImageOrientation::rotate_90_flip:
+    return "90;flip";
+  case ImageOrientation::rotate_minus_90:
+    return "-90";
+  case ImageOrientation::rotate_minus_90_flip:
+    return "-90;flip";
+  case ImageOrientation::rotate_180:
+    return "180";
+  case ImageOrientation::rotate_180_flip:
+    return "180;flip";
+  }
+  return "0";
+}
+
+const char *to_string(PixelOrigin origin) noexcept {
+  switch (origin) {
+  case PixelOrigin::top_left:
+    return "Top-left";
+  }
+  return "Top-left";
+}
+
+const char *to_string(PixelTraversal traversal) noexcept {
+  switch (traversal) {
+  case PixelTraversal::top_to_bottom_left_to_right:
+    return "Top-to-bottom, left-to-right";
+  }
+  return "Top-to-bottom, left-to-right";
+}
+
+const char *to_string(NominalChannelOrder order) noexcept {
+  switch (order) {
+  case NominalChannelOrder::gray_then_alpha:
+    return "Gray, then alpha";
+  case NominalChannelOrder::red_green_blue_then_alpha:
+    return "Red, green, blue, then alpha";
+  case NominalChannelOrder::cie_l_a_b_then_alpha:
+    return "CIE L*, a*, b*, then alpha";
+  }
+  return "Gray, then alpha";
+}
+
+const char *to_string(ChecksumVerification verification) noexcept {
+  return verification == ChecksumVerification::verified ? "Verified"
+                                                        : "Not declared";
 }
 
 const char *to_string(MetadataEntry::Scope scope) noexcept {

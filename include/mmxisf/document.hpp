@@ -25,6 +25,23 @@ enum class SampleFormat {
 enum class PixelStorage { planar, normal };
 enum class ByteOrder { little, big };
 enum class BlockKind { attachment, embedded, inline_data, external, unknown };
+enum class ImageOrientation {
+  identity,
+  flip,
+  rotate_90,
+  rotate_90_flip,
+  rotate_minus_90,
+  rotate_minus_90_flip,
+  rotate_180,
+  rotate_180_flip
+};
+enum class PixelOrigin { top_left };
+enum class PixelTraversal { top_to_bottom_left_to_right };
+enum class NominalChannelOrder {
+  gray_then_alpha,
+  red_green_blue_then_alpha,
+  cie_l_a_b_then_alpha
+};
 
 struct BlockLocation {
   BlockKind kind{BlockKind::unknown};
@@ -69,6 +86,12 @@ struct ImageInfo {
   SampleFormat sample_format{SampleFormat::unsupported};
   std::string sample_format_name;
   std::string color_space;
+  std::optional<ImageOrientation> orientation;
+  PixelOrigin pixel_origin{PixelOrigin::top_left};
+  PixelTraversal pixel_traversal{
+      PixelTraversal::top_to_bottom_left_to_right};
+  NominalChannelOrder nominal_channel_order{
+      NominalChannelOrder::gray_then_alpha};
   std::optional<double> lower_bound;
   std::optional<double> upper_bound;
   PixelStorage pixel_storage{PixelStorage::planar};
@@ -120,6 +143,10 @@ private:
 [[nodiscard]] const char *to_string(PixelStorage storage) noexcept;
 [[nodiscard]] const char *to_string(ByteOrder order) noexcept;
 [[nodiscard]] const char *to_string(BlockKind kind) noexcept;
+[[nodiscard]] const char *to_string(ImageOrientation orientation) noexcept;
+[[nodiscard]] const char *to_string(PixelOrigin origin) noexcept;
+[[nodiscard]] const char *to_string(PixelTraversal traversal) noexcept;
+[[nodiscard]] const char *to_string(NominalChannelOrder order) noexcept;
 [[nodiscard]] const char *to_string(MetadataEntry::Scope scope) noexcept;
 [[nodiscard]] const char *
 to_string(MetadataEntry::ValueForm value_form) noexcept;

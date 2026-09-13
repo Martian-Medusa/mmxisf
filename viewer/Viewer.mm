@@ -461,6 +461,23 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
         ns_string(image.sample_format_name), @"");
     add(scope, @"Image", @"colorSpace", @"Enum", ns_string(image.color_space),
         @"");
+    add(scope, @"Image", @"nominalChannelOrder", @"Sequence",
+        [NSString
+            stringWithUTF8String:mmxisf::to_string(image.nominal_channel_order)],
+        @"");
+    add(scope, @"Image", @"pixelOrigin", @"Coordinate convention",
+        [NSString stringWithUTF8String:mmxisf::to_string(image.pixel_origin)],
+        @"");
+    add(scope, @"Image", @"pixelTraversal", @"Coordinate convention",
+        [NSString stringWithUTF8String:mmxisf::to_string(
+                                           image.pixel_traversal)],
+        @"");
+    add(scope, @"Image", @"orientation", @"Optional display transform",
+        image.orientation
+            ? [NSString
+                  stringWithUTF8String:mmxisf::to_string(*image.orientation)]
+            : @"Unavailable (not declared)",
+        @"Never applied to scientific pixel decoding");
     if (image.lower_bound && image.upper_bound) {
       add(scope, @"Image", @"bounds", @"Range",
           [NSString stringWithFormat:@"%.17g : %.17g", *image.lower_bound,
@@ -481,7 +498,7 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     }
     if (!image.checksum.empty()) {
       add(scope, @"Image", @"checksum", @"Digest", ns_string(image.checksum),
-          @"");
+          @"Verified when pixels are decoded");
     }
   }
   const auto add_metadata = [&](const mmxisf::MetadataEntry &entry,
