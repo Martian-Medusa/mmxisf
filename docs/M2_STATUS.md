@@ -37,8 +37,14 @@
 - Independent installed-package consumer: 1/1 PASS locally.
 - Strict ad-hoc bundle signature validation: PASS.
 - Embedded Expat dependency resolution through `@rpath`: PASS.
-- Human test of a real RGB producer file: PENDING; the user has been asked to
-  test the generated local bundle manually.
+- Human launch/open/render test of a real RGB producer file: PASS. The exact
+  producer settings are not yet captured, so this is compatibility evidence,
+  not a claim for every RGB storage/sample combination.
+- Metadata viewer layout: a permanently visible, titled right-hand pane now
+  exposes document summaries, image descriptors, XISF Properties, and FITS
+  keywords with column headers, row count, scrolling, selectable cells, and
+  full-value tooltips.
+- Human visibility/readability test of the revised metadata pane: PENDING.
 
 ## Still required to close M2
 

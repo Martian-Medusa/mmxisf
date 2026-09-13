@@ -56,6 +56,7 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   NSWindow *window_;
   NSImageView *image_view_;
   NSTableView *metadata_table_;
+  NSTextField *metadata_title_label_;
   NSTextField *status_label_;
   NSTextField *stretch_value_label_;
   NSSlider *stretch_slider_;
@@ -173,7 +174,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   image_view_.frame = imageScroll.contentView.bounds;
   image_view_.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
 
-  metadata_table_ = [[NSTableView alloc] initWithFrame:NSZeroRect];
+  metadata_table_ =
+      [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, 900, 600)];
   NSArray<NSArray *> *columns = @[
     @[ @"scope", @"Scope", @80 ], @[ @"kind", @"Kind", @75 ],
     @[ @"name", @"Name", @190 ], @[ @"type", @"Type", @90 ],
@@ -190,20 +192,60 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   metadata_table_.dataSource = self;
   metadata_table_.delegate = self;
   metadata_table_.usesAlternatingRowBackgroundColors = YES;
+  metadata_table_.rowHeight = 22.0;
+  metadata_table_.headerView =
+      [[NSTableHeaderView alloc] initWithFrame:NSMakeRect(0, 0, 900, 24)];
   metadata_table_.columnAutoresizingStyle =
       NSTableViewUniformColumnAutoresizingStyle;
   NSScrollView *metadataScroll =
-      [[NSScrollView alloc] initWithFrame:NSZeroRect];
+      [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 480, 600)];
   metadataScroll.hasVerticalScroller = YES;
   metadataScroll.hasHorizontalScroller = YES;
   metadataScroll.autohidesScrollers = YES;
+  metadataScroll.borderType = NSBezelBorder;
   metadataScroll.documentView = metadata_table_;
+
+  metadata_title_label_ =
+      [NSTextField labelWithString:@"Metadata — open an XISF file"];
+  metadata_title_label_.font =
+      [NSFont systemFontOfSize:13.0 weight:NSFontWeightSemibold];
+  metadata_title_label_.textColor = NSColor.labelColor;
+  metadata_title_label_.translatesAutoresizingMaskIntoConstraints = NO;
+  metadataScroll.translatesAutoresizingMaskIntoConstraints = NO;
+
+  NSView *metadataPane =
+      [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 480, 600)];
+  [metadataPane addSubview:metadata_title_label_];
+  [metadataPane addSubview:metadataScroll];
+  [NSLayoutConstraint activateConstraints:@[
+    [metadata_title_label_.leadingAnchor
+        constraintEqualToAnchor:metadataPane.leadingAnchor
+                       constant:10],
+    [metadata_title_label_.trailingAnchor
+        constraintEqualToAnchor:metadataPane.trailingAnchor
+                       constant:-10],
+    [metadata_title_label_.topAnchor
+        constraintEqualToAnchor:metadataPane.topAnchor
+                       constant:8],
+    [metadataScroll.leadingAnchor
+        constraintEqualToAnchor:metadataPane.leadingAnchor
+                       constant:8],
+    [metadataScroll.trailingAnchor
+        constraintEqualToAnchor:metadataPane.trailingAnchor
+                       constant:-8],
+    [metadataScroll.topAnchor
+        constraintEqualToAnchor:metadata_title_label_.bottomAnchor
+                       constant:8],
+    [metadataScroll.bottomAnchor
+        constraintEqualToAnchor:metadataPane.bottomAnchor
+                       constant:-8]
+  ]];
 
   NSSplitView *split = [[NSSplitView alloc] initWithFrame:NSZeroRect];
   split.vertical = YES;
   split.dividerStyle = NSSplitViewDividerStyleThin;
   [split addSubview:imageScroll];
-  [split addSubview:metadataScroll];
+  [split addSubview:metadataPane];
   [split setHoldingPriority:NSLayoutPriorityDefaultHigh forSubviewAtIndex:1];
   split.translatesAutoresizingMaskIntoConstraints = NO;
 
@@ -239,7 +281,7 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     [status_label_.heightAnchor constraintEqualToConstant:20]
   ]];
   [content layoutSubtreeIfNeeded];
-  [split setPosition:NSWidth(split.bounds) * 0.68 ofDividerAtIndex:0];
+  [split setPosition:NSWidth(split.bounds) * 0.64 ofDividerAtIndex:0];
 }
 
 - (void)openDocument:(id)sender {
@@ -285,6 +327,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   reader_ = std::make_unique<mmxisf::Reader>(std::move(result).value());
   [self rebuildMetadataRowsForPath:url.path];
   [metadata_table_ reloadData];
+  metadata_title_label_.stringValue =
+      [NSString stringWithFormat:@"Metadata — %lu rows", rows_.count];
   if (reader_->document().images().empty()) {
     raw_image_.reset();
     image_view_.image = nil;
@@ -467,6 +511,7 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   NSTextField *cell = [NSTextField labelWithString:value != nil ? value : @""];
   cell.lineBreakMode = NSLineBreakByTruncatingTail;
   cell.selectable = YES;
+  cell.toolTip = value;
   return cell;
 }
 
