@@ -428,6 +428,47 @@ void test_compression_shuffle_checksum_round_trip() {
   }
 }
 
+void test_compression_subblocks_round_trip() {
+  std::array<std::byte, 512> pixels{};
+  for (std::size_t sample = 0; sample < pixels.size() / 2; ++sample) {
+    const auto value = static_cast<std::uint16_t>((sample % 32) * 127U);
+    pixels[sample * 2] = static_cast<std::byte>(value & 0xffU);
+    pixels[sample * 2 + 1] = static_cast<std::byte>(value >> 8U);
+  }
+  auto image = gray_image(pixels);
+  image.id = "zstd-subblocks";
+  image.width = 16;
+  image.height = 16;
+  image.compression = mmxisf::CompressionCodec::zstd;
+  image.byte_shuffle = true;
+  image.checksum = mmxisf::ChecksumAlgorithm::sha256;
+  auto writer_options = options();
+  writer_options.compression_subblock_bytes = 64;
+
+  const auto first_path = output_path("mmxisf-writer-subblocks-a.xisf");
+  const auto second_path = output_path("mmxisf-writer-subblocks-b.xisf");
+  auto first = mmxisf::Writer::write_file(first_path, image, writer_options);
+  auto second = mmxisf::Writer::write_file(second_path, image, writer_options);
+  expect(first.has_value() && second.has_value(), "subblock writer failed");
+  expect(read_file(first_path) == read_file(second_path),
+         "subblock writer output is not deterministic");
+
+  auto opened = mmxisf::Reader::open_file(first_path);
+  expect(opened.has_value(), "subblock writer result did not reopen");
+  const auto &descriptor = opened.value().document().images()[0];
+  expect(descriptor.compression == "zstd+sh:512:2" &&
+             std::count(descriptor.subblocks.begin(),
+                        descriptor.subblocks.end(), ':') == 7,
+         "writer did not declare eight compression subblocks");
+  auto decoded = opened.value().read_image(0);
+  expect(decoded.has_value() &&
+             decoded.value().checksum_verification ==
+                 mmxisf::ChecksumVerification::verified &&
+             decoded.value().pixels ==
+                 std::vector<std::byte>(pixels.begin(), pixels.end()),
+         "writer subblocks did not round trip exactly");
+}
+
 void test_rejection_and_cleanup() {
   const std::array<std::byte, 8> pixels{};
   auto image = gray_image(pixels);
@@ -537,6 +578,41 @@ void test_rejection_and_cleanup() {
   expect(!cumulative_serialized && cumulative_serialized.error().code ==
                                        mmxisf::ErrorCode::resource_limit,
          "writer cumulative serialized-byte budget was not enforced");
+
+  image = gray_image(pixels);
+  image.compression = mmxisf::CompressionCodec::zstd;
+  auto subblock_options = options();
+  subblock_options.compression_subblock_bytes = 0;
+  auto zero_subblock = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-zero-subblock.xisf"), image, subblock_options);
+  expect(!zero_subblock &&
+             zero_subblock.error().code == mmxisf::ErrorCode::invalid_argument,
+         "writer accepted a zero compression subblock size");
+  subblock_options = options();
+  subblock_options.max_compression_subblocks = 0;
+  auto zero_subblock_count = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-zero-subblock-count.xisf"), image,
+      subblock_options);
+  expect(!zero_subblock_count && zero_subblock_count.error().code ==
+                                     mmxisf::ErrorCode::invalid_argument,
+         "writer accepted a zero compression subblock-count budget");
+  subblock_options = options();
+  subblock_options.compression_subblock_bytes = 1;
+  auto undersized_subblock = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-undersized-subblock.xisf"), image,
+      subblock_options);
+  expect(!undersized_subblock && undersized_subblock.error().code ==
+                                     mmxisf::ErrorCode::invalid_argument,
+         "writer accepted a subblock smaller than one sample");
+  subblock_options = options();
+  subblock_options.compression_subblock_bytes = 2;
+  subblock_options.max_compression_subblocks = 3;
+  auto subblock_count_limit = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-subblock-count-limit.xisf"), image,
+      subblock_options);
+  expect(!subblock_count_limit && subblock_count_limit.error().code ==
+                                      mmxisf::ErrorCode::resource_limit,
+         "writer compression subblock-count budget was not enforced");
 
   const std::span images(&image, 1);
   const auto metadata_path = [&](std::string_view suffix) {
@@ -752,6 +828,7 @@ int main() {
     test_multi_image_scalar_round_trip();
     test_declared_metadata_round_trip();
     test_compression_shuffle_checksum_round_trip();
+    test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();
     std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;

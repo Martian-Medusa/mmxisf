@@ -19,6 +19,8 @@
   raw XML is never accepted.
 - Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
   and SHA-1/256/512 checksums over exact serialized attachment bytes.
+- Deterministic sample-aligned compression subblocks with a 16 MiB default,
+  bounded count, per-subblock shuffle scratch, and cancellation checkpoints.
 - Independent decoded and serialized per-image/cumulative byte budgets.
 - Canonical XML field order, XML 1.0 UTF-8 validation/escaping, fixed zero
   padding, power-of-two attachment alignment, and fixed-point block planning.
@@ -70,6 +72,14 @@
   hash; independent package `xisf` 0.9.7 accepts every descriptor and returns
   identical UInt16 pixels. The anchored file SHA-256 is
   `78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5`.
+- An eight-subblock Zstandard+shuffle+SHA-256 writer case is byte-deterministic,
+  reopens in `mmxisf`, verifies its checksum before decompression, and recovers
+  all 512 source bytes exactly. Zero/undersized subblock sizes and exhausted
+  subblock-count budgets fail explicitly. Independent package `xisf` 0.9.7
+  exposes the exact eight-pair `subblocks` descriptor through its public
+  metadata API but its image API decodes only the first pair and then fails its
+  reshape. This is recorded as LIMITED external-consumer evidence, not a PASS;
+  native PixInsight validation remains required before release.
 
 ## Still required for M6
 

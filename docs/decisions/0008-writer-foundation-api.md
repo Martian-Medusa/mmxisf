@@ -38,6 +38,9 @@ Add a standalone `Writer::write_file` API over PFI-independent records:
 - per-image zlib, LZ4, LZ4HC, or Zstandard compression can apply XISF byte
   shuffle before compression, and SHA-1/256/512 checksums cover the serialized
   bytes that are written;
+- large compressed images use deterministic, sample-aligned subblocks with
+  caller-configurable byte/count limits, per-subblock shuffle scratch, and
+  cancellation checkpoints;
 - decoded and serialized bytes have independent per-image and cumulative
   resource limits;
 - geometry, color/channel agreement, pixel byte count, alignment, XML text,
@@ -66,3 +69,9 @@ stream; decoded pixel identity remains the cross-version oracle. Numeric and
 block-backed Properties, references, caller-provided sinks, and replacement
 policy are follow-up gates. Unsupported requests fail explicitly instead of
 being coerced into the narrow profile.
+
+The independent `xisf` 0.9.7 consumer enumerates writer subblock descriptors
+but does not assemble them in its public image API. This is a third-party
+consumer limitation observed by black-box testing, not evidence to remove a
+standard XISF feature. Subblock output therefore remains gated on native
+PixInsight interoperability before release.

@@ -56,6 +56,8 @@ struct WriterOptions {
   std::size_t max_images{64};
   std::size_t max_metadata_entries{4096};
   std::size_t max_metadata_value_bytes{1024U * 1024U};
+  std::uint64_t compression_subblock_bytes{16ULL * 1024ULL * 1024ULL};
+  std::size_t max_compression_subblocks{65'536};
   std::uint64_t max_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_cumulative_image_bytes{4ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};

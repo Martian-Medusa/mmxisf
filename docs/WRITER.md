@@ -12,6 +12,7 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - direct image-scoped FITS keywords;
 - direct XISF-unit String and TimePoint Properties;
 - zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
+- bounded, sample-aligned compression subblocks for large images;
 - SHA-1, SHA-256, and SHA-512 checksums over exact serialized block bytes;
 - fixed caller-supplied creation time and creator application.
 
@@ -67,6 +68,14 @@ damaged block before decompression. Compression output is deterministic for a
 fixed dependency/toolchain set; dependency upgrades may legitimately change
 the compressed byte stream while preserving the decoded image.
 
+Compressed images are divided into independently compressed, sample-aligned
+subblocks. `WriterOptions::compression_subblock_bytes` defaults to 16 MiB, so
+shuffle and codec scratch memory do not scale to a complete large image.
+`max_compression_subblocks` bounds the amount of descriptor and loop work.
+Files that fit in one subblock retain the single-block representation. The
+writer checks cancellation between subblocks and emits the XISF `subblocks`
+descriptor only when more than one is required.
+
 ## Multiple images and metadata
 
 Use the span overload to write several images and declarative metadata. A
@@ -104,11 +113,11 @@ replace them through the metadata array.
 ## Failure and filesystem contract
 
 Geometry arithmetic, image and metadata counts, decoded and serialized
-per-image/cumulative byte budgets, header size, identifiers, XML UTF-8, and
-metadata scope are validated before the destination is created. Output is
-written to a sibling temporary file, flushed, closed, and committed through a
-no-overwrite hard link. An existing destination or stale `.mmxisf-tmp` sibling
-is never replaced.
+per-image/cumulative byte budgets, compression subblock size/count, header
+size, identifiers, XML UTF-8, and metadata scope are validated before the
+destination is created. Output is written to a sibling temporary file, flushed,
+closed, and committed through a no-overwrite hard link. An existing destination
+or stale `.mmxisf-tmp` sibling is never replaced.
 
 Cancellation is cooperative between bounded write chunks and immediately
 before commit. A cancelled or failed write removes its incomplete temporary

@@ -300,6 +300,7 @@ struct PreparedImageBlock {
   std::vector<std::byte> storage;
   std::uint64_t serialized_size{0};
   std::string compression;
+  std::string subblocks;
   std::string checksum;
 };
 
@@ -561,6 +562,9 @@ Result<std::string> make_header(std::span<const ImageWriteView> images,
     if (!prepared[index].compression.empty()) {
       header += " compression=\"" + prepared[index].compression + "\"";
     }
+    if (!prepared[index].subblocks.empty()) {
+      header += " subblocks=\"" + prepared[index].subblocks + "\"";
+    }
     if (!prepared[index].checksum.empty()) {
       header += " checksum=\"" + prepared[index].checksum + "\"";
     }
@@ -685,6 +689,17 @@ write_file_impl(const std::filesystem::path &destination,
     return make_error(
         ErrorCode::invalid_argument,
         "Writer alignment must be a power of two from 16 to 1 MiB");
+  }
+  if (options.compression_subblock_bytes == 0 ||
+      options.compression_subblock_bytes >
+          std::numeric_limits<std::size_t>::max()) {
+    return make_error(
+        ErrorCode::invalid_argument,
+        "Writer compression subblock size must fit a nonzero size_t");
+  }
+  if (options.max_compression_subblocks == 0) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Writer compression subblock count must be nonzero");
   }
   if (!is_canonical_utc_time(options.creation_time)) {
     return make_error(ErrorCode::invalid_argument,
@@ -850,19 +865,6 @@ write_file_impl(const std::filesystem::path &destination,
   for (std::size_t index = 0; index < images.size(); ++index) {
     const auto &image = images[index];
     auto &block = prepared[index];
-    std::vector<std::byte> shuffled;
-    std::span<const std::byte> compression_input = image.pixels;
-    if (image.byte_shuffle) {
-      const auto sample_size =
-          sample_format_description(image.sample_format).second;
-      auto result =
-          shuffle_bytes(image.pixels, static_cast<std::size_t>(sample_size));
-      if (!result) {
-        return result.error();
-      }
-      shuffled = std::move(result).value();
-      compression_input = shuffled;
-    }
     if (image.compression != CompressionCodec::none) {
       if (cumulative_serialized_bytes >
           options.max_cumulative_serialized_bytes) {
@@ -870,16 +872,79 @@ write_file_impl(const std::filesystem::path &destination,
             ErrorCode::resource_limit,
             "Writer images exceed their cumulative serialized-byte budget");
       }
-      const auto remaining_cumulative =
-          options.max_cumulative_serialized_bytes - cumulative_serialized_bytes;
-      const auto compression_budget =
-          std::min(options.max_serialized_image_bytes, remaining_cumulative);
-      auto compressed = compress_bytes(compression_input, image.compression,
-                                       compression_budget, stop_token);
-      if (!compressed) {
-        return compressed.error();
+      const auto sample_size = static_cast<std::size_t>(
+          sample_format_description(image.sample_format).second);
+      auto chunk_limit =
+          static_cast<std::uint64_t>(options.compression_subblock_bytes);
+      if (image.compression == CompressionCodec::lz4 ||
+          image.compression == CompressionCodec::lz4hc) {
+        chunk_limit = std::min<std::uint64_t>(chunk_limit, LZ4_MAX_INPUT_SIZE);
+      } else if (image.compression == CompressionCodec::zlib) {
+        chunk_limit = std::min<std::uint64_t>(
+            chunk_limit, std::numeric_limits<uLong>::max());
       }
-      block.storage = std::move(compressed).value();
+      chunk_limit -= chunk_limit % sample_size;
+      if (chunk_limit < sample_size) {
+        return make_error(
+            ErrorCode::invalid_argument,
+            "Writer compression subblock size is smaller than one sample");
+      }
+
+      std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
+      std::uint64_t input_offset = 0;
+      while (input_offset < pixel_sizes[index]) {
+        if (stop_token.stop_requested()) {
+          return make_error(ErrorCode::cancelled, "XISF write was cancelled");
+        }
+        if (subblocks.size() >= options.max_compression_subblocks) {
+          return make_error(
+              ErrorCode::resource_limit,
+              "Writer compression subblock count exceeds its budget");
+        }
+        const auto uncompressed_size =
+            std::min(chunk_limit, pixel_sizes[index] - input_offset);
+        const auto input =
+            image.pixels.subspan(static_cast<std::size_t>(input_offset),
+                                 static_cast<std::size_t>(uncompressed_size));
+        std::vector<std::byte> shuffled;
+        std::span<const std::byte> compression_input = input;
+        if (image.byte_shuffle) {
+          auto result = shuffle_bytes(input, sample_size);
+          if (!result) {
+            return result.error();
+          }
+          shuffled = std::move(result).value();
+          compression_input = shuffled;
+        }
+
+        const auto serialized_so_far =
+            static_cast<std::uint64_t>(block.storage.size());
+        if (serialized_so_far >= options.max_serialized_image_bytes ||
+            serialized_so_far > options.max_cumulative_serialized_bytes -
+                                    cumulative_serialized_bytes) {
+          return make_error(
+              ErrorCode::resource_limit,
+              "Writer compressed block has no remaining byte budget");
+        }
+        const auto remaining_image =
+            options.max_serialized_image_bytes - serialized_so_far;
+        const auto remaining_cumulative =
+            options.max_cumulative_serialized_bytes -
+            cumulative_serialized_bytes - serialized_so_far;
+        const auto compression_budget =
+            std::min(remaining_image, remaining_cumulative);
+        auto compressed = compress_bytes(compression_input, image.compression,
+                                         compression_budget, stop_token);
+        if (!compressed) {
+          return compressed.error();
+        }
+        const auto compressed_size =
+            static_cast<std::uint64_t>(compressed.value().size());
+        block.storage.insert(block.storage.end(), compressed.value().begin(),
+                             compressed.value().end());
+        subblocks.emplace_back(compressed_size, uncompressed_size);
+        input_offset += uncompressed_size;
+      }
       block.serialized_size = block.storage.size();
       block.compression = std::string(compression_name(image.compression));
       if (image.byte_shuffle) {
@@ -890,6 +955,15 @@ write_file_impl(const std::filesystem::path &destination,
         block.compression +=
             ':' + std::to_string(
                       sample_format_description(image.sample_format).second);
+      }
+      if (subblocks.size() > 1) {
+        for (const auto &[compressed_size, uncompressed_size] : subblocks) {
+          if (!block.subblocks.empty()) {
+            block.subblocks += ':';
+          }
+          block.subblocks += std::to_string(compressed_size) + ',' +
+                             std::to_string(uncompressed_size);
+        }
       }
     } else {
       block.serialized_size = pixel_sizes[index];

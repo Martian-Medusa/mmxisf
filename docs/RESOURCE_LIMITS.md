@@ -24,6 +24,7 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
+| writer compression subblock bytes | 16 MiB | Bounds codec and byte-shuffle scratch independently of full image size |
 | decompression ratio | 65,536:1 | Measured current-producer sparse embedded RGB requires about 32,506:1; absolute decoded-byte and sample caps remain authoritative |
 | Zstandard window | 256 MiB | Bounds codec history allocation independently of decoded image size; configurable only as a power of two |
 | diagnostic records | 1,000 | Prevent error amplification |
@@ -48,3 +49,10 @@ inventoried attachment ranges. Every scanned byte must be zero. The attachment
 inventory includes standard elements and extension elements that use the
 standard `attachment:position:size` syntax, preventing legitimate extension
 payloads from being mistaken for unused space.
+
+Writer compression subblocks are rounded down to a whole number of samples and
+further capped by the selected codec's input type. A configured size smaller
+than one sample and a zero subblock-count budget are invalid arguments. Running
+out of the configured count or serialized-byte budget is a resource-limit
+failure; the writer never silently falls back to a larger scratch allocation or
+uncompressed output.
