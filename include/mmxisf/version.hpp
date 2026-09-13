@@ -4,8 +4,10 @@
 
 #include <string_view>
 
+#include "mmxisf/export.hpp"
+
 namespace mmxisf {
 
-[[nodiscard]] std::string_view version() noexcept;
+[[nodiscard]] MMXISF_API std::string_view version() noexcept;
 
 } // namespace mmxisf

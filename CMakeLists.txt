@@ -18,6 +18,7 @@ option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools" ON)
 option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
 option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
 option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)
+option(BUILD_SHARED_LIBS "Build mmxisf as a shared library" OFF)
 set(
   MMXISF_VIEWER_OUTPUT_DIR
   "${PROJECT_SOURCE_DIR}/artifacts"
@@ -33,6 +34,12 @@ find_package(ZSTD REQUIRED)
 
 add_library(mmxisf src/reader.cpp src/version.cpp src/writer.cpp)
 add_library(mmxisf::mmxisf ALIAS mmxisf)
+
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(mmxisf PRIVATE MMXISF_BUILDING_LIBRARY)
+else()
+  target_compile_definitions(mmxisf PUBLIC MMXISF_STATIC_DEFINE)
+endif()
 
 target_compile_features(mmxisf PUBLIC cxx_std_20)
 target_include_directories(
@@ -73,6 +80,8 @@ set_target_properties(
   mmxisf
   PROPERTIES
     CXX_EXTENSIONS OFF
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES
     VERSION ${PROJECT_VERSION}
     SOVERSION 0
 )
@@ -179,6 +188,10 @@ if(MMXISF_BUILD_TOOLS)
   install(TARGETS mmxisf_inspect RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(
+  FILES LICENSE NOTICE SECURITY.md THIRD_PARTY_NOTICES.md
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf"
+)
 install(
   EXPORT mmxisfTargets
   FILE mmxisfTargets.cmake

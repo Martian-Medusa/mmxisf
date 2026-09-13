@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "mmxisf/export.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -35,6 +37,6 @@ struct Error {
   std::string attribute;
 };
 
-const char *to_string(ErrorCode code) noexcept;
+MMXISF_API const char *to_string(ErrorCode code) noexcept;
 
 } // namespace mmxisf

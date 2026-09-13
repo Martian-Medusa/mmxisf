@@ -95,7 +95,7 @@ struct WriteSummary {
   std::vector<BlockLocation> property_blocks;
 };
 
-class Writer {
+class MMXISF_API Writer {
 public:
   // The 0.1 writer accepts attached Planar Gray or RGB images using the
   // scalar sample formats supported by the reader. Input bytes are

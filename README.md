@@ -81,6 +81,12 @@ build/mmxisf-inspect --decode-properties-sha256 path/to/image.xisf
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
 OpenSSL Crypto development packages. No dependency is downloaded implicitly.
 
+The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
+library. Public functions/classes use explicit import/export annotations, and
+the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static
+consumers. Both forms install the Apache-2.0 license, notices, security policy,
+and dependency notices under `share/mmxisf`.
+
 The public API requires C++20 library support for `std::span` and
 `std::stop_token`. The macOS CI baseline therefore uses macOS 15 with Xcode
 26.3 selected explicitly. The standard libraries supplied with Xcode 15.4 and

@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include "mmxisf/export.hpp"
+
 namespace mmxisf {
 
 enum class SampleFormat {
@@ -142,16 +144,20 @@ private:
   std::vector<MetadataBinding> metadata_bindings_;
 };
 
-[[nodiscard]] const char *to_string(SampleFormat format) noexcept;
-[[nodiscard]] const char *to_string(PixelStorage storage) noexcept;
-[[nodiscard]] const char *to_string(ByteOrder order) noexcept;
-[[nodiscard]] const char *to_string(BlockKind kind) noexcept;
-[[nodiscard]] const char *to_string(ImageOrientation orientation) noexcept;
-[[nodiscard]] const char *to_string(PixelOrigin origin) noexcept;
-[[nodiscard]] const char *to_string(PixelTraversal traversal) noexcept;
-[[nodiscard]] const char *to_string(NominalChannelOrder order) noexcept;
-[[nodiscard]] const char *to_string(MetadataEntry::Scope scope) noexcept;
-[[nodiscard]] const char *
+[[nodiscard]] MMXISF_API const char *to_string(SampleFormat format) noexcept;
+[[nodiscard]] MMXISF_API const char *to_string(PixelStorage storage) noexcept;
+[[nodiscard]] MMXISF_API const char *to_string(ByteOrder order) noexcept;
+[[nodiscard]] MMXISF_API const char *to_string(BlockKind kind) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(ImageOrientation orientation) noexcept;
+[[nodiscard]] MMXISF_API const char *to_string(PixelOrigin origin) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(PixelTraversal traversal) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(NominalChannelOrder order) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(MetadataEntry::Scope scope) noexcept;
+[[nodiscard]] MMXISF_API const char *
 to_string(MetadataEntry::ValueForm value_form) noexcept;
 
 } // namespace mmxisf

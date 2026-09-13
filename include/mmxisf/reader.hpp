@@ -60,7 +60,8 @@ struct RawImage {
   std::vector<std::byte> pixels;
 };
 
-[[nodiscard]] const char *to_string(ChecksumVerification verification) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(ChecksumVerification verification) noexcept;
 
 enum class PixelStorageOutput { source, planar, normal };
 enum class ByteOrderOutput { source, native };
@@ -81,7 +82,7 @@ struct PropertyReadOptions {
   ByteOrderOutput byte_order{ByteOrderOutput::source};
 };
 
-class Reader {
+class MMXISF_API Reader {
 public:
   Reader(Reader &&) noexcept;
   Reader &operator=(Reader &&) noexcept;
