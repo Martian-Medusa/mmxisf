@@ -93,14 +93,20 @@ void write_u32_le(std::ofstream &output, std::uint32_t value) {
 std::filesystem::path write_fixture(const std::string &name,
                                     const std::string &xml,
                                     const std::vector<std::byte> &pixels = {},
-                                    std::size_t attachment_offset = 1024) {
+                                    std::size_t attachment_offset = 1024,
+                                    bool add_xml_declaration = true) {
   const auto path = std::filesystem::temp_directory_path() / name;
   fixture_paths.push_back(path);
+  constexpr std::string_view declaration =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+  const auto header = add_xml_declaration && !xml.starts_with(declaration)
+                          ? std::string(declaration) + xml
+                          : xml;
   std::ofstream output(path, std::ios::binary | std::ios::trunc);
   output.write("XISF0100", 8);
-  write_u32_le(output, static_cast<std::uint32_t>(xml.size()));
+  write_u32_le(output, static_cast<std::uint32_t>(header.size()));
   output.write("\0\0\0\0", 4);
-  output.write(xml.data(), static_cast<std::streamsize>(xml.size()));
+  output.write(header.data(), static_cast<std::streamsize>(header.size()));
   if (!pixels.empty()) {
     const auto position = static_cast<std::size_t>(output.tellp());
     expect(position <= attachment_offset, "test XML fits before attachment");
@@ -318,6 +324,114 @@ int main() {
   expect(!no_namespace &&
              no_namespace.error().code == mmxisf::ErrorCode::invalid_xisf,
          "missing XISF namespace is rejected");
+
+  const auto missing_declaration_path = write_fixture(
+      "mmxisf-missing-declaration.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto missing_declaration =
+      mmxisf::Reader::open_file(missing_declaration_path);
+  expect(!missing_declaration && missing_declaration.error().code ==
+                                     mmxisf::ErrorCode::invalid_xisf,
+         "mandatory XML declaration is enforced");
+
+  const auto noncanonical_declaration_path = write_fixture(
+      "mmxisf-noncanonical-declaration.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">") +
+          valid_metadata() + "</xisf>",
+      {}, 1024, false);
+  auto noncanonical_declaration =
+      mmxisf::Reader::open_file(noncanonical_declaration_path);
+  expect(!noncanonical_declaration && noncanonical_declaration.error().code ==
+                                          mmxisf::ErrorCode::invalid_xisf,
+         "canonical XML 1.0 UTF-8 declaration is enforced");
+
+  const auto root_text_path = write_fixture(
+      "mmxisf-root-text.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">not allowed") +
+          valid_metadata() + "</xisf>");
+  auto root_text = mmxisf::Reader::open_file(root_text_path);
+  expect(!root_text &&
+             root_text.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "XISF root character data is rejected");
+
+  const auto root_whitespace_path = write_fixture(
+      "mmxisf-root-whitespace.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">\n  ") +
+          valid_metadata() + "\n</xisf>");
+  auto root_whitespace = mmxisf::Reader::open_file(root_whitespace_path);
+  expect(root_whitespace.has_value(),
+         "XML whitespace between root children remains valid");
+
+  const auto forward_reference_path = write_fixture(
+      "mmxisf-forward-reference.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Reference ref=\"later\"/>"
+          "<Property uid=\"later\" id=\"p\" type=\"String\" value=\"x\"/>") +
+          valid_metadata() + "</xisf>");
+  auto forward_reference =
+      mmxisf::Reader::open_file(forward_reference_path);
+  expect(forward_reference.has_value(),
+         "forward Reference to a core uid is accepted");
+
+  struct InvalidUidCase {
+    const char *name;
+    const char *uid;
+  };
+  const std::array invalid_uid_cases{
+      InvalidUidCase{"empty", ""}, InvalidUidCase{"leading-digit", "1bad"},
+      InvalidUidCase{"hyphen", "bad-id"},
+      InvalidUidCase{"non-ascii", "zażółć"},
+  };
+  for (const auto &test : invalid_uid_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-invalid-uid-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Property uid=\"") +
+            test.uid + "\" id=\"p\" type=\"String\" value=\"x\"/>" +
+            valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           test.name);
+  }
+
+  const std::array invalid_reference_elements{
+      "<Reference/>",
+      "<Reference ref=\"missing\"/>",
+      "<Reference ref=\"bad-id\"/>",
+      "<Reference uid=\"self\" ref=\"self\"/>",
+  };
+  for (std::size_t index = 0; index < invalid_reference_elements.size();
+       ++index) {
+    const auto path = write_fixture(
+        "mmxisf-invalid-reference-" + std::to_string(index) + ".xisf",
+        std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                    "version=\"1.0\">") +
+            invalid_reference_elements[index] + valid_metadata() + "</xisf>");
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           "invalid Reference contract is rejected");
+  }
+
+  const auto duplicate_uid_path = write_fixture(
+      "mmxisf-duplicate-uid.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property uid=\"duplicate\" id=\"p1\" type=\"String\" value=\"x\"/>"
+          "<Property uid=\"duplicate\" id=\"p2\" type=\"String\" value=\"y\"/>") +
+          valid_metadata() + "</xisf>");
+  auto duplicate_uid = mmxisf::Reader::open_file(duplicate_uid_path);
+  expect(!duplicate_uid &&
+             duplicate_uid.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "core element uid values must be unique");
 
   const auto missing_metadata_path = write_fixture(
       "mmxisf-missing-metadata.xisf",

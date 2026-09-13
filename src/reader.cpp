@@ -18,6 +18,7 @@
 #include <sstream>
 #include <string_view>
 #include <system_error>
+#include <unordered_set>
 #include <utility>
 
 namespace mmxisf {
@@ -26,6 +27,8 @@ namespace {
 constexpr std::array<unsigned char, 8> kSignature{'X', 'I', 'S', 'F',
                                                   '0', '1', '0', '0'};
 constexpr std::string_view kXisfNamespace = "http://www.pixinsight.com/xisf";
+constexpr std::string_view kXmlDeclaration =
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 Error make_error(ErrorCode code, std::string message) {
   Error error;
@@ -55,6 +58,37 @@ std::optional<std::string_view> attribute(const XML_Char **attributes,
     }
   }
   return std::nullopt;
+}
+
+bool is_core_element(std::string_view name) {
+  constexpr std::array<std::string_view, 13> kCoreElements{
+      "Property",         "Structure",  "Table",      "Metadata",
+      "Image",            "FITSKeyword", "ICCProfile", "RGBWorkingSpace",
+      "DisplayFunction",  "ColorFilterArray",          "Resolution",
+      "Thumbnail",        "Reference"};
+  return std::find(kCoreElements.begin(), kCoreElements.end(), name) !=
+         kCoreElements.end();
+}
+
+bool is_valid_unique_id(std::string_view value) {
+  const auto is_ascii_letter = [](char character) {
+    return (character >= 'A' && character <= 'Z') ||
+           (character >= 'a' && character <= 'z');
+  };
+  if (value.empty() || (value.front() != '_' && !is_ascii_letter(value.front()))) {
+    return false;
+  }
+  return std::all_of(value.begin() + 1, value.end(), [&](char character) {
+    return character == '_' || is_ascii_letter(character) ||
+           (character >= '0' && character <= '9');
+  });
+}
+
+bool contains_non_xml_whitespace(std::string_view text) {
+  return std::any_of(text.begin(), text.end(), [](char character) {
+    return character != ' ' && character != '\t' && character != '\r' &&
+           character != '\n';
+  });
 }
 
 template <typename T> bool parse_unsigned(std::string_view text, T &result) {
@@ -281,6 +315,8 @@ struct XmlBuilder {
   std::size_t metadata_count{0};
   bool saw_creation_time{false};
   bool saw_creator_application{false};
+  std::unordered_set<std::string> core_uids;
+  std::vector<std::string> references;
 
   void fail(ErrorCode code, std::string message, std::string element = {},
             std::string attribute_name = {}) {
@@ -347,6 +383,32 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     state.version = std::string(*version);
     return;
+  }
+
+  if (is_xisf_element && is_core_element(name)) {
+    const auto uid = attribute(attributes, "uid");
+    if (name == "Reference") {
+      const auto reference = attribute(attributes, "ref");
+      if (uid || !reference || !is_valid_unique_id(*reference)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Reference requires a valid ref and cannot define uid",
+                   name, uid ? "uid" : "ref");
+        return;
+      }
+      state.references.emplace_back(*reference);
+    } else if (uid) {
+      if (!is_valid_unique_id(*uid)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Core element uid has invalid syntax", name, "uid");
+        return;
+      }
+      if (!state.core_uids.emplace(*uid).second) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Core element uid must be unique in the XISF unit", name,
+                   "uid");
+        return;
+      }
+    }
   }
 
   if (is_xisf_element && name == "Image") {
@@ -581,7 +643,17 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
 
 void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
   auto &state = *static_cast<XmlBuilder *>(user_data);
-  if (state.error || !state.text_metadata_index || length <= 0) {
+  if (state.error || length <= 0) {
+    return;
+  }
+  const std::string_view data(text, static_cast<std::size_t>(length));
+  if (!state.text_metadata_index) {
+    if (state.depth == 1 && !state.element_stack.empty() &&
+        state.element_stack.back() == "xisf" &&
+        contains_non_xml_whitespace(data)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "The XISF root cannot contain character data", "xisf");
+    }
     return;
   }
   auto &value = state.metadata[*state.text_metadata_index].value;
@@ -607,6 +679,11 @@ Result<Document> parse_header(std::string_view xml,
                               const ReaderOptions &options,
                               std::uint64_t file_size,
                               std::uint32_t header_length) {
+  if (!xml.starts_with(kXmlDeclaration)) {
+    return make_error(
+        ErrorCode::invalid_xisf,
+        "XISF header must begin with the XML 1.0 UTF-8 declaration");
+  }
   XmlBuilder state;
   state.options = options;
   state.parser = XML_ParserCreateNS("UTF-8", '|');
@@ -656,6 +733,12 @@ Result<Document> parse_header(std::string_view xml,
     return make_error(
         ErrorCode::invalid_xisf,
         "Metadata must define XISF:CreationTime and XISF:CreatorApplication");
+  }
+  for (const auto &reference : state.references) {
+    if (!state.core_uids.contains(reference)) {
+      return make_error(ErrorCode::invalid_xisf,
+                        "Reference points to an undefined core element uid");
+    }
   }
   const auto header_end = 16ULL + static_cast<std::uint64_t>(header_length);
   for (std::size_t index = 0; index < state.images.size(); ++index) {

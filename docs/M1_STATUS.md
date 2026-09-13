@@ -32,12 +32,13 @@
 
 - CMake Release build: PASS.
 - CTest: 3/3 PASS (`version`, `reader`, planning consistency).
-- Synthetic reader coverage (80 checks): valid preamble/XML/metadata/raw pixels,
+- Synthetic reader coverage (94 checks): valid preamble/XML/metadata/raw pixels,
   DOCTYPE rejection, invalid root/namespace/core grammar, mandatory attributes,
-  preamble and block ranges, exact/over-limit text and attribute metadata
-  values, checked geometry arithmetic, every exposed resource-limit class,
-  cancellation, caller buffers, partial ByteSource reads, and fail-closed
-  compressed decode.
+  canonical XML declaration, root character-data exclusion, core `uid` and
+  `Reference` contracts, preamble and block ranges, exact/over-limit text and
+  attribute metadata values, checked geometry arithmetic, every exposed
+  resource-limit class, cancellation, caller buffers, partial ByteSource
+  reads, and fail-closed compressed decode.
 - Pinned-spec spot audit: PASS for Image geometry/channel semantics, optional
   `colorSpace="Gray"` default, case-sensitive `Planar`/`Normal` storage values,
   floating-point bounds, mandatory Metadata properties, Metadata uniqueness,
@@ -181,3 +182,14 @@ element character data. Table-driven tests cover exact-limit and one-byte-over
 values, zero/EOF/maximum attachment ranges, attachment-size mismatch, and
 overflow in axis, sample-count, and byte-count multiplication. Release,
 warning-clean, and ASan/UBSan test builds pass locally.
+
+## Fourth implementation checkpoint
+
+The pinned specification grammar audit added the mandatory canonical XML 1.0
+UTF-8 declaration, prohibited non-whitespace character data directly in the
+`xisf` root, and implemented the common core-element `uid` contract. Identifiers
+are ASCII grammar-checked and unit-unique; `Reference` requires a valid `ref`,
+cannot define `uid`, resolves forward references after parsing, and rejects
+dangling targets. The hardened parser retains 9/9 local PixInsight corpus
+compatibility and passes Release, warning-clean, ASan/UBSan, and deterministic
+20,000-case mutation gates locally.
