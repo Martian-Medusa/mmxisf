@@ -586,6 +586,85 @@ void test_block_property_subblocks_round_trip() {
          "writer overwrote a stale Property compression spool");
 }
 
+void test_block_property_type_matrix() {
+  struct TypeCase {
+    std::string_view type;
+    std::size_t element_size;
+    bool matrix;
+  };
+  constexpr std::array<TypeCase, 40> types{
+      TypeCase{"I8Vector", 1, false}, {"UI8Vector", 1, false},
+      {"ByteArray", 1, false},        {"I16Vector", 2, false},
+      {"UI16Vector", 2, false},       {"I32Vector", 4, false},
+      {"IVector", 4, false},          {"UI32Vector", 4, false},
+      {"UIVector", 4, false},         {"I64Vector", 8, false},
+      {"UI64Vector", 8, false},       {"I128Vector", 16, false},
+      {"UI128Vector", 16, false},     {"F32Vector", 4, false},
+      {"F64Vector", 8, false},        {"Vector", 8, false},
+      {"F128Vector", 16, false},      {"C32Vector", 8, false},
+      {"C64Vector", 16, false},       {"C128Vector", 32, false},
+      {"I8Matrix", 1, true},          {"UI8Matrix", 1, true},
+      {"ByteMatrix", 1, true},        {"I16Matrix", 2, true},
+      {"UI16Matrix", 2, true},        {"I32Matrix", 4, true},
+      {"IMatrix", 4, true},           {"UI32Matrix", 4, true},
+      {"UIMatrix", 4, true},          {"I64Matrix", 8, true},
+      {"UI64Matrix", 8, true},        {"I128Matrix", 16, true},
+      {"UI128Matrix", 16, true},      {"F32Matrix", 4, true},
+      {"F64Matrix", 8, true},         {"Matrix", 8, true},
+      {"F128Matrix", 16, true},       {"C32Matrix", 8, true},
+      {"C64Matrix", 16, true},        {"C128Matrix", 32, true}};
+  std::array<std::vector<std::byte>, types.size()> blocks;
+  for (std::size_t index = 0; index < types.size(); ++index) {
+    blocks[index].resize(types[index].element_size);
+    for (std::size_t byte = 0; byte < blocks[index].size(); ++byte) {
+      blocks[index][byte] =
+          static_cast<std::byte>((index * 17U + byte * 11U) & 0xffU);
+    }
+  }
+  std::vector<mmxisf::MetadataWriteEntry> metadata;
+  metadata.reserve(types.size());
+  for (std::size_t index = 0; index < types.size(); ++index) {
+    mmxisf::MetadataWriteEntry entry;
+    entry.image_index = 0;
+    entry.name = "Test:T" + std::to_string(index);
+    entry.type = types[index].type;
+    entry.value_form = mmxisf::MetadataWriteValueForm::data_block;
+    if (types[index].matrix) {
+      entry.rows = 1;
+      entry.columns = 1;
+    } else {
+      entry.length = 1;
+    }
+    entry.block_bytes = blocks[index];
+    metadata.push_back(std::move(entry));
+  }
+
+  const std::array<std::byte, 8> pixels{
+      std::byte{1}, std::byte{0}, std::byte{2}, std::byte{0},
+      std::byte{3}, std::byte{0}, std::byte{4}, std::byte{0}};
+  const auto image = gray_image(pixels);
+  auto write_options = options();
+  write_options.attachment_alignment = 16;
+  const auto path = output_path("mmxisf-writer-property-type-matrix.xisf");
+  auto written = mmxisf::Writer::write_file(path, std::span(&image, 1),
+                                            metadata, write_options);
+  expect(written && written.value().property_blocks.size() == types.size(),
+         "writer Property type matrix failed");
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value(), "writer Property type matrix did not reopen");
+  const auto &entries = opened.value().document().metadata();
+  expect(entries.size() >= types.size(),
+         "writer Property type matrix metadata is incomplete");
+  for (std::size_t index = 0; index < types.size(); ++index) {
+    expect(entries[index].name == "Test:T" + std::to_string(index) &&
+               entries[index].type == types[index].type,
+           "writer Property type matrix ordering changed");
+    auto decoded = opened.value().read_property_block(index);
+    expect(decoded && decoded.value().bytes == blocks[index],
+           "writer Property type matrix bytes changed");
+  }
+}
+
 void test_compression_shuffle_checksum_round_trip() {
   std::array<std::byte, 512> pixels{};
   for (std::size_t sample = 0; sample < pixels.size() / 2; ++sample) {
@@ -1182,6 +1261,7 @@ int main() {
     test_scalar_metadata_round_trip();
     test_block_property_round_trip();
     test_block_property_subblocks_round_trip();
+    test_block_property_type_matrix();
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();

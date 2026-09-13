@@ -87,6 +87,10 @@
   SHA-256 checksum, format, byte order, and both exact attachment descriptors
   through its public API. The observed file is 12,292 bytes with SHA-256
   `4da1d1bef566e6cbe626522cf938d738db667e7b2648a26bc1a2c376eb125abb`.
+- A compiled 40-type matrix writes and rereads every standard integer, real,
+  complex, alias, and byte-array vector/matrix element width through the public
+  API, preserving input order and exact bytes. This is a reader/writer drift
+  guard, not independent semantic validation of every numeric type.
 - A five-image codec fixture covers all four writer codecs, shuffled and
   unshuffled paths, all three checksums, and an uncompressed checksummed block.
   `mmxisf` verifies each digest before decompression and recovers one exact pixel

@@ -137,6 +137,8 @@ little endian and `format` is retained as declarative metadata. Property blocks
 use the same compression, optional byte shuffle, checksum, bounded-subblock,
 and cleanup-guarded spool behavior as image blocks. Shuffle operates on the
 declared Property element width, including a complete complex element.
+Compiled coverage exercises all 40 supported vector/matrix types and aliases;
+the library still returns raw bytes rather than reinterpreting astronomy values.
 
 Property attachments follow image attachments and preserve metadata encounter
 order. `WriteSummary::property_blocks` reports their locations in block-entry
