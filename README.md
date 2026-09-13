@@ -97,8 +97,9 @@ images borrow immutable pixel spans for the duration of the call. Equivalent
 inputs produce byte-identical files. Existing destinations are not overwritten,
 per-image and cumulative resource limits and arithmetic are checked before file
 creation, and cancellation removes incomplete temporary output. A declarative
-metadata overload writes image-scoped String/TimePoint Properties and FITS
-keywords plus XISF-unit String/TimePoint Properties without accepting raw XML.
+metadata overload writes image-scoped direct scalar/String/TimePoint Properties
+and FITS keywords plus the corresponding XISF-unit Properties without accepting
+raw XML.
 Optional zlib, LZ4, LZ4HC, and Zstandard compression can be combined with byte
 shuffle and SHA-1/256/512 checksums. Large compressed images use bounded,
 sample-aligned subblocks so codec/shuffle scratch does not scale to the complete

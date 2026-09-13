@@ -366,6 +366,55 @@ void test_declared_metadata_round_trip() {
          "metadata child elements changed image pixels");
 }
 
+void test_scalar_metadata_round_trip() {
+  const std::array<std::byte, 8> pixels{};
+  const auto image = gray_image(pixels);
+  std::vector<mmxisf::MetadataWriteEntry> metadata{
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:Enabled",
+                                 .type = "Boolean",
+                                 .value = "true"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:SignedMinimum",
+                                 .type = "Int8",
+                                 .value = "-128"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:UnsignedMaximum",
+                                 .type = "UInt64",
+                                 .value = "18446744073709551615"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:Floating",
+                                 .type = "Float64",
+                                 .value = "-1.25e+02"}};
+  constexpr std::array<std::string_view, 18> aliases{
+      "Int16",   "Short",   "Int32",  "Int",    "Int64",    "Int128",
+      "UInt8",   "Byte",    "UInt16", "UShort", "UInt32",   "UInt",
+      "UInt128", "Float32", "Float",  "Double", "Float128", "Quad"};
+  for (std::size_t index = 0; index < aliases.size(); ++index) {
+    metadata.push_back({.image_index = 0,
+                        .name = "Test:Alias" + std::to_string(index),
+                        .type = std::string(aliases[index]),
+                        .value = "0"});
+  }
+  const auto path = output_path("mmxisf-writer-scalar-metadata.xisf");
+  const std::span images(&image, 1);
+  auto written = mmxisf::Writer::write_file(path, images, metadata, options());
+  expect(written.has_value(), "scalar metadata writer failed");
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value(), "scalar metadata writer result did not reopen");
+  const auto &entries = opened.value().document().metadata();
+  for (const auto &expected : metadata) {
+    const auto found =
+        std::find_if(entries.begin(), entries.end(), [&](const auto &entry) {
+          return entry.name == expected.name;
+        });
+    expect(found != entries.end() && found->type == expected.type &&
+               found->value == expected.value &&
+               found->value_form == mmxisf::MetadataEntry::ValueForm::attribute,
+           "scalar Property did not round trip exactly");
+  }
+}
+
 void test_compression_shuffle_checksum_round_trip() {
   std::array<std::byte, 512> pixels{};
   for (std::size_t sample = 0; sample < pixels.size() / 2; ++sample) {
@@ -668,8 +717,10 @@ void test_rejection_and_cleanup() {
   expect(!metadata_result && metadata_result.error().code ==
                                  mmxisf::ErrorCode::invalid_argument,
          "invalid writer Property identifier was accepted");
-  invalid_metadata = {
-      .image_index = 0, .name = "Test:Value", .type = "Float64", .value = "1"};
+  invalid_metadata = {.image_index = 0,
+                      .name = "Test:Value",
+                      .type = "F64Vector",
+                      .value = "1"};
   metadata_result = mmxisf::Writer::write_file(
       metadata_path("property-type"), images,
       std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
@@ -677,6 +728,24 @@ void test_rejection_and_cleanup() {
   expect(!metadata_result && metadata_result.error().code ==
                                  mmxisf::ErrorCode::unsupported_feature,
          "unsupported writer Property type was not explicit");
+  invalid_metadata = {
+      .image_index = 0, .name = "Test:Value", .type = "UInt8", .value = "256"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("scalar-range"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "out-of-range writer scalar Property was accepted");
+  invalid_metadata = {
+      .image_index = 0, .name = "Test:Value", .type = "Float64", .value = "1e"};
+  metadata_result = mmxisf::Writer::write_file(
+      metadata_path("scalar-syntax"), images,
+      std::span<const mmxisf::MetadataWriteEntry>(&invalid_metadata, 1),
+      options());
+  expect(!metadata_result && metadata_result.error().code ==
+                                 mmxisf::ErrorCode::invalid_argument,
+         "malformed writer scalar Property was accepted");
   invalid_metadata = {.kind = mmxisf::MetadataWriteKind::fits_keyword,
                       .image_index = 0,
                       .name = "bad key",
@@ -844,6 +913,7 @@ int main() {
     test_rgb_little_endian_round_trip();
     test_multi_image_scalar_round_trip();
     test_declared_metadata_round_trip();
+    test_scalar_metadata_round_trip();
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();

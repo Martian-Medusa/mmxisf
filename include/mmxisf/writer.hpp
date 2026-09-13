@@ -44,7 +44,8 @@ struct MetadataWriteEntry {
   std::optional<std::size_t> image_index;
   // Property identifier or FITS keyword name, depending on kind.
   std::string name;
-  // The current profile accepts String and TimePoint Property types.
+  // The current direct-value profile accepts String, TimePoint, Boolean,
+  // signed/unsigned integer, and real floating-point Property types.
   std::string type;
   std::string value;
   std::string comment;
