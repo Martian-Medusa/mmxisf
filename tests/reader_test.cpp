@@ -589,7 +589,9 @@ int main() {
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
           "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
           "colorSpace=\"RGB\" location=\"embedded\">"
-          "<Data encoding=\"base64\" compression=\"zlib:6\">"
+          "<Data encoding=\"base64\" compression=\"zlib:6\" "
+          "checksum=\"sha256:2fc3146104370f94342cbabfe10ecc0f019cfb1196541"
+          "460372fd8fec537a314\">"
           "eJxjZGJmYWUDAAA+ABY=</Data></Image>") +
           valid_metadata() + "</xisf>");
   auto zlib_embedded = mmxisf::Reader::open_file(zlib_embedded_path);
@@ -677,6 +679,207 @@ int main() {
            "zlib subblocks concatenate exact decoded bytes");
   }
 
+  struct Lz4CodecCase {
+    const char *name;
+    const char *codec;
+  };
+  const std::array lz4_codec_cases{Lz4CodecCase{"lz4", "lz4"},
+                                   Lz4CodecCase{"lz4hc", "lz4hc"}};
+  const std::vector<std::byte> lz4_rgb_compressed{
+      std::byte{0x60}, std::byte{1}, std::byte{2}, std::byte{3},
+      std::byte{4},    std::byte{5}, std::byte{6}};
+  for (const auto &test : lz4_codec_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m3-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"RGB\" compression=\"") +
+            test.codec + ":6\" location=\"attachment:1024:7\"/>" +
+            valid_metadata() + "</xisf>",
+        lz4_rgb_compressed);
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), test.name);
+    if (reader) {
+      auto image = reader.value().read_image(0);
+      expect(image && image.value().pixels == zlib_rgb_pixels, test.name);
+    }
+  }
+
+  const std::vector<std::byte> shuffled_lz4_compressed{
+      std::byte{0xc0}, std::byte{1},  std::byte{3}, std::byte{5}, std::byte{7},
+      std::byte{9},    std::byte{11}, std::byte{2}, std::byte{4}, std::byte{6},
+      std::byte{8},    std::byte{10}, std::byte{12}};
+  const auto shuffled_lz4_path = write_fixture(
+      "mmxisf-m3-lz4-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"RGB\" byteOrder=\"big\" "
+          "compression=\"lz4+sh:12:2\" "
+          "location=\"attachment:1024:13\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_lz4_compressed);
+  auto shuffled_lz4 = mmxisf::Reader::open_file(shuffled_lz4_path);
+  expect(shuffled_lz4.has_value(), "lz4+sh fixture opens");
+  if (shuffled_lz4) {
+    auto image = shuffled_lz4.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{
+                            std::byte{1}, std::byte{2}, std::byte{3},
+                            std::byte{4}, std::byte{5}, std::byte{6},
+                            std::byte{7}, std::byte{8}, std::byte{9},
+                            std::byte{10}, std::byte{11}, std::byte{12}},
+           "lz4+sh reverses byte shuffle exactly");
+  }
+
+  const auto shuffled_lz4hc_path = write_fixture(
+      "mmxisf-m3-lz4hc-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt16\" "
+          "colorSpace=\"RGB\" byteOrder=\"big\" "
+          "compression=\"lz4hc+sh:12:2\" "
+          "location=\"attachment:1024:13\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_lz4_compressed);
+  auto shuffled_lz4hc = mmxisf::Reader::open_file(shuffled_lz4hc_path);
+  expect(shuffled_lz4hc.has_value(), "lz4hc+sh fixture opens");
+  if (shuffled_lz4hc) {
+    auto image = shuffled_lz4hc.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{
+                            std::byte{1}, std::byte{2}, std::byte{3},
+                            std::byte{4}, std::byte{5}, std::byte{6},
+                            std::byte{7}, std::byte{8}, std::byte{9},
+                            std::byte{10}, std::byte{11}, std::byte{12}},
+           "lz4hc+sh uses the compatible LZ4 decoder and unshuffle path");
+  }
+
+  const std::vector<std::byte> lz4_subblocks{
+      std::byte{0x40}, std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4},
+      std::byte{0x40}, std::byte{5}, std::byte{6}, std::byte{7}, std::byte{8}};
+  const auto lz4_subblocks_path = write_fixture(
+      "mmxisf-m3-lz4-subblocks.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"8:1:1\" sampleFormat=\"UInt8\" "
+          "compression=\"lz4:8\" subblocks=\"5,4:5,4\" "
+          "location=\"attachment:1024:10\"/>") +
+          valid_metadata() + "</xisf>",
+      lz4_subblocks);
+  auto lz4_subblock_reader = mmxisf::Reader::open_file(lz4_subblocks_path);
+  expect(lz4_subblock_reader.has_value(), "LZ4 subblock fixture opens");
+  if (lz4_subblock_reader) {
+    auto image = lz4_subblock_reader.value().read_image(0);
+    expect(image && image.value().pixels ==
+                        std::vector<std::byte>{std::byte{1}, std::byte{2},
+                                               std::byte{3}, std::byte{4},
+                                               std::byte{5}, std::byte{6},
+                                               std::byte{7}, std::byte{8}},
+           "LZ4 subblocks concatenate exact decoded bytes");
+  }
+
+  struct ChecksumCase {
+    const char *name;
+    const char *descriptor;
+  };
+  const std::array checksum_cases{
+      ChecksumCase{"sha-1", "sha-1:5d211bad8f4ee70e16c7d343a838fc344a1ed961"},
+      ChecksumCase{"sha1", "sha1:5d211bad8f4ee70e16c7d343a838fc344a1ed961"},
+      ChecksumCase{
+          "sha-256",
+          "sha-256:"
+          "7192385c3c0605de55bb9476ce1d90748190ecb32a8eed7f5207b30cf6a1fe89"},
+      ChecksumCase{
+          "sha256",
+          "sha256:"
+          "7192385c3c0605de55bb9476ce1d90748190ecb32a8eed7f5207b30cf6a1fe89"},
+      ChecksumCase{
+          "sha-512",
+          "sha-512:"
+          "178d767c364244ede054ebb3cc4af0ac2b307a86fba6a32706ce4f692642674d"
+          "2ab8f51ee738ecb09bc296918aa85db48abe28fcaef7aa2da81a618cc6d891c3"},
+      ChecksumCase{
+          "sha512",
+          "sha512:"
+          "178d767c364244ede054ebb3cc4af0ac2b307a86fba6a32706ce4f692642674d"
+          "2ab8f51ee738ecb09bc296918aa85db48abe28fcaef7aa2da81a618cc6d891c3"}};
+  for (const auto &test : checksum_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m3-checksum-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"RGB\" checksum=\"") +
+            test.descriptor + "\" location=\"attachment:1024:6\"/>" +
+            valid_metadata() + "</xisf>",
+        zlib_rgb_pixels);
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), test.name);
+    if (reader) {
+      auto image = reader.value().read_image(0);
+      expect(image && image.value().pixels == zlib_rgb_pixels, test.name);
+    }
+  }
+
+  const auto checksum_before_codec_path = write_fixture(
+      "mmxisf-m3-checksum-before-codec.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" compression=\"zlib:6\" "
+          "checksum=\"sha1:89a1ac94f2d9b748cedfd823d6ff59078736ff4a\" "
+          "location=\"attachment:1024:14\"/>") +
+          valid_metadata() + "</xisf>",
+      std::vector<std::byte>(zlib_rgb_compressed.size(), std::byte{0}));
+  auto checksum_before_codec =
+      mmxisf::Reader::open_file(checksum_before_codec_path);
+  expect(checksum_before_codec.has_value(),
+         "checksum-before-codec fixture opens");
+  if (checksum_before_codec) {
+    auto image = checksum_before_codec.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::checksum_mismatch,
+           "failed checksum prevents invalid compressed bytes reaching codec");
+  }
+
+  struct InvalidChecksumCase {
+    const char *name;
+    const char *checksum;
+    mmxisf::ErrorCode expected_error;
+  };
+  const std::array invalid_checksum_cases{
+      InvalidChecksumCase{"mismatch",
+                          "sha1:0000000000000000000000000000000000000000",
+                          mmxisf::ErrorCode::checksum_mismatch},
+      InvalidChecksumCase{"uppercase",
+                          "sha1:5D211bad8f4ee70e16c7d343a838fc344a1ed961",
+                          mmxisf::ErrorCode::invalid_block},
+      InvalidChecksumCase{"short", "sha256:00",
+                          mmxisf::ErrorCode::invalid_block},
+      InvalidChecksumCase{
+          "sha3-inspect",
+          "sha3-256:"
+          "0000000000000000000000000000000000000000000000000000000000000000",
+          mmxisf::ErrorCode::unsupported_feature}};
+  for (const auto &test : invalid_checksum_cases) {
+    const auto path = write_fixture(
+        std::string("mmxisf-m3-invalid-checksum-") + test.name + ".xisf",
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+            "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+            "colorSpace=\"RGB\" checksum=\"") +
+            test.checksum + "\" location=\"attachment:1024:6\"/>" +
+            valid_metadata() + "</xisf>",
+        zlib_rgb_pixels);
+    auto reader = mmxisf::Reader::open_file(path);
+    expect(reader.has_value(), test.name);
+    if (reader) {
+      auto image = reader.value().read_image(0);
+      expect(!image && image.error().code == test.expected_error, test.name);
+    }
+  }
+
   const auto embedded_wrong_level_path = write_fixture(
       "mmxisf-m3-embedded-wrong-level.xisf",
       std::string(
@@ -742,6 +945,28 @@ int main() {
     auto image = ratio_limit.value().read_image(0);
     expect(!image && image.error().code == mmxisf::ErrorCode::resource_limit,
            "decompression ratio is rejected before codec invocation");
+  }
+
+  mmxisf::ReaderOptions serialized_limit_options;
+  serialized_limit_options.max_serialized_image_bytes = 13;
+  auto serialized_limit =
+      mmxisf::Reader::open_file(zlib_attachment_path, serialized_limit_options);
+  expect(serialized_limit.has_value(), "serialized-size limit fixture opens");
+  if (serialized_limit) {
+    auto image = serialized_limit.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::resource_limit,
+           "serialized image byte limit is enforced before allocation");
+  }
+
+  mmxisf::ReaderOptions subblock_limit_options;
+  subblock_limit_options.max_compressed_subblocks = 1;
+  auto subblock_limit =
+      mmxisf::Reader::open_file(zlib_subblocks_path, subblock_limit_options);
+  expect(subblock_limit.has_value(), "subblock-count limit fixture opens");
+  if (subblock_limit) {
+    auto image = subblock_limit.value().read_image(0);
+    expect(!image && image.error().code == mmxisf::ErrorCode::resource_limit,
+           "compression subblock count limit is enforced");
   }
 
   const std::array invalid_color_channel_cases{std::pair{"RGB", "2"},

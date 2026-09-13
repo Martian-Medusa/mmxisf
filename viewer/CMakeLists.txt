@@ -91,6 +91,101 @@ if(ZLIB_LIBRARY MATCHES "\\.dylib$")
   )
 endif()
 
+if(LZ4_LIBRARY MATCHES "\\.dylib$")
+  get_filename_component(MMXISF_LZ4_REAL_PATH "${LZ4_LIBRARY}" REALPATH)
+  execute_process(
+    COMMAND otool -D "${MMXISF_LZ4_REAL_PATH}"
+    OUTPUT_VARIABLE MMXISF_LZ4_ID_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE MMXISF_LZ4_ID_RESULT
+  )
+  if(NOT MMXISF_LZ4_ID_RESULT EQUAL 0)
+    message(FATAL_ERROR "Unable to inspect the LZ4 install name")
+  endif()
+  string(REPLACE "\n" ";" MMXISF_LZ4_ID_LINES "${MMXISF_LZ4_ID_OUTPUT}")
+  list(GET MMXISF_LZ4_ID_LINES -1 MMXISF_LZ4_INSTALL_NAME)
+  get_filename_component(MMXISF_LZ4_BUNDLE_NAME
+                         "${MMXISF_LZ4_INSTALL_NAME}" NAME)
+  set_target_properties(
+    mmxisf_viewer
+    PROPERTIES BUILD_RPATH "@executable_path/../Frameworks"
+  )
+  add_custom_command(
+    TARGET mmxisf_viewer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MMXISF_LZ4_REAL_PATH}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_LZ4_BUNDLE_NAME}"
+    COMMAND install_name_tool -id "@rpath/${MMXISF_LZ4_BUNDLE_NAME}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_LZ4_BUNDLE_NAME}"
+    COMMAND install_name_tool -change "${MMXISF_LZ4_INSTALL_NAME}"
+            "@rpath/${MMXISF_LZ4_BUNDLE_NAME}"
+            "$<TARGET_FILE:mmxisf_viewer>"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_LZ4_BUNDLE_NAME}"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+    VERBATIM
+  )
+endif()
+
+if(OPENSSL_CRYPTO_LIBRARY MATCHES "\\.dylib$")
+  get_filename_component(MMXISF_CRYPTO_REAL_PATH
+                         "${OPENSSL_CRYPTO_LIBRARY}" REALPATH)
+  execute_process(
+    COMMAND otool -D "${MMXISF_CRYPTO_REAL_PATH}"
+    OUTPUT_VARIABLE MMXISF_CRYPTO_ID_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE MMXISF_CRYPTO_ID_RESULT
+  )
+  if(NOT MMXISF_CRYPTO_ID_RESULT EQUAL 0)
+    message(FATAL_ERROR "Unable to inspect the OpenSSL Crypto install name")
+  endif()
+  string(REPLACE "\n" ";" MMXISF_CRYPTO_ID_LINES
+                 "${MMXISF_CRYPTO_ID_OUTPUT}")
+  list(GET MMXISF_CRYPTO_ID_LINES -1 MMXISF_CRYPTO_INSTALL_NAME)
+  get_filename_component(MMXISF_CRYPTO_BUNDLE_NAME
+                         "${MMXISF_CRYPTO_INSTALL_NAME}" NAME)
+  set_target_properties(
+    mmxisf_viewer
+    PROPERTIES BUILD_RPATH "@executable_path/../Frameworks"
+  )
+  add_custom_command(
+    TARGET mmxisf_viewer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MMXISF_CRYPTO_REAL_PATH}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
+    COMMAND install_name_tool -id "@rpath/${MMXISF_CRYPTO_BUNDLE_NAME}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
+    COMMAND install_name_tool -change "${MMXISF_CRYPTO_INSTALL_NAME}"
+            "@rpath/${MMXISF_CRYPTO_BUNDLE_NAME}"
+            "$<TARGET_FILE:mmxisf_viewer>"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+    VERBATIM
+  )
+endif()
+
+if(OPENSSL_CRYPTO_LIBRARY MATCHES "\\.dylib$" AND
+   ZLIB_LIBRARY MATCHES "\\.dylib$")
+  add_custom_command(
+    TARGET mmxisf_viewer POST_BUILD
+    COMMAND install_name_tool -change "${MMXISF_ZLIB_INSTALL_NAME}"
+            "@rpath/${MMXISF_ZLIB_BUNDLE_NAME}"
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
+    COMMAND /usr/bin/codesign --force --sign -
+            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+    VERBATIM
+  )
+endif()
+
 set_target_properties(
   mmxisf_viewer
   PROPERTIES

@@ -3,6 +3,8 @@
 #include "mmxisf/reader.hpp"
 
 #include <expat.h>
+#include <lz4.h>
+#include <openssl/evp.h>
 #include <zlib.h>
 
 #include <algorithm>
@@ -1095,6 +1097,72 @@ struct CompressionPlan {
   std::vector<CompressionSubblock> subblocks;
 };
 
+enum class ChecksumAlgorithm { none, sha1, sha256, sha512 };
+
+struct ChecksumPlan {
+  ChecksumAlgorithm algorithm{ChecksumAlgorithm::none};
+  std::vector<unsigned char> expected_digest;
+};
+
+std::optional<unsigned char> lowercase_hex_value(char character) {
+  if (character >= '0' && character <= '9') {
+    return static_cast<unsigned char>(character - '0');
+  }
+  if (character >= 'a' && character <= 'f') {
+    return static_cast<unsigned char>(character - 'a' + 10);
+  }
+  return std::nullopt;
+}
+
+Result<ChecksumPlan> parse_checksum_plan(const ImageInfo &image) {
+  if (image.checksum.empty()) {
+    return ChecksumPlan{};
+  }
+  const auto separator = image.checksum.find(':');
+  if (separator == std::string::npos ||
+      image.checksum.find(':', separator + 1) != std::string::npos) {
+    return make_error(ErrorCode::invalid_block, "Invalid checksum descriptor");
+  }
+  const auto algorithm = std::string_view(image.checksum).substr(0, separator);
+  const auto encoded_digest =
+      std::string_view(image.checksum).substr(separator + 1);
+  ChecksumPlan plan;
+  std::size_t digest_size = 0;
+  if (algorithm == "sha-1" || algorithm == "sha1") {
+    plan.algorithm = ChecksumAlgorithm::sha1;
+    digest_size = 20;
+  } else if (algorithm == "sha-256" || algorithm == "sha256") {
+    plan.algorithm = ChecksumAlgorithm::sha256;
+    digest_size = 32;
+  } else if (algorithm == "sha-512" || algorithm == "sha512") {
+    plan.algorithm = ChecksumAlgorithm::sha512;
+    digest_size = 64;
+  } else if (algorithm == "sha3-256" || algorithm == "sha3-512") {
+    return make_error(ErrorCode::unsupported_feature,
+                      "SHA-3 checksums are inspect-only in this profile");
+  } else {
+    return make_error(ErrorCode::unsupported_feature,
+                      "Unsupported image checksum algorithm");
+  }
+  if (encoded_digest.size() != digest_size * 2) {
+    return make_error(ErrorCode::invalid_block,
+                      "Checksum digest has an invalid length");
+  }
+  plan.expected_digest.reserve(digest_size);
+  for (std::size_t index = 0; index < encoded_digest.size(); index += 2) {
+    const auto high = lowercase_hex_value(encoded_digest[index]);
+    const auto low = lowercase_hex_value(encoded_digest[index + 1]);
+    if (!high || !low) {
+      return make_error(
+          ErrorCode::invalid_block,
+          "Checksum digest must use lowercase hexadecimal digits");
+    }
+    plan.expected_digest.push_back(
+        static_cast<unsigned char>((*high << 4U) | *low));
+  }
+  return plan;
+}
+
 Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
                                                std::uint64_t serialized_bytes,
                                                std::uint64_t expected_bytes,
@@ -1105,8 +1173,9 @@ Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
                       "Serialized image block exceeds the configured limit");
   }
   if (serialized_bytes > std::numeric_limits<std::size_t>::max()) {
-    return make_error(ErrorCode::resource_limit,
-                      "Serialized image block cannot fit in addressable memory");
+    return make_error(
+        ErrorCode::resource_limit,
+        "Serialized image block cannot fit in addressable memory");
   }
   if (image.compression.empty()) {
     if (!image.subblocks.empty()) {
@@ -1262,6 +1331,7 @@ struct ImageReadPlan {
   std::uint64_t expected_bytes{0};
   std::uint64_t serialized_bytes{0};
   CompressionPlan compression;
+  ChecksumPlan checksum;
 };
 
 Result<ImageReadPlan>
@@ -1280,10 +1350,6 @@ plan_image_read(const Document &document, const ReaderOptions &options,
     return make_error(ErrorCode::unsupported_feature,
                       "The M2 reader only reads attachment and embedded image "
                       "blocks");
-  }
-  if (!image.checksum.empty()) {
-    return make_error(ErrorCode::unsupported_feature,
-                      "Checksummed image blocks are scheduled for M3");
   }
   if (image.geometry.size() != 3) {
     return make_error(ErrorCode::unsupported_feature,
@@ -1331,6 +1397,10 @@ plan_image_read(const Document &document, const ReaderOptions &options,
   if (!compression) {
     return compression.error();
   }
+  auto checksum = parse_checksum_plan(image);
+  if (!checksum) {
+    return checksum.error();
+  }
   if (image.block.kind == BlockKind::attachment &&
       (image.block.offset > document.file_size() ||
        image.block.size > document.file_size() - image.block.offset)) {
@@ -1340,10 +1410,15 @@ plan_image_read(const Document &document, const ReaderOptions &options,
   if (image.block.kind == BlockKind::embedded) {
     embedded_block = &embedded_blocks[image_index];
   }
-  return ImageReadPlan{&image,           embedded_block,
-                       channels,         sample_count,
-                       *sample_size,     expected_bytes,
-                       serialized_bytes, std::move(compression).value()};
+  return ImageReadPlan{&image,
+                       embedded_block,
+                       channels,
+                       sample_count,
+                       *sample_size,
+                       expected_bytes,
+                       serialized_bytes,
+                       std::move(compression).value(),
+                       std::move(checksum).value()};
 }
 
 Result<PixelStorage>
@@ -1470,6 +1545,82 @@ Result<std::size_t> decompress_zlib(std::span<const std::byte> input,
   return produced;
 }
 
+Result<std::size_t> decompress_lz4(std::span<const std::byte> input,
+                                   std::span<std::byte> output) {
+  if (input.size() >
+          static_cast<std::size_t>(std::numeric_limits<int>::max()) ||
+      output.size() >
+          static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+    return make_error(ErrorCode::resource_limit,
+                      "LZ4 subblock exceeds the codec size limit");
+  }
+  const auto produced = LZ4_decompress_safe(
+      reinterpret_cast<const char *>(input.data()),
+      reinterpret_cast<char *>(output.data()), static_cast<int>(input.size()),
+      static_cast<int>(output.size()));
+  if (produced < 0 || static_cast<std::size_t>(produced) != output.size()) {
+    return make_error(ErrorCode::invalid_block,
+                      "Invalid LZ4 block or decompressed size mismatch");
+  }
+  return static_cast<std::size_t>(produced);
+}
+
+Result<std::size_t> decompress_subblock(CompressionCodec codec,
+                                        std::span<const std::byte> input,
+                                        std::span<std::byte> output) {
+  switch (codec) {
+  case CompressionCodec::zlib:
+    return decompress_zlib(input, output);
+  case CompressionCodec::lz4:
+  case CompressionCodec::lz4hc:
+    return decompress_lz4(input, output);
+  case CompressionCodec::none:
+    return make_error(ErrorCode::internal_error,
+                      "Missing codec for compressed image block");
+  }
+  return make_error(ErrorCode::internal_error,
+                    "Invalid compression codec state");
+}
+
+const EVP_MD *checksum_digest(ChecksumAlgorithm algorithm) {
+  switch (algorithm) {
+  case ChecksumAlgorithm::sha1:
+    return EVP_sha1();
+  case ChecksumAlgorithm::sha256:
+    return EVP_sha256();
+  case ChecksumAlgorithm::sha512:
+    return EVP_sha512();
+  case ChecksumAlgorithm::none:
+    return nullptr;
+  }
+  return nullptr;
+}
+
+Result<bool> verify_checksum(const ChecksumPlan &plan,
+                             std::span<const std::byte> serialized) {
+  if (plan.algorithm == ChecksumAlgorithm::none) {
+    return true;
+  }
+  const auto *digest = checksum_digest(plan.algorithm);
+  if (digest == nullptr) {
+    return make_error(ErrorCode::internal_error,
+                      "Unable to resolve checksum implementation");
+  }
+  std::array<unsigned char, EVP_MAX_MD_SIZE> actual{};
+  unsigned int actual_size = 0;
+  if (EVP_Digest(serialized.data(), serialized.size(), actual.data(),
+                 &actual_size, digest, nullptr) != 1) {
+    return make_error(ErrorCode::internal_error, "Checksum computation failed");
+  }
+  if (actual_size != plan.expected_digest.size() ||
+      !std::equal(actual.begin(), actual.begin() + actual_size,
+                  plan.expected_digest.begin())) {
+    return make_error(ErrorCode::checksum_mismatch,
+                      "Image block checksum verification failed");
+  }
+  return true;
+}
+
 Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
                                     std::span<std::byte> output,
                                     std::size_t item_size,
@@ -1492,26 +1643,12 @@ Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
   return output.size();
 }
 
-Result<std::size_t> decode_compressed_image(const ByteSource &source,
-                                            const ImageReadPlan &plan,
-                                            std::span<std::byte> destination,
-                                            std::stop_token stop_token,
-                                            std::size_t image_index) {
-  if (plan.compression.codec != CompressionCodec::zlib) {
-    return make_error(ErrorCode::unsupported_feature,
-                      "LZ4 image decoding is not enabled in this M3 slice");
-  }
+Result<std::size_t> decode_compressed_image(
+    std::span<const std::byte> serialized, const ImageReadPlan &plan,
+    std::span<std::byte> destination, std::stop_token stop_token) {
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "Image read was cancelled");
   }
-  std::vector<std::byte> serialized(
-      static_cast<std::size_t>(plan.serialized_bytes));
-  auto copied =
-      copy_serialized_image(source, plan, serialized, stop_token, image_index);
-  if (!copied) {
-    return copied.error();
-  }
-
   std::size_t input_offset = 0;
   std::size_t output_offset = 0;
   std::vector<std::byte> shuffled;
@@ -1528,7 +1665,8 @@ Result<std::size_t> decode_compressed_image(const ByteSource &source,
     auto output = destination.subspan(output_offset, uncompressed_size);
     if (plan.compression.byte_shuffled) {
       shuffled.resize(uncompressed_size);
-      auto decoded = decompress_zlib(input, shuffled);
+      auto decoded =
+          decompress_subblock(plan.compression.codec, input, shuffled);
       if (!decoded) {
         return decoded.error();
       }
@@ -1539,7 +1677,7 @@ Result<std::size_t> decode_compressed_image(const ByteSource &source,
         return unshuffled.error();
       }
     } else {
-      auto decoded = decompress_zlib(input, output);
+      auto decoded = decompress_subblock(plan.compression.codec, input, output);
       if (!decoded) {
         return decoded.error();
       }
@@ -1914,31 +2052,54 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
       return output_byte_order.error();
     }
     auto output = destination.first(expected);
-    if (plan.value().compression.codec != CompressionCodec::none) {
-      if (output_storage.value() != plan.value().image->pixel_storage) {
-        std::vector<std::byte> source_pixels(expected);
-        auto decoded =
-            decode_compressed_image(*impl_->source, plan.value(), source_pixels,
-                                    stop_token, image_index);
+    const bool needs_serialized_staging =
+        plan.value().compression.codec != CompressionCodec::none ||
+        plan.value().checksum.algorithm != ChecksumAlgorithm::none;
+    if (needs_serialized_staging) {
+      std::vector<std::byte> serialized(
+          static_cast<std::size_t>(plan.value().serialized_bytes));
+      auto copied = copy_serialized_image(*impl_->source, plan.value(),
+                                          serialized, stop_token, image_index);
+      if (!copied) {
+        return copied.error();
+      }
+      auto verified = verify_checksum(plan.value().checksum, serialized);
+      if (!verified) {
+        return verified.error();
+      }
+
+      if (plan.value().compression.codec != CompressionCodec::none) {
+        if (output_storage.value() != plan.value().image->pixel_storage) {
+          std::vector<std::byte> source_pixels(expected);
+          auto decoded = decode_compressed_image(serialized, plan.value(),
+                                                 source_pixels, stop_token);
+          if (!decoded) {
+            return decoded.error();
+          }
+          return transform_pixel_storage_from_buffer(
+              plan.value(), source_pixels, output, output_storage.value(),
+              output_byte_order.value(), stop_token);
+        }
+        auto decoded = decode_compressed_image(serialized, plan.value(), output,
+                                               stop_token);
         if (!decoded) {
           return decoded.error();
         }
+      } else if (output_storage.value() != plan.value().image->pixel_storage) {
         return transform_pixel_storage_from_buffer(
-            plan.value(), source_pixels, output, output_storage.value(),
+            plan.value(), serialized, output, output_storage.value(),
             output_byte_order.value(), stop_token);
+      } else {
+        std::copy(serialized.begin(), serialized.end(), output.begin());
       }
-      auto decoded = decode_compressed_image(*impl_->source, plan.value(),
-                                             output, stop_token, image_index);
-      if (!decoded) {
-        return decoded.error();
-      }
+
       if (plan.value().sample_size > 1 &&
           output_byte_order.value() != plan.value().image->byte_order) {
         return swap_byte_order_in_place(
             output, static_cast<std::size_t>(plan.value().sample_size),
             stop_token);
       }
-      return decoded.value();
+      return expected;
     }
     if (output_storage.value() != plan.value().image->pixel_storage) {
       return transform_pixel_storage(
@@ -1987,6 +2148,8 @@ const char *to_string(ErrorCode code) noexcept {
     return "unsupported_feature";
   case ErrorCode::invalid_block:
     return "invalid_block";
+  case ErrorCode::checksum_mismatch:
+    return "checksum_mismatch";
   case ErrorCode::invalid_argument:
     return "invalid_argument";
   case ErrorCode::overflow:

@@ -114,6 +114,20 @@ compressed corpus, and checksum/shuffle defect rate are the next rebaseline
 gate. Native PixInsight acceptance remains serial and manual because UI
 automation is intentionally excluded from this project workflow.
 
+### 2026-09-13 M2/M3 implementation checkpoint
+
+The complete M2 change set passed Linux, Windows, macOS, installed-package, and
+two 20,000-case fuzz gates in CI run `34774526481`. M2 implementation is closed;
+its independent-producer parity evidence remains an explicit acceptance gate.
+
+The first local M3 session implemented all six required zlib/LZ4/LZ4HC codec
+identifiers, reverse byte shuffle, compression subblocks, SHA-1/256/512, and the
+checksum-before-decompression invariant. Local Release, warning-as-error,
+ASan/UBSan, installed-package, deterministic fuzz, and standalone macOS bundle
+gates pass. Cross-platform CI and independent compressed producer files remain
+open, so this checkpoint does not yet close M3 or trigger another calendar
+rebaseline.
+
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
 dependencies. A fast green prototype does not move the production gate unless

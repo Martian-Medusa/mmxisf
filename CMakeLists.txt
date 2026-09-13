@@ -11,6 +11,8 @@ include(CTest)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 option(MMXISF_BUILD_TESTS "Build mmxisf tests" ${BUILD_TESTING})
 option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools" ON)
 option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
@@ -24,6 +26,8 @@ set(
 )
 
 find_package(EXPAT 2.2 REQUIRED)
+find_package(LZ4 REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(ZLIB REQUIRED)
 
 add_library(mmxisf src/reader.cpp src/version.cpp)
@@ -36,7 +40,10 @@ target_include_directories(
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
-target_link_libraries(mmxisf PRIVATE EXPAT::EXPAT ZLIB::ZLIB)
+target_link_libraries(
+  mmxisf
+  PRIVATE EXPAT::EXPAT LZ4::LZ4 OpenSSL::Crypto ZLIB::ZLIB
+)
 
 if(MMXISF_BUILD_TESTS OR MMXISF_BUILD_VIEWER)
   add_library(mmxisf_viewer_preview STATIC viewer/Preview.cpp)
@@ -163,6 +170,7 @@ install(
 )
 install(
   FILES
+    cmake/FindLZ4.cmake
     "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"

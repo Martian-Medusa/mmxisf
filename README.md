@@ -9,9 +9,10 @@ PFI, PixInsight, PCL, or Qt.
 > interoperability acceptance still pending, and M3 is in progress. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
-> FITS keywords. The reader handles the PFI scalar profile from uncompressed or
-> zlib-compressed attachment and embedded blocks, including zlib byte shuffle
-> and compression subblocks, and powers Gray/RGB preview in the macOS viewer.
+> FITS keywords. The reader handles the PFI scalar profile from uncompressed,
+> zlib, LZ4, and LZ4HC-compatible attachment and embedded blocks, including byte
+> shuffle, compression subblocks, and SHA-1/256/512 verification. It powers
+> Gray/RGB preview in the macOS viewer.
 > This is still a pre-release profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
@@ -65,8 +66,8 @@ build/mmxisf-inspect path/to/image.xisf
 build/mmxisf-inspect --decode path/to/image.xisf
 ```
 
-Normal configuration requires installed Expat and zlib development packages.
-No dependency is downloaded implicitly.
+Normal configuration requires installed Expat, zlib, LZ4, and OpenSSL Crypto
+development packages. No dependency is downloaded implicitly.
 
 The public API requires C++20 library support for `std::span` and
 `std::stop_token`. The macOS CI baseline therefore uses macOS 15 with Xcode
@@ -82,8 +83,9 @@ The pre-release reader can also consume a caller-provided seekable
 owning `RawImage` or written into a caller-owned span with cooperative
 `std::stop_token` cancellation. Embedded image blocks support whitespace-tolerant
 Base64 and the specification's lowercase hexadecimal encoding. The current M3
-slice supports zlib and zlib+sh with validated compression subblocks; LZ4 and
-checksums remain fail-closed until the next slice.
+slice supports zlib, LZ4, and LZ4HC-compatible blocks, their `+sh` variants,
+validated compression subblocks, and SHA-1/256/512 checksums. Failed checksums
+stop processing before any compressed bytes reach a codec.
 
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
@@ -124,7 +126,8 @@ open "artifacts/mmXISF Viewer PoC.app"
 ```
 
 The optional AppKit target is macOS-only and does not enter the standalone
-library. The generated local bundle embeds Expat and non-system zlib. Its
+library. The generated local bundle embeds Expat, LZ4, OpenSSL Crypto, and zlib
+when they resolve to non-system dynamic libraries. Its
 current preview scope is the first supported uncompressed or zlib-compressed
 local/embedded Gray/RGB block in Planar or Normal layout, with UInt8, UInt16,
 UInt32, Float32, or Float64 samples. The metadata inspector can still open a
