@@ -32,17 +32,20 @@ std::string sha256(std::span<const std::byte> bytes) {
 } // namespace
 
 int main(int argc, char **argv) {
-  const bool decode = argc == 3 &&
-                      (std::string(argv[1]) == "--decode" ||
-                       std::string(argv[1]) == "--decode-sha256");
+  const bool decode_properties =
+      argc == 3 && std::string(argv[1]) == "--decode-properties-sha256";
+  const bool decode = argc == 3 && (std::string(argv[1]) == "--decode" ||
+                                    std::string(argv[1]) == "--decode-sha256");
   const bool decode_sha256 =
       decode && std::string(argv[1]) == "--decode-sha256";
-  if ((!decode && argc != 2) || (argc == 3 && !decode)) {
-    std::cerr << "Usage: mmxisf-inspect [--decode|--decode-sha256] "
+  const bool has_option = decode || decode_properties;
+  if ((!has_option && argc != 2) || (argc == 3 && !has_option)) {
+    std::cerr << "Usage: mmxisf-inspect "
+                 "[--decode|--decode-sha256|--decode-properties-sha256] "
                  "<file.xisf>\n";
     return EXIT_FAILURE;
   }
-  auto result = mmxisf::Reader::open_file(argv[decode ? 2 : 1]);
+  auto result = mmxisf::Reader::open_file(argv[has_option ? 2 : 1]);
   if (!result) {
     std::cerr << mmxisf::to_string(result.error().code) << ": "
               << result.error().message << '\n';
@@ -67,8 +70,7 @@ int main(int argc, char **argv) {
     }
     std::cout << " sample=" << image.sample_format_name
               << " color=" << image.color_space
-              << " channels="
-              << mmxisf::to_string(image.nominal_channel_order)
+              << " channels=" << mmxisf::to_string(image.nominal_channel_order)
               << " origin=" << mmxisf::to_string(image.pixel_origin)
               << " traversal=" << mmxisf::to_string(image.pixel_traversal)
               << " storage=" << mmxisf::to_string(image.pixel_storage)
@@ -107,7 +109,9 @@ int main(int argc, char **argv) {
       std::cout << '\n';
     }
   }
-  for (const auto &entry : document.metadata()) {
+  for (std::size_t metadata_index = 0;
+       metadata_index < document.metadata().size(); ++metadata_index) {
+    const auto &entry = document.metadata()[metadata_index];
     std::cout << mmxisf::to_string(entry.scope);
     if (entry.image_index) {
       std::cout << '[' << *entry.image_index << ']';
@@ -140,6 +144,28 @@ int main(int argc, char **argv) {
       std::cout << "\tcolumns=" << *entry.columns;
     }
     std::cout << '\n';
+    if (decode_properties &&
+        entry.kind == mmxisf::MetadataEntry::Kind::property &&
+        entry.value_form == mmxisf::MetadataEntry::ValueForm::data_block) {
+      auto block = result.value().read_property_block(metadata_index);
+      if (!block) {
+        std::cerr << "metadata[" << metadata_index
+                  << "] decode: " << mmxisf::to_string(block.error().code)
+                  << ": " << block.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      const auto digest = sha256(block.value().bytes);
+      if (digest.empty()) {
+        std::cerr << "metadata[" << metadata_index
+                  << "] decode: unable to compute Property SHA-256\n";
+        return EXIT_FAILURE;
+      }
+      std::cout << "metadata[" << metadata_index
+                << "] decoded-bytes: " << block.value().bytes.size()
+                << " checksum: "
+                << mmxisf::to_string(block.value().checksum_verification)
+                << " property-sha256: " << digest << '\n';
+    }
   }
   for (const auto &binding : document.metadata_bindings()) {
     std::cout << "binding\tmetadata[" << binding.metadata_index << "]\t"

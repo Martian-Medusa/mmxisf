@@ -14,7 +14,9 @@ PFI, PixInsight, PCL, or Qt.
 > zlib, LZ4, LZ4HC-compatible, and current PixInsight Zstandard attachment and
 > embedded blocks, including byte shuffle, compression subblocks, and
 > SHA-1/256/512 verification. It powers
-> Gray/RGB preview in the macOS viewer.
+> Gray/RGB preview in the macOS viewer. Block-backed String, vector, and matrix
+> Properties can be read from attachment or inline blocks with the same codec,
+> integrity, resource-limit, endian, and cancellation guarantees.
 > This is still a pre-release profile, not a general XISF decoder.
 
 ## Why the public name is not `libXISF`
@@ -68,6 +70,7 @@ ctest --test-dir build --output-on-failure
 build/mmxisf-inspect path/to/image.xisf
 build/mmxisf-inspect --decode path/to/image.xisf
 build/mmxisf-inspect --decode-sha256 path/to/image.xisf
+build/mmxisf-inspect --decode-properties-sha256 path/to/image.xisf
 ```
 
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
@@ -93,6 +96,15 @@ Zstandard rows are a current PixInsight interoperability extension to the
 pinned 2017 XISF 1.0 baseline. Failed checksums stop processing before any
 compressed bytes reach a codec.
 
+`Reader::read_property_block(metadata_index, options, stop_token)` returns the
+exact bytes of a block-backed String, vector, or matrix Property. It supports
+attachment and `inline:base64`/`inline:hex` locations, all declared standard
+element widths through 128-bit and complex arrays, optional native-endian
+output, the reader codecs and checksum algorithms above, and independent
+serialized/decoded Property byte limits. Matrix bytes retain XISF row-major
+order. The library does not reinterpret these bytes as astronomy semantics;
+that remains a consumer responsibility.
+
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
 and either layout explicitly. No sample type or precision conversion is
@@ -110,6 +122,8 @@ and reports the exact decoded byte count. It does not convert endian, storage
 layout, color, or sample precision.
 `--decode-sha256` additionally reports a deterministic SHA-256 of those exact
 source-representation pixel bytes for differential producer/PFI comparisons.
+`--decode-properties-sha256` performs the corresponding bounded decode and hash
+for every block-backed Property without decoding image pixels.
 
 For a local sanitizer mutation smoke:
 

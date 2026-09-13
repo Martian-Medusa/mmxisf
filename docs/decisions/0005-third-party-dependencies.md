@@ -39,8 +39,9 @@ and application-bundle gates locally, plus Linux, macOS, and Windows CI in run
 `34775853605`. This accepts the dependency and encapsulation policy, not a
 permanent version floor. Exact versions, hashes, licenses, and SBOM data remain
 release-artifact records and must be refreshed for each publication candidate.
-Zstandard follows the same private-adapter and installed-consumer gates; its
-cross-platform promotion remains pending until the corresponding CI run passes.
+Zstandard passed the same private-adapter and installed-consumer gates on
+Linux, macOS, and Windows in CI run `34781659044`, including the macOS bundle
+and both 20,000-case fuzz campaigns.
 
 ## Consequences
 

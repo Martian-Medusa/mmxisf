@@ -28,6 +28,8 @@ struct ReaderOptions {
   std::size_t max_metadata_value_bytes{8U * 1024U * 1024U};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_decoded_property_bytes{256ULL * 1024ULL * 1024ULL};
   std::uint64_t max_unused_space_bytes{64ULL * 1024ULL * 1024ULL};
   std::size_t max_compressed_subblocks{65'536};
   std::uint64_t max_decompression_ratio{65'536};
@@ -46,8 +48,7 @@ struct RawImage {
   SampleFormat sample_format{SampleFormat::unsupported};
   std::optional<ImageOrientation> orientation;
   PixelOrigin pixel_origin{PixelOrigin::top_left};
-  PixelTraversal pixel_traversal{
-      PixelTraversal::top_to_bottom_left_to_right};
+  PixelTraversal pixel_traversal{PixelTraversal::top_to_bottom_left_to_right};
   NominalChannelOrder nominal_channel_order{
       NominalChannelOrder::gray_then_alpha};
   std::optional<double> lower_bound;
@@ -59,14 +60,24 @@ struct RawImage {
   std::vector<std::byte> pixels;
 };
 
-[[nodiscard]] const char *
-to_string(ChecksumVerification verification) noexcept;
+[[nodiscard]] const char *to_string(ChecksumVerification verification) noexcept;
 
 enum class PixelStorageOutput { source, planar, normal };
 enum class ByteOrderOutput { source, native };
 
 struct ImageReadOptions {
   PixelStorageOutput pixel_storage{PixelStorageOutput::source};
+  ByteOrderOutput byte_order{ByteOrderOutput::source};
+};
+
+struct RawPropertyBlock {
+  ByteOrder byte_order{ByteOrder::little};
+  ChecksumVerification checksum_verification{
+      ChecksumVerification::not_declared};
+  std::vector<std::byte> bytes;
+};
+
+struct PropertyReadOptions {
   ByteOrderOutput byte_order{ByteOrderOutput::source};
 };
 
@@ -102,6 +113,10 @@ public:
   read_image_into(std::size_t image_index, std::span<std::byte> destination,
                   ImageReadOptions read_options,
                   std::stop_token stop_token = {}) const;
+  [[nodiscard]] Result<RawPropertyBlock>
+  read_property_block(std::size_t metadata_index,
+                      PropertyReadOptions read_options = {},
+                      std::stop_token stop_token = {}) const;
 
 private:
   struct Impl;

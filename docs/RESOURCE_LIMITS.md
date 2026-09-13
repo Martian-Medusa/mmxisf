@@ -18,6 +18,8 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | samples per image | 536,870,912 | Geometry cap independent of sample size |
 | decoded bytes per image | 2 GiB | Covers representative desktop astronomy images |
 | serialized bytes per image | 2 GiB | Bounds compressed-input staging and address-space conversion |
+| serialized bytes per Property block | 256 MiB | Bounds attachment/inline staging independently of image pixels |
+| decoded bytes per Property block | 256 MiB | Covers large astrometric arrays while preventing unbounded allocation |
 | cumulative decoded bytes | 4 GiB | Bounds multi-image and metadata blocks |
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
@@ -35,10 +37,11 @@ Limits that reject a valid file must return a dedicated resource-limit error,
 not a generic malformed-file result.
 
 `max_encoded_block_bytes` is enforced on non-whitespace encoded characters.
-Decoded embedded bytes are also bounded by `max_decoded_image_bytes`. With the
+Decoded embedded image bytes are bounded by `max_decoded_image_bytes`; decoded
+inline Property bytes are bounded by `max_decoded_property_bytes`. With the
 default profile, the 16 MiB XML-header limit is reached before the larger
-per-block encoded ceiling; applications must raise both limits deliberately for
-larger embedded payloads.
+per-block encoded ceiling; applications must raise the header and relevant
+decoded-block limits deliberately for larger inline payloads.
 
 `max_unused_space_bytes` bounds the cumulative gaps before, between, and after
 inventoried attachment ranges. Every scanned byte must be zero. The attachment

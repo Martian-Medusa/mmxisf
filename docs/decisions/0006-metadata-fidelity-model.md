@@ -63,8 +63,10 @@ the original attribute text remains unchanged.
 Reference resolution does not rewrite the entry's lexical scope: a standalone
 metadata element with a `uid` remains standalone while its binding records each
 resolved association. References to non-metadata core elements remain part of
-the general XISF graph and do not generate metadata bindings. Decoding of
-block-backed property values is a separate increment.
+the general XISF graph and do not generate metadata bindings. Block-backed
+String, vector, and matrix values are decoded by an explicit metadata-index
+API. The returned bytes retain row-major matrix order and source type precision;
+consumers interpret the declared type and astronomy meaning.
 
 ## Consequences
 

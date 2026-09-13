@@ -66,6 +66,10 @@ struct MetadataEntry {
   std::string comment;
   std::string format;
   BlockLocation block;
+  ByteOrder byte_order{ByteOrder::little};
+  std::string compression;
+  std::string subblocks;
+  std::string checksum;
   std::optional<std::uint64_t> length;
   std::optional<std::uint64_t> rows;
   std::optional<std::uint64_t> columns;
@@ -88,8 +92,7 @@ struct ImageInfo {
   std::string color_space;
   std::optional<ImageOrientation> orientation;
   PixelOrigin pixel_origin{PixelOrigin::top_left};
-  PixelTraversal pixel_traversal{
-      PixelTraversal::top_to_bottom_left_to_right};
+  PixelTraversal pixel_traversal{PixelTraversal::top_to_bottom_left_to_right};
   NominalChannelOrder nominal_channel_order{
       NominalChannelOrder::gray_then_alpha};
   std::optional<double> lower_bound;

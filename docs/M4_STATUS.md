@@ -36,6 +36,14 @@
 - Inline Property blocks nested in an embedded Image are distinguished from the
   Image's direct character data, so valid metadata does not trip the
   outside-`Data` rejection rule.
+- Block-backed String, vector, and matrix Properties are readable from
+  attachment, inline Base64, and inline hexadecimal locations. The typed extent
+  is checked before delivery; matrices remain row-major and complex values swap
+  endian order per scalar component.
+- Property blocks reuse the bounded zlib, LZ4/LZ4HC, Zstandard, byte-shuffle,
+  compression-subblock, SHA-1/256/512, and cancellation pipeline. Independent
+  256 MiB serialized and decoded defaults prevent metadata arrays from silently
+  inheriting the 2 GiB image budget.
 
 ## Evidence available now
 
@@ -44,6 +52,9 @@
 - Synthetic quoted FITS value and comment preservation: PASS locally.
 - Synthetic standalone inline vector Property with length and block location:
   PASS locally.
+- Exact inline F64Vector, big-endian attachment F64Vector, zlib plus checksum,
+  Zstandard plus byte shuffle, size-mismatch, invalid-index, and mid-read
+  cancellation cases: PASS locally.
 - XISF-unit String character data and lexical scope: PASS locally.
 - Malformed vector extent rejection: PASS locally.
 - Interleaved direct FITS keywords and repeated forward references retain exact
@@ -74,10 +85,16 @@
   inspection and full Zstandard decode. Its exact source and decoded-pixel
   identities are recorded in `SOURCES.md` and `M3_PERFORMANCE.md`; bytes remain
   outside the repository.
+- Property decode over the four pinned private current-PixInsight files is
+  4/4 PASS: 33/33 block-backed values (30, 0, 2, and 1 per file), covering
+  inline/attachment, String/UI8/F64 vector/matrix, and Zstandard-shuffled data.
+  The astrometric file includes exact 2x2 linear WCS and two-element reference
+  coordinate blocks required by the PFI projection. This is private-producer
+  compatibility evidence, not an independent-producer claim.
 
 ## Still required for M4
 
-- Implement the documented PFI-facing projection in the later PFI adapter and
+- Project the newly decoded WCS vectors/matrices through the PFI adapter and
   compare its conservative FITS stripping with the current host result.
 - Exercise the metadata parity matrix against independently produced files and
   the local non-redistributed PFI corpus.

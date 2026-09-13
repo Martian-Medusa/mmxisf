@@ -63,8 +63,8 @@
 - ASan/UBSan 4/4 unit suite: PASS locally on macOS.
 - Deterministic ASan/UBSan mutation smoke, 20,000 cases: PASS.
 - Installed-package consumer with Expat, zlib, LZ4, Zstandard, and OpenSSL
-  Crypto discovered through the exported CMake package: PASS locally. CI
-  confirmation for this unit remains pending.
+  Crypto discovered through the exported CMake package: PASS locally and on
+  Linux, macOS, and Windows in CI run `34781659044`.
 - Strict ad-hoc viewer bundle signature and `@rpath` resolution for Expat,
   zlib, LZ4, Zstandard, and OpenSSL Crypto: PASS.
 - Coverage-guided seed corpus now includes valid embedded zlib+SHA-256 and LZ4
@@ -82,6 +82,9 @@
   UInt8/UInt16/Float32/Float64, Gray/RGB, and 73-518 MiB decoded outputs, decode
   successfully with exact pixel-buffer SHA-256 anchors. Single-run timing and
   memory measurements are recorded separately from the earlier median sample.
+- Follow-up CI run `34781659044` at commit `5218074`: PASS for Linux, macOS,
+  Windows, installed-package consumers, deterministic 20,000-case sanitizer
+  mutation, and coverage-guided 20,000-run libFuzzer gates.
 
 ## Still required to close M3
 

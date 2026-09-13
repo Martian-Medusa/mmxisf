@@ -227,14 +227,13 @@ int main() {
       "comment=\"Filter name\"/>"
       "</Image>"
       "<Property uid=\"profile\" id=\"Test:Profile\" type=\"F64Vector\" "
-      "length=\"3\" location=\"inline:base64\">AAAAAAAAAAAAAAAAAAAAAA=="
+      "length=\"3\" location=\"inline:base64\">"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "</Property>" +
           valid_metadata() + "</xisf>",
       pixels);
-  auto metadata_fidelity =
-      mmxisf::Reader::open_file(metadata_fidelity_path);
-  expect(metadata_fidelity.has_value(),
-         "metadata fidelity fixture opens");
+  auto metadata_fidelity = mmxisf::Reader::open_file(metadata_fidelity_path);
+  expect(metadata_fidelity.has_value(), "metadata fidelity fixture opens");
   if (metadata_fidelity) {
     const auto &entries = metadata_fidelity.value().document().metadata();
     expect(entries.size() == 5, "all metadata serializations are retained");
@@ -263,6 +262,14 @@ int main() {
                    mmxisf::MetadataEntry::ValueForm::character_data &&
                entries[4].value == "test",
            "XISF-unit character data Property remains exact");
+    auto property = metadata_fidelity.value().read_property_block(2);
+    expect(property &&
+               property.value().bytes ==
+                   std::vector<std::byte>(24, std::byte{0}) &&
+               property.value().byte_order == mmxisf::ByteOrder::little &&
+               property.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::not_declared,
+           "inline F64Vector Property bytes are decoded exactly");
   }
 
   const auto invalid_property_extent_path = write_fixture(
@@ -274,9 +281,8 @@ int main() {
           valid_metadata() + "</xisf>");
   auto invalid_property_extent =
       mmxisf::Reader::open_file(invalid_property_extent_path);
-  expect(!invalid_property_extent &&
-             invalid_property_extent.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+  expect(!invalid_property_extent && invalid_property_extent.error().code ==
+                                         mmxisf::ErrorCode::invalid_xisf,
          "malformed Property extent is rejected");
 
   const auto multi_image_metadata_path = write_fixture(
@@ -353,8 +359,7 @@ int main() {
   if (default_image_attributes) {
     const auto &image = default_image_attributes.value().document().images()[0];
     expect(image.color_space == "Gray", "missing colorSpace defaults to Gray");
-    expect(!image.orientation,
-           "missing orientation remains explicitly absent");
+    expect(!image.orientation, "missing orientation remains explicitly absent");
     expect(image.pixel_origin == mmxisf::PixelOrigin::top_left,
            "XISF pixel origin is explicit");
     expect(image.pixel_traversal ==
@@ -399,8 +404,7 @@ int main() {
       OrientationCase{"-90;flip",
                       mmxisf::ImageOrientation::rotate_minus_90_flip},
       OrientationCase{"180", mmxisf::ImageOrientation::rotate_180},
-      OrientationCase{"180;flip",
-                      mmxisf::ImageOrientation::rotate_180_flip}};
+      OrientationCase{"180;flip", mmxisf::ImageOrientation::rotate_180_flip}};
   const std::vector<std::byte> asymmetric_pixels{std::byte{0x12},
                                                  std::byte{0x34}};
   for (std::size_t index = 0; index < orientation_cases.size(); ++index) {
@@ -444,9 +448,8 @@ int main() {
       {std::byte{0x00}});
   auto invalid_orientation =
       mmxisf::Reader::open_file(invalid_orientation_path);
-  expect(!invalid_orientation &&
-             invalid_orientation.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+  expect(!invalid_orientation && invalid_orientation.error().code ==
+                                     mmxisf::ErrorCode::invalid_xisf,
          "invalid Image orientation is rejected");
 
   struct ChannelOrderCase {
@@ -458,9 +461,8 @@ int main() {
   const std::array channel_order_cases{
       ChannelOrderCase{"gray", "Gray", 1,
                        mmxisf::NominalChannelOrder::gray_then_alpha},
-      ChannelOrderCase{
-          "rgb", "RGB", 3,
-          mmxisf::NominalChannelOrder::red_green_blue_then_alpha},
+      ChannelOrderCase{"rgb", "RGB", 3,
+                       mmxisf::NominalChannelOrder::red_green_blue_then_alpha},
       ChannelOrderCase{"cielab", "CIELab", 3,
                        mmxisf::NominalChannelOrder::cie_l_a_b_then_alpha}};
   for (const auto &test : channel_order_cases) {
@@ -471,9 +473,8 @@ int main() {
             "<Image geometry=\"1:1:") +
             std::to_string(test.channels) + "\" sampleFormat=\"UInt8\" " +
             "colorSpace=\"" + test.color_space +
-            "\" location=\"attachment:1024:" +
-            std::to_string(test.channels) + "\"/>" + valid_metadata() +
-            "</xisf>",
+            "\" location=\"attachment:1024:" + std::to_string(test.channels) +
+            "\"/>" + valid_metadata() + "</xisf>",
         std::vector<std::byte>(static_cast<std::size_t>(test.channels),
                                std::byte{0}));
     auto reader = mmxisf::Reader::open_file(path);
@@ -845,14 +846,150 @@ int main() {
          "inline Property block inside embedded Image remains inspectable");
   if (embedded_inline_property) {
     auto image = embedded_inline_property.value().read_image(0);
-    expect(image && image.value().pixels ==
-                        std::vector<std::byte>{std::byte{1}},
+    expect(image &&
+               image.value().pixels == std::vector<std::byte>{std::byte{1}},
            "inline Property bytes are not confused with embedded image bytes");
     const auto &entries =
         embedded_inline_property.value().document().metadata();
     expect(!entries.empty() && entries[0].value_form ==
                                    mmxisf::MetadataEntry::ValueForm::data_block,
            "inline Property block form is retained inside embedded Image");
+    auto property = embedded_inline_property.value().read_property_block(0);
+    expect(property && property.value().bytes ==
+                           std::vector<std::byte>(8, std::byte{0}),
+           "inline Property bytes remain independently readable");
+  }
+  mmxisf::ReaderOptions tiny_inline_property_limit;
+  tiny_inline_property_limit.max_serialized_property_bytes = 7;
+  auto inline_property_limited = mmxisf::Reader::open_file(
+      embedded_inline_property_path, tiny_inline_property_limit);
+  expect(!inline_property_limited && inline_property_limited.error().code ==
+                                         mmxisf::ErrorCode::resource_limit,
+         "inline Property serialized-byte limit is enforced during parsing");
+
+  const auto compressed_property_path = write_fixture(
+      "mmxisf-property-zlib-checksum.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Compressed\" type=\"UI8Vector\" length=\"6\" "
+          "compression=\"zlib:6\" "
+          "checksum=\"sha256:2fc3146104370f94342cbabfe10ecc0f019cfb1196541"
+          "460372fd8fec537a314\" location=\"attachment:1024:14\"/>") +
+          valid_metadata() + "</xisf>",
+      zlib_rgb_compressed);
+  auto compressed_property =
+      mmxisf::Reader::open_file(compressed_property_path);
+  expect(compressed_property.has_value(),
+         "compressed block-backed Property remains inspectable");
+  if (compressed_property) {
+    auto property = compressed_property.value().read_property_block(0);
+    expect(property && property.value().bytes == zlib_rgb_pixels &&
+               property.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified,
+           "Property compression and checksum verification are exact");
+  }
+  mmxisf::ReaderOptions tiny_serialized_property_limit;
+  tiny_serialized_property_limit.max_serialized_property_bytes = 13;
+  auto serialized_property_limited = mmxisf::Reader::open_file(
+      compressed_property_path, tiny_serialized_property_limit);
+  expect(serialized_property_limited.has_value(),
+         "attached Property inspection does not allocate block bytes");
+  if (serialized_property_limited) {
+    auto property = serialized_property_limited.value().read_property_block(0);
+    expect(!property &&
+               property.error().code == mmxisf::ErrorCode::resource_limit,
+           "serialized Property byte limit is enforced before allocation");
+  }
+  mmxisf::ReaderOptions tiny_decoded_property_limit;
+  tiny_decoded_property_limit.max_decoded_property_bytes = 5;
+  auto decoded_property_limited = mmxisf::Reader::open_file(
+      compressed_property_path, tiny_decoded_property_limit);
+  expect(decoded_property_limited.has_value(),
+         "decoded Property limit does not affect metadata inspection");
+  if (decoded_property_limited) {
+    auto property = decoded_property_limited.value().read_property_block(0);
+    expect(!property &&
+               property.error().code == mmxisf::ErrorCode::resource_limit,
+           "decoded Property byte limit is enforced before decompression");
+  }
+  auto cancelling_property_source =
+      std::make_shared<MemoryByteSource>(read_bytes(compressed_property_path));
+  auto cancelling_property_reader =
+      mmxisf::Reader::open_source(cancelling_property_source);
+  expect(cancelling_property_reader.has_value(),
+         "Property cancellation ByteSource opens");
+  if (cancelling_property_reader) {
+    std::stop_source mid_property_stop;
+    cancelling_property_source->request_stop_after(mid_property_stop, 1);
+    auto cancelled = cancelling_property_reader.value().read_property_block(
+        0, {}, mid_property_stop.get_token());
+    expect(!cancelled && cancelled.error().code == mmxisf::ErrorCode::cancelled,
+           "Property read cancellation is observed between partial reads");
+  }
+
+  const std::vector<std::byte> big_endian_property_bytes{
+      std::byte{0x3f}, std::byte{0xf0}, std::byte{0}, std::byte{0},
+      std::byte{0},    std::byte{0},    std::byte{0}, std::byte{0},
+      std::byte{0x40}, std::byte{0},    std::byte{0}, std::byte{0},
+      std::byte{0},    std::byte{0},    std::byte{0}, std::byte{0}};
+  const auto big_endian_property_path = write_fixture(
+      "mmxisf-property-big-endian.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Coordinates\" type=\"F64Vector\" length=\"2\" "
+          "byteOrder=\"big\" location=\"attachment:1024:16\"/>") +
+          valid_metadata() + "</xisf>",
+      big_endian_property_bytes);
+  auto big_endian_property =
+      mmxisf::Reader::open_file(big_endian_property_path);
+  expect(big_endian_property.has_value(), "big-endian Property fixture opens");
+  if (big_endian_property) {
+    auto source = big_endian_property.value().read_property_block(0);
+    expect(source && source.value().bytes == big_endian_property_bytes &&
+               source.value().byte_order == mmxisf::ByteOrder::big,
+           "Property source byte order remains exact");
+    mmxisf::PropertyReadOptions options;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto native = big_endian_property.value().read_property_block(0, options);
+    auto expected = big_endian_property_bytes;
+    if constexpr (std::endian::native == std::endian::little) {
+      std::reverse(expected.begin(), expected.begin() + 8);
+      std::reverse(expected.begin() + 8, expected.end());
+    }
+    expect(native && native.value().bytes == expected &&
+               native.value().byte_order ==
+                   (std::endian::native == std::endian::little
+                        ? mmxisf::ByteOrder::little
+                        : mmxisf::ByteOrder::big),
+           "Property native-endian conversion swaps each scalar component");
+  }
+
+  const auto complex_property_path = write_fixture(
+      "mmxisf-property-complex-hex.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:ComplexArray\" type=\"C64Vector\" length=\"1\" "
+          "byteOrder=\"big\" location=\"inline:hex\">"
+          "000102030405060708090a0b0c0d0e0f</Property>") +
+          valid_metadata() + "</xisf>");
+  auto complex_property = mmxisf::Reader::open_file(complex_property_path);
+  expect(complex_property.has_value(), "inline hexadecimal Property opens");
+  if (complex_property) {
+    mmxisf::PropertyReadOptions options;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto native = complex_property.value().read_property_block(0, options);
+    std::vector<std::byte> expected{
+        std::byte{0},    std::byte{1},    std::byte{2},    std::byte{3},
+        std::byte{4},    std::byte{5},    std::byte{6},    std::byte{7},
+        std::byte{8},    std::byte{9},    std::byte{0x0a}, std::byte{0x0b},
+        std::byte{0x0c}, std::byte{0x0d}, std::byte{0x0e}, std::byte{0x0f}};
+    if constexpr (std::endian::native == std::endian::little) {
+      std::reverse(expected.begin(), expected.begin() + 8);
+      std::reverse(expected.begin() + 8, expected.end());
+    }
+    expect(native && native.value().bytes == expected,
+           "complex Property endian conversion swaps real and imaginary "
+           "components independently");
   }
 
   const auto embedded_direct_text_path = write_fixture(
@@ -865,9 +1002,8 @@ int main() {
           valid_metadata() + "</xisf>");
   auto embedded_direct_text =
       mmxisf::Reader::open_file(embedded_direct_text_path);
-  expect(!embedded_direct_text &&
-             embedded_direct_text.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+  expect(!embedded_direct_text && embedded_direct_text.error().code ==
+                                      mmxisf::ErrorCode::invalid_xisf,
          "direct text outside embedded Data still fails closed");
 
   const std::vector<std::byte> shuffled_zlib_compressed{
@@ -1002,8 +1138,7 @@ int main() {
          "invalid Zstandard window option does not affect inspection");
   if (invalid_zstd_window_reader) {
     auto image = invalid_zstd_window_reader.value().read_image(0);
-    expect(!image &&
-               image.error().code == mmxisf::ErrorCode::invalid_argument,
+    expect(!image && image.error().code == mmxisf::ErrorCode::invalid_argument,
            "invalid Zstandard window limit fails closed before decompression");
   }
 
@@ -1038,6 +1173,30 @@ int main() {
            "Zstandard byte shuffle reverses to exact UInt16 bytes");
   }
 
+  const auto shuffled_zstd_property_path = write_fixture(
+      "mmxisf-property-zstd-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Shuffled\" type=\"UI16Vector\" length=\"6\" "
+          "byteOrder=\"big\" compression=\"zstd+sh:12:2\" "
+          "location=\"attachment:1024:25\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_zstd_compressed);
+  auto shuffled_zstd_property =
+      mmxisf::Reader::open_file(shuffled_zstd_property_path);
+  expect(shuffled_zstd_property.has_value(),
+         "Zstandard-shuffled Property fixture opens");
+  if (shuffled_zstd_property) {
+    auto property = shuffled_zstd_property.value().read_property_block(0);
+    expect(property && property.value().bytes ==
+                           std::vector<std::byte>{
+                               std::byte{1}, std::byte{2}, std::byte{3},
+                               std::byte{4}, std::byte{5}, std::byte{6},
+                               std::byte{7}, std::byte{8}, std::byte{9},
+                               std::byte{10}, std::byte{11}, std::byte{12}},
+           "Zstandard byte shuffle reverses exact Property elements");
+  }
+
   auto invalid_zstd_bytes = zstd_rgb_compressed;
   invalid_zstd_bytes[0] = std::byte{0};
   const auto invalid_zstd_path = write_fixture(
@@ -1054,8 +1213,7 @@ int main() {
          "corrupt Zstandard fixture remains inspectable");
   if (invalid_zstd_reader) {
     auto image = invalid_zstd_reader.value().read_image(0);
-    expect(!image &&
-               image.error().code == mmxisf::ErrorCode::invalid_block,
+    expect(!image && image.error().code == mmxisf::ErrorCode::invalid_block,
            "corrupt Zstandard frame fails closed");
   }
 
@@ -1699,12 +1857,9 @@ int main() {
            "direct and referenced metadata bindings are retained");
     expect(bindings[0].metadata_index == 0 && !bindings[0].by_reference &&
                bindings[0].image_index == 0 &&
-               bindings[1].metadata_index == 2 &&
-               bindings[1].by_reference &&
-               bindings[2].metadata_index == 1 &&
-               !bindings[2].by_reference &&
-               bindings[3].metadata_index == 2 &&
-               bindings[3].by_reference,
+               bindings[1].metadata_index == 2 && bindings[1].by_reference &&
+               bindings[2].metadata_index == 1 && !bindings[2].by_reference &&
+               bindings[3].metadata_index == 2 && bindings[3].by_reference,
            "image metadata binding order and duplicate references are exact");
     expect(document.metadata()[2].scope ==
                    mmxisf::MetadataEntry::Scope::standalone &&
@@ -1724,9 +1879,8 @@ int main() {
       "</Property></Metadata></xisf>");
   auto invalid_unit_fits_binding =
       mmxisf::Reader::open_file(invalid_unit_fits_binding_path);
-  expect(!invalid_unit_fits_binding &&
-             invalid_unit_fits_binding.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+  expect(!invalid_unit_fits_binding && invalid_unit_fits_binding.error().code ==
+                                           mmxisf::ErrorCode::invalid_xisf,
          "FITSKeyword cannot be associated with XISF-unit metadata");
 
   struct InvalidUidCase {
@@ -2166,6 +2320,58 @@ int main() {
              bad_property.error().code == mmxisf::ErrorCode::invalid_xisf,
          "Property mandatory attributes are enforced");
 
+  const auto short_property_path = write_fixture(
+      "mmxisf-property-size-mismatch.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Short\" type=\"F64Vector\" length=\"2\" "
+          "location=\"inline:base64\">AAAAAAAAAAA=</Property>") +
+          valid_metadata() + "</xisf>");
+  auto short_property = mmxisf::Reader::open_file(short_property_path);
+  expect(short_property.has_value(),
+         "short Property block remains inspectable before typed decode");
+  if (short_property) {
+    auto block = short_property.value().read_property_block(0);
+    expect(!block && block.error().code == mmxisf::ErrorCode::invalid_block,
+           "Property block size must match its typed extent");
+    auto scalar = short_property.value().read_property_block(1);
+    expect(!scalar &&
+               scalar.error().code == mmxisf::ErrorCode::invalid_argument,
+           "non-block metadata cannot be read as a Property block");
+    auto outside = short_property.value().read_property_block(99);
+    expect(!outside &&
+               outside.error().code == mmxisf::ErrorCode::invalid_argument,
+           "out-of-range Property metadata index is rejected");
+  }
+
+  const auto invalid_property_block_attributes_path = write_fixture(
+      "mmxisf-property-block-attributes-without-location.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:String\" type=\"String\" "
+          "byteOrder=\"big\">text</Property>") +
+          valid_metadata() + "</xisf>");
+  auto invalid_property_block_attributes =
+      mmxisf::Reader::open_file(invalid_property_block_attributes_path);
+  expect(!invalid_property_block_attributes &&
+             invalid_property_block_attributes.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "Property block attributes without a location are rejected");
+
+  const auto embedded_property_location_path = write_fixture(
+      "mmxisf-property-embedded-location.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"Test:Vector\" type=\"UI8Vector\" length=\"1\" "
+          "location=\"embedded\"/>") +
+          valid_metadata() + "</xisf>");
+  auto embedded_property_location =
+      mmxisf::Reader::open_file(embedded_property_location_path);
+  expect(!embedded_property_location &&
+             embedded_property_location.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "Image-only embedded location is rejected for Property blocks");
+
   const auto property_forms_path = write_fixture(
       "mmxisf-property-forms.xisf",
       std::string(
@@ -2208,8 +2414,7 @@ int main() {
       PropertyValueCase{"int8-maximum", "Int8", "127"},
       PropertyValueCase{"int8-full-bit-pattern", "Int8", "0xff"},
       PropertyValueCase{"uint16-octal-maximum", "UInt16", "0o177777"},
-      PropertyValueCase{"uint64-maximum", "UInt64",
-                        "18446744073709551615"},
+      PropertyValueCase{"uint64-maximum", "UInt64", "18446744073709551615"},
       PropertyValueCase{"int128-minimum", "Int128",
                         "-170141183460469231731687303715884105728"},
       PropertyValueCase{"int128-maximum", "Int128",
@@ -2229,8 +2434,8 @@ int main() {
         std::string("mmxisf-valid-property-value-") + test.name + ".xisf",
         std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                     "version=\"1.0\"><Property id=\"Test:Value\" type=\"") +
-            test.type + "\" value=\"" + test.value + "\"/>" +
-            valid_metadata() + "</xisf>");
+            test.type + "\" value=\"" + test.value + "\"/>" + valid_metadata() +
+            "</xisf>");
     auto result = mmxisf::Reader::open_file(path);
     expect(result.has_value(), test.name);
     if (result) {
@@ -2249,8 +2454,7 @@ int main() {
         std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                     "version=\"1.0\"><Property id=\"Test:Time\" "
                     "type=\"TimePoint\" value=\"") +
-            valid_time_points[index] + "\"/>" + valid_metadata() +
-            "</xisf>");
+            valid_time_points[index] + "\"/>" + valid_metadata() + "</xisf>");
     auto result = mmxisf::Reader::open_file(path);
     expect(result.has_value(), "supported ISO 8601 TimePoint form is accepted");
   }
@@ -2268,8 +2472,7 @@ int main() {
       PropertyValueCase{"uint8-overflow", "UInt8", "256"},
       PropertyValueCase{"uint8-hex-overflow", "UInt8", "0x100"},
       PropertyValueCase{"uint16-octal-overflow", "UInt16", "0o200000"},
-      PropertyValueCase{"uint64-overflow", "UInt64",
-                        "18446744073709551616"},
+      PropertyValueCase{"uint64-overflow", "UInt64", "18446744073709551616"},
       PropertyValueCase{"int128-positive-overflow", "Int128",
                         "170141183460469231731687303715884105728"},
       PropertyValueCase{"int128-negative-overflow", "Int128",
@@ -2289,16 +2492,16 @@ int main() {
         std::string("mmxisf-invalid-property-value-") + test.name + ".xisf",
         std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                     "version=\"1.0\"><Property id=\"Test:Value\" type=\"") +
-            test.type + "\" value=\"" + test.value + "\"/>" +
-            valid_metadata() + "</xisf>");
+            test.type + "\" value=\"" + test.value + "\"/>" + valid_metadata() +
+            "</xisf>");
     auto result = mmxisf::Reader::open_file(path);
     expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
            test.name);
   }
 
   const std::array invalid_time_points{
-      "2023-02-29T00:00:00Z", "2026-13-01T00:00:00Z",
-      "2026-09-13T24:00:00Z", "2026-09-13T00:00:00.Z",
+      "2023-02-29T00:00:00Z",      "2026-13-01T00:00:00Z",
+      "2026-09-13T24:00:00Z",      "2026-09-13T00:00:00.Z",
       "2026-09-13T00:00:00+24:00", "2026-09-13 00:00:00Z"};
   for (std::size_t index = 0; index < invalid_time_points.size(); ++index) {
     const auto path = write_fixture(
@@ -2306,8 +2509,7 @@ int main() {
         std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                     "version=\"1.0\"><Property id=\"Test:Time\" "
                     "type=\"TimePoint\" value=\"") +
-            invalid_time_points[index] + "\"/>" + valid_metadata() +
-            "</xisf>");
+            invalid_time_points[index] + "\"/>" + valid_metadata() + "</xisf>");
     auto result = mmxisf::Reader::open_file(path);
     expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
            "malformed TimePoint is rejected");
@@ -2330,10 +2532,9 @@ int main() {
           "timepoint-with-format",
           "<Property id=\"p\" type=\"TimePoint\" value=\"time\" "
           "format=\"width:8\"/>"},
-      InvalidPropertyFormCase{
-          "vector-without-length",
-          "<Property id=\"p\" type=\"F64Vector\" "
-          "location=\"inline:base64\"/>"},
+      InvalidPropertyFormCase{"vector-without-length",
+                              "<Property id=\"p\" type=\"F64Vector\" "
+                              "location=\"inline:base64\"/>"},
       InvalidPropertyFormCase{
           "vector-with-value",
           "<Property id=\"p\" type=\"F64Vector\" length=\"1\" "
@@ -2343,8 +2544,7 @@ int main() {
           "<Property id=\"p\" type=\"F64Matrix\" rows=\"1\" "
           "location=\"inline:base64\"/>"},
       InvalidPropertyFormCase{
-          "unknown-type",
-          "<Property id=\"p\" type=\"Custom\" value=\"1\"/>"},
+          "unknown-type", "<Property id=\"p\" type=\"Custom\" value=\"1\"/>"},
       InvalidPropertyFormCase{
           "invalid-identifier",
           "<Property id=\"bad-id\" type=\"Int32\" value=\"1\"/>"},
@@ -2372,9 +2572,8 @@ int main() {
           valid_metadata() + "</xisf>");
   auto duplicate_image_property =
       mmxisf::Reader::open_file(duplicate_image_property_path);
-  expect(!duplicate_image_property &&
-             duplicate_image_property.error().code ==
-                 mmxisf::ErrorCode::invalid_xisf,
+  expect(!duplicate_image_property && duplicate_image_property.error().code ==
+                                          mmxisf::ErrorCode::invalid_xisf,
          "Property identifiers are unique within an image association");
 
   const auto bad_fits_parent_path = write_fixture(
@@ -2394,9 +2593,8 @@ int main() {
         "mmxisf-invalid-fits-name-" + std::to_string(index) + ".xisf",
         std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                     "version=\"1.0\"><FITSKeyword name=\"") +
-            invalid_fits_names[index] +
-            "\" value=\"1\" comment=\"invalid\"/>" + valid_metadata() +
-            "</xisf>");
+            invalid_fits_names[index] + "\" value=\"1\" comment=\"invalid\"/>" +
+            valid_metadata() + "</xisf>");
     auto result = mmxisf::Reader::open_file(path);
     expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
            "invalid FITS keyword name is rejected");

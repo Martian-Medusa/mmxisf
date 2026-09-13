@@ -71,7 +71,7 @@
 
     {"id":"metadata.properties-scalar","section":"8.4, 11.1","feature":"Boolean, signed/unsigned integer, real and complex scalar properties","pfi":"REQUIRED","baselineDecoder":"INSPECT_ONLY","target":"0.1"},
     {"id":"metadata.string-timepoint","section":"8.4.4, 11.1","feature":"String and TimePoint properties","pfi":"REQUIRED","baselineDecoder":"INSPECT_ONLY","target":"0.1"},
-    {"id":"metadata.vector-matrix","section":"8.4.4, 11.1","feature":"vector and matrix properties","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3"},
+    {"id":"metadata.vector-matrix","section":"8.4.4, 11.1","feature":"vector and matrix properties","pfi":"INSPECT_ONLY","baselineDecoder":"REQUIRED","target":"0.3","note":"Raw typed block decode is implemented; PFI semantic projection remains gated."},
     {"id":"metadata.table-structure","section":"8.4.4, 11.2, 11.3","feature":"Structure and Table properties","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.4"},
     {"id":"metadata.fits-keyword","section":"11.6","feature":"FITSKeyword name, value and comment","pfi":"REQUIRED","baselineDecoder":"INSPECT_ONLY","target":"0.1"},
     {"id":"metadata.icc-profile","section":"11.7","feature":"ICC profile block","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3"},

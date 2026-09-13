@@ -44,6 +44,9 @@ The M1 pre-release API now supports:
   memory and a convenience owning `read_image` path;
 - explicit `ImageReadOptions` for source-preserving or native-endian output and
   source/Planar/Normal layout, without sample-type conversion;
+- `Reader::read_property_block(metadata_index, options, stop_token)` for
+  bounded, integrity-checked String/vector/matrix block bytes with optional
+  native-endian conversion;
 - bounded chunk reads with cooperative cancellation;
 
 Later milestones still need:

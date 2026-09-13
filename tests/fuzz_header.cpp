@@ -55,12 +55,28 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_metadata_entries = 2'000;
   options.max_metadata_value_bytes = 256U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
+  options.max_serialized_property_bytes = 1024U * 1024U;
+  options.max_decoded_property_bytes = 1024U * 1024U;
   options.max_samples_per_image = 256U * 1024U;
 
   auto source = std::make_shared<FuzzByteSource>(data, size);
   auto reader = mmxisf::Reader::open_source(std::move(source), options);
-  if (reader && !reader.value().document().images().empty()) {
-    (void)reader.value().read_image(0);
+  if (reader) {
+    if (!reader.value().document().images().empty()) {
+      (void)reader.value().read_image(0);
+    }
+    std::size_t decoded_properties = 0;
+    const auto &metadata = reader.value().document().metadata();
+    for (std::size_t index = 0; index < metadata.size(); ++index) {
+      if (metadata[index].kind == mmxisf::MetadataEntry::Kind::property &&
+          metadata[index].value_form ==
+              mmxisf::MetadataEntry::ValueForm::data_block) {
+        (void)reader.value().read_property_block(index);
+        if (++decoded_properties == 16) {
+          break;
+        }
+      }
+    }
   }
   return 0;
 }
@@ -82,6 +98,8 @@ std::vector<std::uint8_t> seed_unit() {
       "value=\"(1.5,-2)\"/>"
       "<Property id=\"Test:Time\" type=\"TimePoint\" "
       "value=\"2026-09-13T00:00:00Z\"/>"
+      "<Property id=\"Test:Vector\" type=\"UI8Vector\" length=\"4\" "
+      "location=\"inline:base64\">AQIDBA==</Property>"
       "<Metadata><Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
       "value=\"2026-09-13T00:00:00Z\"/>"
       "<Property id=\"XISF:CreatorApplication\" "

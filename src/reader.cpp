@@ -95,20 +95,18 @@ bool is_valid_fits_keyword_name(std::string_view value) {
   return !value.empty() && value.size() <= 8 &&
          std::all_of(value.begin(), value.end(), [](char character) {
            return (character >= 'A' && character <= 'Z') ||
-                  (character >= '0' && character <= '9') ||
-                  character == '_' || character == '-';
+                  (character >= '0' && character <= '9') || character == '_' ||
+                  character == '-';
          });
 }
 
 bool is_valid_property_identifier(std::string_view value) {
   const auto is_start = [](char character) {
-    return character == '_' ||
-           (character >= 'A' && character <= 'Z') ||
+    return character == '_' || (character >= 'A' && character <= 'Z') ||
            (character >= 'a' && character <= 'z');
   };
   const auto is_continue = [&](char character) {
-    return is_start(character) ||
-           (character >= '0' && character <= '9');
+    return is_start(character) || (character >= '0' && character <= '9');
   };
   if (value.empty()) {
     return false;
@@ -151,8 +149,7 @@ bool is_ascii_digit(char character) {
   return character >= '0' && character <= '9';
 }
 
-bool decimal_magnitude_fits(std::string_view digits,
-                            std::string_view maximum) {
+bool decimal_magnitude_fits(std::string_view digits, std::string_view maximum) {
   return digits.size() < maximum.size() ||
          (digits.size() == maximum.size() && digits <= maximum);
 }
@@ -217,8 +214,7 @@ bool prefixed_integer_fits(std::string_view digits, unsigned base,
     return true;
   }
   const auto maximum_leading_digit = (1U << leading_bits) - 1U;
-  return static_cast<unsigned>(digits.front() - '0') <=
-         maximum_leading_digit;
+  return static_cast<unsigned>(digits.front() - '0') <= maximum_leading_digit;
 }
 
 bool is_valid_integer_value(std::string_view text, bool is_signed,
@@ -385,8 +381,8 @@ bool is_valid_time_point_value(std::string_view text) {
       !parse_fixed_digits(text, 17, 2, second)) {
     return false;
   }
-  constexpr std::array<unsigned, 12> month_lengths{
-      31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  constexpr std::array<unsigned, 12> month_lengths{31, 28, 31, 30, 31, 30,
+                                                   31, 31, 30, 31, 30, 31};
   if (month == 0 || month > month_lengths.size()) {
     return false;
   }
@@ -447,8 +443,8 @@ PropertyValueKind classify_property_value_kind(std::string_view type) {
     return PropertyValueKind::signed_integer;
   }
   constexpr std::array<std::string_view, 8> kUnsignedIntegerTypes{
-      "UInt8", "Byte", "UInt16", "UShort", "UInt32", "UInt", "UInt64",
-      "UInt128"};
+      "UInt8",  "Byte", "UInt16", "UShort",
+      "UInt32", "UInt", "UInt64", "UInt128"};
   if (std::find(kUnsignedIntegerTypes.begin(), kUnsignedIntegerTypes.end(),
                 type) != kUnsignedIntegerTypes.end()) {
     return PropertyValueKind::unsigned_integer;
@@ -476,8 +472,7 @@ unsigned integer_bit_width(std::string_view type) {
       type == "UShort") {
     return 16;
   }
-  if (type == "Int32" || type == "Int" || type == "UInt32" ||
-      type == "UInt") {
+  if (type == "Int32" || type == "Int" || type == "UInt32" || type == "UInt") {
     return 32;
   }
   if (type == "Int64" || type == "UInt64") {
@@ -522,25 +517,21 @@ enum class PropertyCategory {
 
 PropertyCategory classify_property_type(std::string_view type) {
   constexpr std::array<std::string_view, 26> kScalarAndComplexTypes{
-      "Boolean",    "Int8",       "UInt8",      "Byte",
-      "Int16",      "Short",      "UInt16",     "UShort",
-      "Int32",      "Int",        "UInt32",     "UInt",
-      "Int64",      "Int128",     "UInt64",     "UInt128",
-      "Float32",    "Float",      "Float64",    "Double",
-      "Float128",   "Quad",       "Complex32",  "Complex64",
-      "Complex",    "Complex128"};
+      "Boolean", "Int8",      "UInt8",    "Byte",    "Int16",     "Short",
+      "UInt16",  "UShort",    "Int32",    "Int",     "UInt32",    "UInt",
+      "Int64",   "Int128",    "UInt64",   "UInt128", "Float32",   "Float",
+      "Float64", "Double",    "Float128", "Quad",    "Complex32", "Complex64",
+      "Complex", "Complex128"};
   constexpr std::array<std::string_view, 20> kVectorTypes{
-      "I8Vector",   "UI8Vector",   "ByteArray",  "I16Vector",
-      "UI16Vector", "I32Vector",   "IVector",    "UI32Vector",
-      "UIVector",   "I64Vector",   "UI64Vector", "I128Vector",
-      "UI128Vector", "F32Vector",  "F64Vector",  "Vector",
-      "F128Vector", "C32Vector",   "C64Vector",  "C128Vector"};
+      "I8Vector",   "UI8Vector",  "ByteArray",   "I16Vector", "UI16Vector",
+      "I32Vector",  "IVector",    "UI32Vector",  "UIVector",  "I64Vector",
+      "UI64Vector", "I128Vector", "UI128Vector", "F32Vector", "F64Vector",
+      "Vector",     "F128Vector", "C32Vector",   "C64Vector", "C128Vector"};
   constexpr std::array<std::string_view, 20> kMatrixTypes{
-      "I8Matrix",   "UI8Matrix",   "ByteMatrix",  "I16Matrix",
-      "UI16Matrix", "I32Matrix",   "IMatrix",     "UI32Matrix",
-      "UIMatrix",   "I64Matrix",   "UI64Matrix",  "I128Matrix",
-      "UI128Matrix", "F32Matrix",  "F64Matrix",   "Matrix",
-      "F128Matrix", "C32Matrix",   "C64Matrix",   "C128Matrix"};
+      "I8Matrix",   "UI8Matrix",  "ByteMatrix",  "I16Matrix", "UI16Matrix",
+      "I32Matrix",  "IMatrix",    "UI32Matrix",  "UIMatrix",  "I64Matrix",
+      "UI64Matrix", "I128Matrix", "UI128Matrix", "F32Matrix", "F64Matrix",
+      "Matrix",     "F128Matrix", "C32Matrix",   "C64Matrix", "C128Matrix"};
   if (std::find(kScalarAndComplexTypes.begin(), kScalarAndComplexTypes.end(),
                 type) != kScalarAndComplexTypes.end()) {
     return PropertyCategory::scalar_or_complex;
@@ -797,6 +788,7 @@ struct XmlBuilder {
   std::string version;
   std::vector<ImageInfo> images;
   std::vector<std::vector<std::byte>> embedded_blocks;
+  std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<bool> embedded_data_seen;
   std::vector<AttachedRange> attached_ranges;
   std::vector<MetadataEntry> metadata;
@@ -818,6 +810,7 @@ struct XmlBuilder {
   std::unordered_map<std::string, std::size_t> metadata_uids;
   std::vector<MetadataBindingEvent> metadata_binding_events;
   std::optional<std::size_t> embedded_image_index;
+  std::optional<std::size_t> inline_metadata_index;
   EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
   std::array<unsigned char, 4> base64_quartet{};
   std::size_t base64_quartet_size{0};
@@ -864,18 +857,27 @@ std::optional<unsigned char> base64_value(char character) {
   return std::nullopt;
 }
 
-bool append_embedded_byte(XmlBuilder &state, unsigned char value) {
-  auto &output = state.embedded_blocks[*state.embedded_image_index];
-  if (output.size() >= state.options.max_decoded_image_bytes) {
+bool append_inline_byte(XmlBuilder &state, unsigned char value) {
+  const bool metadata_block = state.inline_metadata_index.has_value();
+  auto &output =
+      metadata_block
+          ? state.inline_metadata_blocks[*state.inline_metadata_index]
+          : state.embedded_blocks[*state.embedded_image_index];
+  const auto limit = metadata_block
+                         ? state.options.max_serialized_property_bytes
+                         : state.options.max_decoded_image_bytes;
+  if (output.size() >= limit) {
     state.fail(ErrorCode::resource_limit,
-               "Embedded block exceeds the decoded byte limit", "Data");
+               "Encoded block exceeds its serialized byte limit",
+               metadata_block ? "Property" : "Data");
     return false;
   }
   try {
     output.push_back(static_cast<std::byte>(value));
   } catch (const std::bad_alloc &) {
     state.fail(ErrorCode::resource_limit,
-               "Memory allocation failed for embedded block", "Data");
+               "Memory allocation failed for encoded block",
+               metadata_block ? "Property" : "Data");
     return false;
   }
   return true;
@@ -883,41 +885,45 @@ bool append_embedded_byte(XmlBuilder &state, unsigned char value) {
 
 bool decode_base64_quartet(XmlBuilder &state) {
   const auto &q = state.base64_quartet;
+  const auto element =
+      state.inline_metadata_index.has_value() ? "Property" : "Data";
   if (q[0] == 64 || q[1] == 64) {
-    state.fail(ErrorCode::invalid_xisf, "Invalid Base64 padding", "Data");
+    state.fail(ErrorCode::invalid_xisf, "Invalid Base64 padding", element);
     return false;
   }
-  if (!append_embedded_byte(
+  if (!append_inline_byte(
           state, static_cast<unsigned char>((q[0] << 2U) | (q[1] >> 4U)))) {
     return false;
   }
   if (q[2] == 64) {
     if (q[3] != 64 || (q[1] & 0x0fU) != 0) {
       state.fail(ErrorCode::invalid_xisf,
-                 "Invalid or noncanonical Base64 padding", "Data");
+                 "Invalid or noncanonical Base64 padding", element);
       return false;
     }
     state.base64_complete = true;
     return true;
   }
-  if (!append_embedded_byte(
+  if (!append_inline_byte(
           state, static_cast<unsigned char>((q[1] << 4U) | (q[2] >> 2U)))) {
     return false;
   }
   if (q[3] == 64) {
     if ((q[2] & 0x03U) != 0) {
       state.fail(ErrorCode::invalid_xisf,
-                 "Invalid or noncanonical Base64 padding", "Data");
+                 "Invalid or noncanonical Base64 padding", element);
       return false;
     }
     state.base64_complete = true;
     return true;
   }
-  return append_embedded_byte(state,
-                              static_cast<unsigned char>((q[2] << 6U) | q[3]));
+  return append_inline_byte(state,
+                            static_cast<unsigned char>((q[2] << 6U) | q[3]));
 }
 
 void decode_embedded_text(XmlBuilder &state, std::string_view text) {
+  const bool metadata_block = state.inline_metadata_index.has_value();
+  const auto element = metadata_block ? "Property" : "Data";
   for (const char character : text) {
     if (character == ' ' || character == '\t' || character == '\r' ||
         character == '\n') {
@@ -925,7 +931,7 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
     }
     if (state.encoded_block_bytes >= state.options.max_encoded_block_bytes) {
       state.fail(ErrorCode::resource_limit,
-                 "Embedded block exceeds the encoded byte limit", "Data");
+                 "Encoded block exceeds the encoded byte limit", element);
       return;
     }
     ++state.encoded_block_bytes;
@@ -937,16 +943,15 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
         nibble = static_cast<unsigned char>(character - 'a' + 10);
       } else {
         state.fail(ErrorCode::invalid_xisf,
-                   "Embedded Base16 data must use lowercase hexadecimal",
-                   "Data");
+                   "Base16 data must use lowercase hexadecimal", element);
         return;
       }
       if (!state.hex_high_nibble) {
         state.hex_high_nibble = nibble;
       } else {
-        if (!append_embedded_byte(
-                state, static_cast<unsigned char>(
-                           (*state.hex_high_nibble << 4U) | nibble))) {
+        if (!append_inline_byte(state,
+                                static_cast<unsigned char>(
+                                    (*state.hex_high_nibble << 4U) | nibble))) {
           return;
         }
         state.hex_high_nibble.reset();
@@ -955,7 +960,7 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
     }
     if (state.base64_complete) {
       state.fail(ErrorCode::invalid_xisf, "Base64 data continues after padding",
-                 "Data");
+                 element);
       return;
     }
     if (character == '=') {
@@ -964,8 +969,8 @@ void decode_embedded_text(XmlBuilder &state, std::string_view text) {
       const auto value = base64_value(character);
       if (!value) {
         state.fail(ErrorCode::invalid_xisf,
-                   "Embedded block contains an invalid Base64 character",
-                   "Data");
+                   "Encoded block contains an invalid Base64 character",
+                   element);
         return;
       }
       state.base64_quartet[state.base64_quartet_size++] = *value;
@@ -1020,9 +1025,9 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
   }
 
-  if (state.embedded_image_index) {
+  if (state.embedded_image_index || state.inline_metadata_index) {
     state.fail(ErrorCode::invalid_xisf,
-               "Embedded Data cannot contain child elements", name);
+               "Encoded data blocks cannot contain child elements", name);
     return;
   }
 
@@ -1066,7 +1071,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         MetadataBindingEvent event;
         event.reference = std::string(*reference);
         event.scope = parent == "Image" ? MetadataBinding::Scope::image
-                                         : MetadataBinding::Scope::xisf_unit;
+                                        : MetadataBinding::Scope::xisf_unit;
         event.image_index = state.current_image();
         event.by_reference = true;
         state.metadata_binding_events.push_back(std::move(event));
@@ -1233,8 +1238,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       image.nominal_channel_order =
           NominalChannelOrder::red_green_blue_then_alpha;
     } else if (image.color_space == "CIELab") {
-      image.nominal_channel_order =
-          NominalChannelOrder::cie_l_a_b_then_alpha;
+      image.nominal_channel_order = NominalChannelOrder::cie_l_a_b_then_alpha;
     }
     const auto orientation = attribute(attributes, "orientation");
     if (orientation) {
@@ -1255,8 +1259,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       } else if (*orientation == "180;flip") {
         image.orientation = ImageOrientation::rotate_180_flip;
       } else {
-        state.fail(ErrorCode::invalid_xisf,
-                   "Invalid Image orientation value", name, "orientation");
+        state.fail(ErrorCode::invalid_xisf, "Invalid Image orientation value",
+                   name, "orientation");
         return;
       }
     }
@@ -1334,6 +1338,13 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     const auto type = attribute(attributes, "type");
     const auto value = attribute(attributes, "value");
     const auto comment = attribute(attributes, "comment");
+    const auto location = name == "Property"
+                              ? attribute(attributes, "location")
+                              : std::optional<std::string_view>{};
+    const auto byte_order_attribute = attribute(attributes, "byteOrder");
+    const auto compression_attribute = attribute(attributes, "compression");
+    const auto subblocks_attribute = attribute(attributes, "subblocks");
+    const auto checksum_attribute = attribute(attributes, "checksum");
     if (!identity || identity->empty() ||
         (name == "Property" && (!type || type->empty())) ||
         (name == "FITSKeyword" && (!value || !comment))) {
@@ -1347,13 +1358,20 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       return;
     }
     if (name == "Property" && !is_valid_property_identifier(*identity)) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Property id has invalid XISF syntax", name, "id");
+      state.fail(ErrorCode::invalid_xisf, "Property id has invalid XISF syntax",
+                 name, "id");
       return;
     }
     if (value && value->size() > state.options.max_metadata_value_bytes) {
       state.fail(ErrorCode::resource_limit,
                  "Metadata value exceeds the inspection limit", name, "value");
+      return;
+    }
+    if (name == "Property" && !location &&
+        (byte_order_attribute || compression_attribute || subblocks_attribute ||
+         checksum_attribute)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Property data-block attributes require a location", name);
       return;
     }
     if (name == "Property" && parent == "Metadata") {
@@ -1386,21 +1404,29 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     entry.kind = name == "Property" ? MetadataEntry::Kind::property
                                     : MetadataEntry::Kind::fits_keyword;
     entry.image_index = state.current_image();
-    entry.scope = entry.image_index
-                      ? MetadataEntry::Scope::image
-                      : parent == "Metadata"
-                            ? MetadataEntry::Scope::xisf_unit
-                            : MetadataEntry::Scope::standalone;
+    entry.scope = entry.image_index      ? MetadataEntry::Scope::image
+                  : parent == "Metadata" ? MetadataEntry::Scope::xisf_unit
+                                         : MetadataEntry::Scope::standalone;
     entry.uid = std::string(attribute(attributes, "uid").value_or(""));
     entry.name = std::string(*identity);
     entry.type = std::string(attribute(attributes, "type").value_or(""));
     entry.value = std::string(attribute(attributes, "value").value_or(""));
     entry.comment = std::string(attribute(attributes, "comment").value_or(""));
     entry.format = std::string(attribute(attributes, "format").value_or(""));
-    const auto location = attribute(attributes, "location");
+    const auto byte_order = byte_order_attribute.value_or("little");
+    if (byte_order != "little" && byte_order != "big") {
+      state.fail(ErrorCode::invalid_xisf, "Invalid Property byteOrder value",
+                 name, "byteOrder");
+      return;
+    }
+    entry.byte_order = byte_order == "big" ? ByteOrder::big : ByteOrder::little;
+    entry.compression = std::string(compression_attribute.value_or(""));
+    entry.subblocks = std::string(subblocks_attribute.value_or(""));
+    entry.checksum = std::string(checksum_attribute.value_or(""));
     if (location) {
       entry.block = parse_location(*location);
-      if (entry.block.kind == BlockKind::unknown) {
+      if (entry.block.kind == BlockKind::unknown ||
+          entry.block.kind == BlockKind::embedded) {
         state.fail(ErrorCode::invalid_xisf,
                    "Property has an invalid data block location", name,
                    "location");
@@ -1500,11 +1526,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       state.metadata_uids.emplace(entry.uid, metadata_index);
     }
     state.metadata.push_back(std::move(entry));
+    state.inline_metadata_blocks.emplace_back();
     if (state.metadata.back().scope != MetadataEntry::Scope::standalone) {
       if (state.metadata_binding_events.size() >=
           state.options.max_metadata_entries) {
-        state.fail(ErrorCode::resource_limit,
-                   "Metadata binding limit exceeded", name);
+        state.fail(ErrorCode::resource_limit, "Metadata binding limit exceeded",
+                   name);
         return;
       }
       MetadataBindingEvent event;
@@ -1517,6 +1544,23 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     if (name == "Property" && !value && !location) {
       state.text_metadata_index = metadata_index;
+    } else if (name == "Property" &&
+               state.metadata.back().block.kind == BlockKind::inline_data) {
+      const auto &raw = state.metadata.back().block.raw;
+      if (raw != "inline:base64" && raw != "inline:hex") {
+        state.fail(ErrorCode::unsupported_feature,
+                   "Unsupported inline Property block encoding", name,
+                   "location");
+        return;
+      }
+      state.inline_metadata_index = metadata_index;
+      state.embedded_encoding = raw == "inline:base64"
+                                    ? XmlBuilder::EmbeddedEncoding::base64
+                                    : XmlBuilder::EmbeddedEncoding::hex;
+      state.base64_quartet_size = 0;
+      state.base64_complete = false;
+      state.hex_high_nibble.reset();
+      state.encoded_block_bytes = 0;
     }
   }
 }
@@ -1546,6 +1590,20 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
     state.embedded_image_index.reset();
     state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
   } else if (is_xisf_element && name == "Property") {
+    if (state.inline_metadata_index) {
+      if ((state.embedded_encoding == XmlBuilder::EmbeddedEncoding::base64 &&
+           state.base64_quartet_size != 0) ||
+          (state.embedded_encoding == XmlBuilder::EmbeddedEncoding::hex &&
+           state.hex_high_nibble)) {
+        state.fail(
+            ErrorCode::invalid_xisf,
+            "Inline Property block has an incomplete encoded byte sequence",
+            name);
+        return;
+      }
+      state.inline_metadata_index.reset();
+      state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
+    }
     state.text_metadata_index.reset();
   } else if (is_xisf_element && name == "Image") {
     if (!state.image_stack.empty()) {
@@ -1578,16 +1636,8 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     return;
   }
   const std::string_view data(text, static_cast<std::size_t>(length));
-  if (state.embedded_image_index) {
+  if (state.embedded_image_index || state.inline_metadata_index) {
     decode_embedded_text(state, data);
-    return;
-  }
-  if (!state.element_stack.empty() &&
-      state.element_stack.back() == "Property" && !state.metadata.empty() &&
-      state.metadata.back().value_form ==
-          MetadataEntry::ValueForm::data_block) {
-    // Inline Property bytes belong to the unavailable block representation,
-    // not to the containing embedded Image's direct character data.
     return;
   }
   if (!state.text_metadata_index) {
@@ -1627,6 +1677,7 @@ void XMLCALL reject_doctype(void *user_data, const XML_Char *, const XML_Char *,
 struct ParsedHeader {
   Document document;
   std::vector<std::vector<std::byte>> embedded_blocks;
+  std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<AttachedRange> attached_ranges;
 };
 
@@ -1771,6 +1822,7 @@ Result<ParsedHeader> parse_header(std::string_view xml,
                     std::move(state.metadata), file_size, header_length,
                     std::move(metadata_bindings));
   return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
+                      std::move(state.inline_metadata_blocks),
                       std::move(state.attached_ranges)};
 }
 
@@ -1835,18 +1887,17 @@ std::optional<unsigned char> lowercase_hex_value(char character) {
   return std::nullopt;
 }
 
-Result<ChecksumPlan> parse_checksum_plan(const ImageInfo &image) {
-  if (image.checksum.empty()) {
+Result<ChecksumPlan> parse_checksum_plan(std::string_view checksum) {
+  if (checksum.empty()) {
     return ChecksumPlan{};
   }
-  const auto separator = image.checksum.find(':');
+  const auto separator = checksum.find(':');
   if (separator == std::string::npos ||
-      image.checksum.find(':', separator + 1) != std::string::npos) {
+      checksum.find(':', separator + 1) != std::string::npos) {
     return make_error(ErrorCode::invalid_block, "Invalid checksum descriptor");
   }
-  const auto algorithm = std::string_view(image.checksum).substr(0, separator);
-  const auto encoded_digest =
-      std::string_view(image.checksum).substr(separator + 1);
+  const auto algorithm = checksum.substr(0, separator);
+  const auto encoded_digest = checksum.substr(separator + 1);
   ChecksumPlan plan;
   std::size_t digest_size = 0;
   if (algorithm == "sha-1" || algorithm == "sha1") {
@@ -1863,7 +1914,7 @@ Result<ChecksumPlan> parse_checksum_plan(const ImageInfo &image) {
                       "SHA-3 checksums are inspect-only in this profile");
   } else {
     return make_error(ErrorCode::unsupported_feature,
-                      "Unsupported image checksum algorithm");
+                      "Unsupported block checksum algorithm");
   }
   if (encoded_digest.size() != digest_size * 2) {
     return make_error(ErrorCode::invalid_block,
@@ -1884,49 +1935,49 @@ Result<ChecksumPlan> parse_checksum_plan(const ImageInfo &image) {
   return plan;
 }
 
-Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
-                                               std::uint64_t serialized_bytes,
-                                               std::uint64_t expected_bytes,
-                                               const ReaderOptions &options,
-                                               std::uint64_t sample_size) {
-  if (serialized_bytes > options.max_serialized_image_bytes) {
+Result<CompressionPlan> parse_compression_plan(
+    std::string_view compression, std::string_view subblocks,
+    std::uint64_t serialized_bytes, std::optional<std::uint64_t> expected_bytes,
+    const ReaderOptions &options, std::uint64_t item_size,
+    std::uint64_t max_serialized_bytes, std::uint64_t max_decoded_bytes) {
+  if (serialized_bytes > max_serialized_bytes) {
     return make_error(ErrorCode::resource_limit,
-                      "Serialized image block exceeds the configured limit");
+                      "Serialized block exceeds the configured limit");
   }
   if (serialized_bytes > std::numeric_limits<std::size_t>::max()) {
-    return make_error(
-        ErrorCode::resource_limit,
-        "Serialized image block cannot fit in addressable memory");
+    return make_error(ErrorCode::resource_limit,
+                      "Serialized block cannot fit in addressable memory");
   }
-  if (image.compression.empty()) {
-    if (!image.subblocks.empty()) {
+  if (compression.empty()) {
+    if (!subblocks.empty()) {
       return make_error(ErrorCode::invalid_block,
                         "Compression subblocks require a compression codec");
     }
-    if (serialized_bytes != expected_bytes) {
-      return make_error(
-          ErrorCode::invalid_block,
-          "Image block size does not match geometry and sample format");
+    if (expected_bytes && serialized_bytes != *expected_bytes) {
+      return make_error(ErrorCode::invalid_block,
+                        "Block size does not match its declared typed extent");
+    }
+    if (serialized_bytes > max_decoded_bytes) {
+      return make_error(ErrorCode::resource_limit,
+                        "Decoded block exceeds the configured limit");
     }
     CompressionPlan plan;
-    plan.uncompressed_size = expected_bytes;
+    plan.uncompressed_size = serialized_bytes;
     return plan;
   }
 
   std::array<std::string_view, 3> tokens{};
   std::size_t token_count = 0;
   std::size_t start = 0;
-  while (start <= image.compression.size()) {
+  while (start <= compression.size()) {
     if (token_count == tokens.size()) {
       return make_error(ErrorCode::invalid_block,
                         "Compression descriptor has too many components");
     }
-    const auto end = image.compression.find(':', start);
-    tokens[token_count++] =
-        std::string_view(image.compression)
-            .substr(start, end == std::string::npos
-                               ? image.compression.size() - start
-                               : end - start);
+    const auto end = compression.find(':', start);
+    tokens[token_count++] = compression.substr(
+        start,
+        end == std::string::npos ? compression.size() - start : end - start);
     if (end == std::string::npos) {
       break;
     }
@@ -1966,52 +2017,56 @@ Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
     return make_error(ErrorCode::invalid_block,
                       "Invalid compression descriptor");
   }
-  if (plan.uncompressed_size != expected_bytes) {
+  if (expected_bytes && plan.uncompressed_size != *expected_bytes) {
     return make_error(
         ErrorCode::invalid_block,
-        "Declared uncompressed size does not match image geometry");
+        "Declared uncompressed size does not match the typed extent");
   }
   if (plan.byte_shuffled &&
       (!parse_unsigned(tokens[2], plan.item_size) || plan.item_size == 0 ||
-       plan.item_size != sample_size)) {
+       plan.item_size != item_size)) {
     return make_error(
         ErrorCode::invalid_block,
-        "Byte-shuffle item size must match the image sample size");
+        "Byte-shuffle item size does not match the typed element size");
   }
   if (serialized_bytes == 0) {
     return make_error(ErrorCode::invalid_block,
-                      "Compressed image block cannot be empty");
+                      "Compressed block cannot be empty");
   }
   std::uint64_t maximum_output = 0;
   if (!checked_multiply(serialized_bytes, options.max_decompression_ratio,
                         maximum_output)) {
     maximum_output = std::numeric_limits<std::uint64_t>::max();
   }
-  if (expected_bytes > maximum_output) {
+  if (plan.uncompressed_size > maximum_output) {
     return make_error(ErrorCode::resource_limit,
-                      "Image exceeds the configured decompression ratio");
+                      "Block exceeds the configured decompression ratio");
+  }
+  if (plan.uncompressed_size > max_decoded_bytes ||
+      plan.uncompressed_size > std::numeric_limits<std::size_t>::max()) {
+    return make_error(ErrorCode::resource_limit,
+                      "Decoded block exceeds the configured limit");
   }
 
-  if (image.subblocks.empty()) {
+  if (subblocks.empty()) {
     plan.subblocks.push_back(
-        CompressionSubblock{serialized_bytes, expected_bytes});
+        CompressionSubblock{serialized_bytes, plan.uncompressed_size});
     return plan;
   }
 
   std::uint64_t total_compressed = 0;
   std::uint64_t total_uncompressed = 0;
   start = 0;
-  while (start <= image.subblocks.size()) {
+  while (start <= subblocks.size()) {
     if (plan.subblocks.size() >= options.max_compressed_subblocks) {
       return make_error(
           ErrorCode::resource_limit,
           "Compressed subblock count exceeds the configured limit");
     }
-    const auto end = image.subblocks.find(':', start);
-    const auto pair = std::string_view(image.subblocks)
-                          .substr(start, end == std::string::npos
-                                             ? image.subblocks.size() - start
-                                             : end - start);
+    const auto end = subblocks.find(':', start);
+    const auto pair = subblocks.substr(start, end == std::string::npos
+                                                  ? subblocks.size() - start
+                                                  : end - start);
     const auto comma = pair.find(',');
     CompressionSubblock subblock;
     if (comma == std::string_view::npos ||
@@ -2042,7 +2097,7 @@ Result<CompressionPlan> parse_compression_plan(const ImageInfo &image,
     start = end + 1;
   }
   if (total_compressed != serialized_bytes ||
-      total_uncompressed != expected_bytes) {
+      total_uncompressed != plan.uncompressed_size) {
     return make_error(ErrorCode::invalid_block,
                       "Compression subblock totals do not match the block");
   }
@@ -2060,6 +2115,156 @@ struct ImageReadPlan {
   CompressionPlan compression;
   ChecksumPlan checksum;
 };
+
+struct PropertyElementLayout {
+  std::uint64_t element_size{0};
+  std::uint64_t scalar_component_size{0};
+  bool string_data{false};
+};
+
+std::optional<PropertyElementLayout>
+property_element_layout(std::string_view type) {
+  if (type == "String") {
+    return PropertyElementLayout{1, 1, true};
+  }
+  constexpr std::array<std::string_view, 6> kOneByteTypes{
+      "I8Vector", "UI8Vector", "ByteArray",
+      "I8Matrix", "UI8Matrix", "ByteMatrix"};
+  constexpr std::array<std::string_view, 4> kTwoByteTypes{
+      "I16Vector", "UI16Vector", "I16Matrix", "UI16Matrix"};
+  constexpr std::array<std::string_view, 10> kFourByteTypes{
+      "I32Vector", "IVector", "UI32Vector", "UIVector", "F32Vector",
+      "I32Matrix", "IMatrix", "UI32Matrix", "UIMatrix", "F32Matrix"};
+  constexpr std::array<std::string_view, 8> kEightByteTypes{
+      "I64Vector", "UI64Vector", "F64Vector", "Vector",
+      "I64Matrix", "UI64Matrix", "F64Matrix", "Matrix"};
+  constexpr std::array<std::string_view, 6> kSixteenByteTypes{
+      "I128Vector", "UI128Vector", "F128Vector",
+      "I128Matrix", "UI128Matrix", "F128Matrix"};
+  const auto contains = [type](const auto &types) {
+    return std::find(types.begin(), types.end(), type) != types.end();
+  };
+  if (contains(kOneByteTypes)) {
+    return PropertyElementLayout{1, 1, false};
+  }
+  if (contains(kTwoByteTypes)) {
+    return PropertyElementLayout{2, 2, false};
+  }
+  if (contains(kFourByteTypes)) {
+    return PropertyElementLayout{4, 4, false};
+  }
+  if (contains(kEightByteTypes)) {
+    return PropertyElementLayout{8, 8, false};
+  }
+  if (contains(kSixteenByteTypes)) {
+    return PropertyElementLayout{16, 16, false};
+  }
+  if (type == "C32Vector" || type == "C32Matrix") {
+    return PropertyElementLayout{8, 4, false};
+  }
+  if (type == "C64Vector" || type == "C64Matrix") {
+    return PropertyElementLayout{16, 8, false};
+  }
+  if (type == "C128Vector" || type == "C128Matrix") {
+    return PropertyElementLayout{32, 16, false};
+  }
+  return std::nullopt;
+}
+
+struct PropertyReadPlan {
+  const MetadataEntry *property{nullptr};
+  const std::vector<std::byte> *inline_block{nullptr};
+  PropertyElementLayout layout;
+  std::uint64_t expected_bytes{0};
+  std::uint64_t serialized_bytes{0};
+  CompressionPlan compression;
+  ChecksumPlan checksum;
+};
+
+Result<PropertyReadPlan>
+plan_property_read(const Document &document, const ReaderOptions &options,
+                   const std::vector<std::vector<std::byte>> &inline_blocks,
+                   std::size_t metadata_index) {
+  if (metadata_index >= document.metadata().size()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Metadata index is outside the document");
+  }
+  const auto &property = document.metadata()[metadata_index];
+  if (property.kind != MetadataEntry::Kind::property ||
+      property.value_form != MetadataEntry::ValueForm::data_block) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Metadata entry is not a block-backed Property");
+  }
+  if (property.block.kind != BlockKind::attachment &&
+      property.block.kind != BlockKind::inline_data) {
+    return make_error(
+        ErrorCode::unsupported_feature,
+        "Only attachment and inline Property blocks are readable");
+  }
+  const auto layout = property_element_layout(property.type);
+  if (!layout) {
+    return make_error(ErrorCode::unsupported_feature,
+                      "Property binary element type is not supported");
+  }
+  std::optional<std::uint64_t> typed_bytes;
+  if (!layout->string_data) {
+    std::uint64_t element_count = 0;
+    const auto category = classify_property_type(property.type);
+    if (category == PropertyCategory::vector && property.length) {
+      element_count = *property.length;
+    } else if (category == PropertyCategory::matrix && property.rows &&
+               property.columns &&
+               checked_multiply(*property.rows, *property.columns,
+                                element_count)) {
+      // element_count was computed above.
+    } else {
+      return make_error(ErrorCode::invalid_block,
+                        "Property typed extent is incomplete or overflows");
+    }
+    std::uint64_t byte_count = 0;
+    if (!checked_multiply(element_count, layout->element_size, byte_count)) {
+      return make_error(ErrorCode::overflow,
+                        "Property typed extent overflows its byte size");
+    }
+    typed_bytes = byte_count;
+  }
+  const std::vector<std::byte> *inline_block = nullptr;
+  std::uint64_t serialized_bytes = property.block.size;
+  if (property.block.kind == BlockKind::inline_data) {
+    if (metadata_index >= inline_blocks.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Inline Property storage is inconsistent");
+    }
+    inline_block = &inline_blocks[metadata_index];
+    serialized_bytes = static_cast<std::uint64_t>(inline_block->size());
+  } else if (property.block.offset > document.file_size() ||
+             property.block.size >
+                 document.file_size() - property.block.offset) {
+    return make_error(ErrorCode::invalid_block,
+                      "Property attachment range extends beyond the source");
+  }
+  auto compression = parse_compression_plan(
+      property.compression, property.subblocks, serialized_bytes, typed_bytes,
+      options, layout->element_size, options.max_serialized_property_bytes,
+      options.max_decoded_property_bytes);
+  if (!compression) {
+    return compression.error();
+  }
+  auto checksum = parse_checksum_plan(property.checksum);
+  if (!checksum) {
+    return checksum.error();
+  }
+  auto compression_plan = std::move(compression).value();
+  auto checksum_plan = std::move(checksum).value();
+  const auto expected_bytes = compression_plan.uncompressed_size;
+  return PropertyReadPlan{&property,
+                          inline_block,
+                          *layout,
+                          expected_bytes,
+                          serialized_bytes,
+                          std::move(compression_plan),
+                          std::move(checksum_plan)};
+}
 
 Result<ImageReadPlan>
 plan_image_read(const Document &document, const ReaderOptions &options,
@@ -2120,11 +2325,13 @@ plan_image_read(const Document &document, const ReaderOptions &options,
           ? image.block.size
           : static_cast<std::uint64_t>(embedded_blocks[image_index].size());
   auto compression = parse_compression_plan(
-      image, serialized_bytes, expected_bytes, options, *sample_size);
+      image.compression, image.subblocks, serialized_bytes, expected_bytes,
+      options, *sample_size, options.max_serialized_image_bytes,
+      options.max_decoded_image_bytes);
   if (!compression) {
     return compression.error();
   }
-  auto checksum = parse_checksum_plan(image);
+  auto checksum = parse_checksum_plan(image.checksum);
   if (!checksum) {
     return checksum.error();
   }
@@ -2163,11 +2370,11 @@ resolve_pixel_storage(const ImageReadPlan &plan,
                     "Invalid output pixel-storage option");
 }
 
-Result<ByteOrder> resolve_byte_order(const ImageReadPlan &plan,
+Result<ByteOrder> resolve_byte_order(ByteOrder source_order,
                                      ByteOrderOutput requested_order) {
   switch (requested_order) {
   case ByteOrderOutput::source:
-    return plan.image->byte_order;
+    return source_order;
   case ByteOrderOutput::native:
     if constexpr (std::endian::native == std::endian::little) {
       return ByteOrder::little;
@@ -2239,6 +2446,38 @@ Result<std::size_t> copy_serialized_image(const ByteSource &source,
       return read.error();
     }
     total += read.value();
+  }
+  return total;
+}
+
+Result<std::size_t> copy_serialized_property(const ByteSource &source,
+                                             const PropertyReadPlan &plan,
+                                             std::span<std::byte> destination,
+                                             std::stop_token stop_token) {
+  constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
+  const auto expected = static_cast<std::size_t>(plan.serialized_bytes);
+  std::size_t total = 0;
+  while (total < expected) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled,
+                        "Property block read was cancelled");
+    }
+    const auto chunk = std::min(kReadChunkBytes, expected - total);
+    auto output = destination.subspan(total, chunk);
+    if (plan.inline_block != nullptr) {
+      std::copy_n(plan.inline_block->data() + total, chunk, output.data());
+      total += chunk;
+    } else {
+      auto read = source.read_at(plan.property->block.offset + total, output);
+      if (!read) {
+        return read.error();
+      }
+      if (read.value() == 0 || read.value() > output.size()) {
+        return make_error(ErrorCode::io_error,
+                          "ByteSource returned an invalid short read");
+      }
+      total += read.value();
+    }
   }
   return total;
 }
@@ -2378,7 +2617,7 @@ Result<bool> verify_checksum(const ChecksumPlan &plan,
       !std::equal(actual.begin(), actual.begin() + actual_size,
                   plan.expected_digest.begin())) {
     return make_error(ErrorCode::checksum_mismatch,
-                      "Image block checksum verification failed");
+                      "Block checksum verification failed");
   }
   return true;
 }
@@ -2396,7 +2635,7 @@ Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
   constexpr std::size_t kCancellationInterval = 1U << 20U;
   for (std::size_t item = 0; item < item_count; ++item) {
     if (item % kCancellationInterval == 0 && stop_token.stop_requested()) {
-      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+      return make_error(ErrorCode::cancelled, "Block read was cancelled");
     }
     for (std::size_t byte = 0; byte < item_size; ++byte) {
       output[item * item_size + byte] = shuffled[byte * item_count + item];
@@ -2405,18 +2644,18 @@ Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
   return output.size();
 }
 
-Result<std::size_t> decode_compressed_image(
-    std::span<const std::byte> serialized, const ImageReadPlan &plan,
+Result<std::size_t> decode_compressed_block(
+    std::span<const std::byte> serialized, const CompressionPlan &compression,
     std::span<std::byte> destination, std::stop_token stop_token) {
   if (stop_token.stop_requested()) {
-    return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    return make_error(ErrorCode::cancelled, "Block read was cancelled");
   }
   std::size_t input_offset = 0;
   std::size_t output_offset = 0;
   std::vector<std::byte> shuffled;
-  for (const auto &subblock : plan.compression.subblocks) {
+  for (const auto &subblock : compression.subblocks) {
     if (stop_token.stop_requested()) {
-      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+      return make_error(ErrorCode::cancelled, "Block read was cancelled");
     }
     const auto compressed_size =
         static_cast<std::size_t>(subblock.compressed_size);
@@ -2425,24 +2664,22 @@ Result<std::size_t> decode_compressed_image(
     const auto input = std::span<const std::byte>(serialized)
                            .subspan(input_offset, compressed_size);
     auto output = destination.subspan(output_offset, uncompressed_size);
-    if (plan.compression.byte_shuffled) {
+    if (compression.byte_shuffled) {
       shuffled.resize(uncompressed_size);
-      auto decoded =
-          decompress_subblock(plan.compression.codec, input, shuffled,
-                              plan.compression.max_zstd_window_bytes);
+      auto decoded = decompress_subblock(compression.codec, input, shuffled,
+                                         compression.max_zstd_window_bytes);
       if (!decoded) {
         return decoded.error();
       }
       auto unshuffled = unshuffle_bytes(
-          shuffled, output,
-          static_cast<std::size_t>(plan.compression.item_size), stop_token);
+          shuffled, output, static_cast<std::size_t>(compression.item_size),
+          stop_token);
       if (!unshuffled) {
         return unshuffled.error();
       }
     } else {
-      auto decoded = decompress_subblock(
-          plan.compression.codec, input, output,
-          plan.compression.max_zstd_window_bytes);
+      auto decoded = decompress_subblock(compression.codec, input, output,
+                                         compression.max_zstd_window_bytes);
       if (!decoded) {
         return decoded.error();
       }
@@ -2555,7 +2792,7 @@ Result<std::size_t> swap_byte_order_in_place(std::span<std::byte> destination,
   for (std::size_t sample = 0; sample < sample_count; ++sample) {
     if (sample % kSamplesPerCancellationCheck == 0 &&
         stop_token.stop_requested()) {
-      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+      return make_error(ErrorCode::cancelled, "Block read was cancelled");
     }
     const auto begin = destination.begin() + sample * sample_size;
     std::reverse(begin, begin + sample_size);
@@ -2624,6 +2861,7 @@ struct Reader::Impl {
   ReaderOptions options;
   Document document;
   std::vector<std::vector<std::byte>> embedded_blocks;
+  std::vector<std::vector<std::byte>> inline_metadata_blocks;
 };
 
 Reader::Reader(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -2718,6 +2956,8 @@ Result<Reader> Reader::open_source(std::shared_ptr<const ByteSource> source,
     impl->options = options;
     impl->document = std::move(parsed_header.document);
     impl->embedded_blocks = std::move(parsed_header.embedded_blocks);
+    impl->inline_metadata_blocks =
+        std::move(parsed_header.inline_metadata_blocks);
     return Reader(std::move(impl));
   } catch (const std::bad_alloc &) {
     return make_error(ErrorCode::resource_limit,
@@ -2753,8 +2993,8 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
     if (!output_storage) {
       return output_storage.error();
     }
-    auto output_byte_order =
-        resolve_byte_order(plan.value(), read_options.byte_order);
+    auto output_byte_order = resolve_byte_order(plan.value().image->byte_order,
+                                                read_options.byte_order);
     if (!output_byte_order) {
       return output_byte_order.error();
     }
@@ -2766,8 +3006,7 @@ Result<RawImage> Reader::read_image(std::size_t image_index,
     result.orientation = plan.value().image->orientation;
     result.pixel_origin = plan.value().image->pixel_origin;
     result.pixel_traversal = plan.value().image->pixel_traversal;
-    result.nominal_channel_order =
-        plan.value().image->nominal_channel_order;
+    result.nominal_channel_order = plan.value().image->nominal_channel_order;
     result.lower_bound = plan.value().image->lower_bound;
     result.upper_bound = plan.value().image->upper_bound;
     result.pixel_storage = output_storage.value();
@@ -2819,8 +3058,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
     if (!output_storage) {
       return output_storage.error();
     }
-    auto output_byte_order =
-        resolve_byte_order(plan.value(), read_options.byte_order);
+    auto output_byte_order = resolve_byte_order(plan.value().image->byte_order,
+                                                read_options.byte_order);
     if (!output_byte_order) {
       return output_byte_order.error();
     }
@@ -2844,8 +3083,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
       if (plan.value().compression.codec != CompressionCodec::none) {
         if (output_storage.value() != plan.value().image->pixel_storage) {
           std::vector<std::byte> source_pixels(expected);
-          auto decoded = decode_compressed_image(serialized, plan.value(),
-                                                 source_pixels, stop_token);
+          auto decoded = decode_compressed_block(
+              serialized, plan.value().compression, source_pixels, stop_token);
           if (!decoded) {
             return decoded.error();
           }
@@ -2853,8 +3092,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
               plan.value(), source_pixels, output, output_storage.value(),
               output_byte_order.value(), stop_token);
         }
-        auto decoded = decode_compressed_image(serialized, plan.value(), output,
-                                               stop_token);
+        auto decoded = decode_compressed_block(
+            serialized, plan.value().compression, output, stop_token);
         if (!decoded) {
           return decoded.error();
         }
@@ -2897,6 +3136,86 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
   } catch (const std::exception &exception) {
     return make_error(ErrorCode::internal_error,
                       std::string("Unexpected image buffer read failure: ") +
+                          exception.what());
+  }
+}
+
+Result<RawPropertyBlock>
+Reader::read_property_block(std::size_t metadata_index,
+                            PropertyReadOptions read_options,
+                            std::stop_token stop_token) const {
+  try {
+    auto plan =
+        plan_property_read(impl_->document, impl_->options,
+                           impl_->inline_metadata_blocks, metadata_index);
+    if (!plan) {
+      return plan.error();
+    }
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled,
+                        "Property block read was cancelled");
+    }
+    auto output_byte_order = resolve_byte_order(
+        plan.value().property->byte_order, read_options.byte_order);
+    if (!output_byte_order) {
+      return output_byte_order.error();
+    }
+
+    RawPropertyBlock result;
+    result.byte_order = output_byte_order.value();
+    result.bytes.resize(static_cast<std::size_t>(plan.value().expected_bytes));
+    const bool needs_serialized_staging =
+        plan.value().compression.codec != CompressionCodec::none ||
+        plan.value().checksum.algorithm != ChecksumAlgorithm::none;
+    if (needs_serialized_staging) {
+      std::vector<std::byte> serialized(
+          static_cast<std::size_t>(plan.value().serialized_bytes));
+      auto copied = copy_serialized_property(*impl_->source, plan.value(),
+                                             serialized, stop_token);
+      if (!copied) {
+        return copied.error();
+      }
+      auto verified = verify_checksum(plan.value().checksum, serialized);
+      if (!verified) {
+        return verified.error();
+      }
+      if (plan.value().compression.codec != CompressionCodec::none) {
+        auto decoded = decode_compressed_block(
+            serialized, plan.value().compression, result.bytes, stop_token);
+        if (!decoded) {
+          return decoded.error();
+        }
+      } else {
+        std::copy(serialized.begin(), serialized.end(), result.bytes.begin());
+      }
+    } else {
+      auto copied = copy_serialized_property(*impl_->source, plan.value(),
+                                             result.bytes, stop_token);
+      if (!copied) {
+        return copied.error();
+      }
+    }
+    if (!plan.value().layout.string_data &&
+        plan.value().layout.scalar_component_size > 1 &&
+        result.byte_order != plan.value().property->byte_order) {
+      auto swapped = swap_byte_order_in_place(
+          result.bytes,
+          static_cast<std::size_t>(plan.value().layout.scalar_component_size),
+          stop_token);
+      if (!swapped) {
+        return swapped.error();
+      }
+    }
+    if (plan.value().checksum.algorithm != ChecksumAlgorithm::none) {
+      result.checksum_verification = ChecksumVerification::verified;
+    }
+    return result;
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Memory allocation failed while reading Property block");
+  } catch (const std::exception &exception) {
+    return make_error(ErrorCode::internal_error,
+                      std::string("Unexpected Property block read failure: ") +
                           exception.what());
   }
 }

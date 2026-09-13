@@ -150,9 +150,17 @@ A subsequent current-producer checkpoint found Zstandard-compressed XISF from
 PixInsight 1.9.3/XISF module 1.1.2 and an embedded-image/inline-Property parser
 interaction. The implementation now treats Zstandard as an explicit PFI
 interoperability extension to the pinned 2017 baseline and preserves the
-inline block as unavailable metadata without confusing it with image text.
-Cross-platform CI and exact private-file decode evidence remain the promotion
-gate for this unit.
+inline block independently from image text. Exact private-file pixel hashes and
+cross-platform codec/fuzz gates passed at commit `5218074` in CI run
+`34781659044`, including Linux, macOS, Windows, installed consumers, and both
+20,000-case fuzz campaigns.
+
+The next M4 slice turns block-backed String, vector, and matrix Properties into
+bounded raw typed reads. Attachment and inline Base64/hex locations share the
+image codec, byte-shuffle, compression-subblock, checksum, endian, and
+cancellation machinery. This closes the library-side prerequisite for the
+PixInsight WCS vectors and matrices observed in the private corpus; semantic WCS
+projection and native parity remain PFI-owned acceptance gates.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
