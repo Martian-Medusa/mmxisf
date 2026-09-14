@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "mmxisf.exact-development-vcpkg-cache-gate/1.0.0",
+  "auditedAt": "2026-09-14",
+  "status": "PASS_EXACT_DEVELOPMENT_HEAD_NOT_FROZEN",
+  "publicationAuthorized": false,
+  "source": {
+    "version": "0.1.0",
+    "commit": "8c33a6526efa7ee968d26c40faedd7ede1e383d8",
+    "archive": {
+      "name": "mmxisf-0.1.0-source-8c33a6526efa.tar.gz",
+      "sizeBytes": 290089,
+      "sha256": "252a59d14640fe45946c894012039a8f08123bdb58f2aab18bbdafb14addf257",
+      "manifestSizeBytes": 475,
+      "manifestSha256": "6383dc81ea29c98371234245cb3b63e24ba1e6ac8d49912fd8ef7ef8cdb2825a",
+      "prefix": "mmxisf-0.1.0/",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+      "buildInput": "EXTRACTED_ARCHIVE_ONLY"
+    }
+  },
+  "host": {
+    "name": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1"
+  },
+  "container": {
+    "base": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "imageId": "sha256:6008232e9f4534fdb162fc3132f66374a833f2da8528945b681df68fb6c0e0e6",
+    "sizeBytes": 841900648,
+    "architecture": "amd64",
+    "gcc": "13.3.0",
+    "cmake": "3.28.3",
+    "privileged": false
+  },
+  "registry": {
+    "name": "Microsoft vcpkg builtin registry",
+    "commit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "trackedCheckoutClean": true,
+    "vcpkgVersion": "2026-07-27-98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d"
+  },
+  "dependencies": [
+    {"name": "Expat", "version": "2.8.4"},
+    {"name": "zlib", "version": "1.3.2", "portVersion": 2},
+    {"name": "LZ4", "version": "1.10.0"},
+    {"name": "Zstandard", "version": "1.5.7"},
+    {"name": "OpenSSL", "version": "3.6.4"}
+  ],
+  "binaryCache": {
+    "path": "/home/matt/mmxisf-vcpkg/a1cae005c39be7b18ba319fced856b68d7276271/.mmxisf-binary-cache",
+    "fileCount": 8,
+    "logicalSizeDisplay": "19M",
+    "restore": {
+      "result": "PASS",
+      "restoredPackages": 8,
+      "reportedRestoreTimeMilliseconds": 348
+    }
+  },
+  "gates": {
+    "warningsAsErrors": {
+      "result": "PASS",
+      "acceptedException": "-Wno-missing-field-initializers for intentional C++20 aggregate defaults"
+    },
+    "populate": {
+      "static": {
+        "ctest": {"result": "PASS", "passed": 12, "total": 12},
+        "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+        "library": {"sizeBytes": 807198, "sha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c"},
+        "binarySbom": {"sizeBytes": 3043, "sha256": "aa1ae3d8d836268a1d2e1cad394480e6cf2f2bd58e4e11a58fdf01cc3acbcd14"}
+      },
+      "shared": {
+        "ctest": {"result": "PASS", "passed": 12, "total": 12},
+        "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+        "library": {"file": "libmmxisf.so.0.1.0", "sizeBytes": 9346216, "sha256": "312e1686083db2c03966e92aba58a3f1db5d10504e1d572de46eeda332475ba5"},
+        "binarySbom": {"sizeBytes": 3043, "sha256": "3cb9c010f9c167855cef76bdc634628a3c8ed5109673c600e1fd18e69e700a3e"}
+      }
+    },
+    "restore": {
+      "static": {
+        "ctest": {"result": "PASS", "passed": 12, "total": 12},
+        "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+        "library": {"sizeBytes": 807198, "sha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c"},
+        "binarySbom": {"sizeBytes": 3043, "sha256": "69562bf7d8dd90bc0ac2050d930201e08be425f1247c0d3f886aaeab3f5328ec"}
+      },
+      "shared": {
+        "ctest": {"result": "PASS", "passed": 12, "total": 12},
+        "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+        "library": {"file": "libmmxisf.so.0.1.0", "sizeBytes": 9346216, "sha256": "312e1686083db2c03966e92aba58a3f1db5d10504e1d572de46eeda332475ba5"},
+        "binarySbom": {"sizeBytes": 3043, "sha256": "6aa0311c6cc9e56ab7d953318d5faba7691f5b6c551e7c0546dce8200e23e34a"}
+      }
+    },
+    "populateRestoreLibraryIdentity": "PASS_BYTE_IDENTICAL_STATIC_AND_SHARED",
+    "productionDependencyFloor": "PASS",
+    "generatedApiDocumentation": "PASS",
+    "sharedNonSystemRuntimeDependencies": []
+  },
+  "retainedLogs": {
+    "restoreStaticCTest": {"sizeBytes": 9387, "sha256": "abbe5a05c6a2a58665fe362f5795b408fe1258cbfe2c493ae77bc52bb697f04f"},
+    "restoreSharedCTest": {"sizeBytes": 9387, "sha256": "d1096b367d8d27fda72dff402dab723f3d91b125970680a8cf725f1a532e9860"},
+    "restoreStaticConsumerCTest": {"sizeBytes": 729, "sha256": "d7c6da945810a08fb1d1b5385a3bc537bdd59ba8fa533e84d4490ed8f96d8efc"},
+    "restoreSharedConsumerCTest": {"sizeBytes": 729, "sha256": "5e429525131f2fc6f2d348580484248ab505b49a3a8e42d6cdaae172e021839e"},
+    "lastTestsFailedLogs": 0
+  },
+  "retainedServerEvidence": {
+    "root": "/home/matt/mmxisf-gates/8c33a6526efa/source",
+    "populateBuildTreeSizeDisplay": "164M",
+    "restoreBuildTreeSizeDisplay": "164M",
+    "committed": false,
+    "published": false
+  },
+  "limitations": [
+    "This is exact-development-head Linux amd64 evidence, not a frozen release-candidate audit.",
+    "The shared variant reused the already installed dependency graph in the isolated restore tree after the static variant restored all eight packages from the persistent binary cache.",
+    "Generated SPDX documents contain build-specific document metadata; library byte identity, not SBOM byte identity, is asserted across populate and restore builds.",
+    "Windows, a frozen candidate, the exact-candidate long fuzz campaign, and the final time-sensitive advisory review remain NOT_TESTED."
+  ]
+}

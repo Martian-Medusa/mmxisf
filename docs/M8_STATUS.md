@@ -306,6 +306,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   retained in `docs/security-audits/2026-09-14-linux-amd64-392ebd3.json`.
   This supersedes the local Linux development checkpoint, but does not claim a
   frozen candidate or Windows result.
+- Exact development commit `8c33a6526efa7ee968d26c40faedd7ede1e383d8`
+  then exercised the persistent vcpkg binary-cache path from its deterministic
+  extracted source archive. An isolated cache-population tree and a second
+  cache-restoration tree each passed GCC 13 warnings-as-errors static/shared
+  12/12 suites and installed-package consumers 1/1. The restore consumed all
+  eight cached packages, and the resulting static and shared libraries were
+  byte-identical to their population-build counterparts. The shared object
+  dynamically links only the standard Linux runtime. Exact archive, image,
+  cache, library, SBOM, and retained-log identities are recorded in
+  `docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json`.
+  This is the newest Linux development checkpoint; it is not a frozen
+  candidate, Windows evidence, or a final vulnerability audit.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

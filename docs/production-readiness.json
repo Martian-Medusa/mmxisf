@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-linux-amd64-392ebd3.json",
-      "note": "Exact development commit 392ebd328858696b86c3e02a4e7cb9b57f956297 passed the versioned extracted-source Ubuntu 24.04 amd64 gate: GCC static/shared 12/12 each, installed consumers 1/1 each, Clang ASan/UBSan 12/12 plus 20,000 mutations, ThreadSanitizer 12/12, generated documentation, and binary SBOM checks. The system dependency versions are compatibility evidence only."
+      "evidence": "docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json",
+      "note": "Exact development commit 8c33a6526efa7ee968d26c40faedd7ede1e383d8 passed two extracted-source Ubuntu 24.04 amd64 production-dependency builds: cache population and isolated cache restoration. Both passed GCC static/shared 12/12, installed consumers 1/1, dependency floors, documentation, and binary SBOM checks; restored static and shared libraries were byte-identical to the population builds. The broader Clang sanitizer gate remains recorded for exact earlier development commit 392ebd328858696b86c3e02a4e7cb9b57f956297."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -126,8 +126,8 @@
       "id": "security.production-dependency-baseline-control",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-linux-amd64-392ebd3.json",
-      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact development commit 392ebd328858696b86c3e02a4e7cb9b57f956297 passed static/shared 12/12, installed consumers 1/1, documentation, binary SBOM, and standard-runtime-only dynamic-linkage checks. Windows, frozen-candidate, and final advisory audits remain separate gates."
+      "evidence": "docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json",
+      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact development commit 8c33a6526efa7ee968d26c40faedd7ede1e383d8 passed cache-population and isolated cache-restoration static/shared 12/12 suites, installed consumers 1/1, documentation, binary SBOM, standard-runtime-only dynamic linkage, and byte-identical library reproduction. Windows, frozen-candidate, and final advisory audits remain separate gates."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",

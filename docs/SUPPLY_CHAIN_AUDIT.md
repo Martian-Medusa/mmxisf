@@ -61,8 +61,12 @@ amd64 Docker gate in both static and shared forms. Both library suites passed
 12/12, both installed-package consumers passed 1/1, the generated API reference
 passed, and the shared library exposed no non-system runtime dependency because
 the five vcpkg libraries were linked statically. Exact library and SBOM hashes
-are retained in
+from the original gate are retained in
 [`security-audits/2026-09-14-vcpkg-linux-amd64.json`](security-audits/2026-09-14-vcpkg-linux-amd64.json).
+The newer exact-development-head replay also proved persistent binary-cache
+population and isolated restoration with byte-identical static and shared
+libraries; its exact evidence is retained in
+[`security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json`](security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json).
 This adds Linux development evidence; it does not freeze a candidate or replace
 the final time-sensitive vulnerability review.
 
