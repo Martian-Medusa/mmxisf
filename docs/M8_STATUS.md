@@ -35,6 +35,9 @@
   retains the HTML output as a short-lived, non-published artifact.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
+- CI keeps one active run per workflow/ref. A newer push cancels only the
+  superseded run for the same branch, so the final commit receives the complete
+  matrix without duplicating long Windows dependency builds.
 
 ## Evidence available now
 
