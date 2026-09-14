@@ -93,7 +93,11 @@ library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static
 consumers. Both forms install the Apache-2.0 license, notices, security policy,
 dependency notices, and the validated SPDX 2.3 source-dependency SBOM under
-`share/mmxisf`.
+`share/mmxisf`. Each configured build also generates and installs a binary
+dependency SBOM containing the exact versions resolved from the dependency
+headers, the target platform, compiler, build configuration, and static/shared
+linkage. Missing or malformed version macros fail configuration rather than
+producing guessed package data.
 
 Each CI revision also creates the source archive twice, requires byte identity,
 and retains one archive plus its SHA-256 as a short-lived workflow artifact.

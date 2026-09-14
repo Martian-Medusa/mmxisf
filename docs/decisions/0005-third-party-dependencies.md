@@ -31,6 +31,8 @@ Dependency policy:
 - dependencies link privately unless their license or static-link requirements
   require documented propagation;
 - CI and releases record exact versions, licenses, hashes and an SBOM;
+- OpenSSL 3.0 or newer is required so the linked dependency matches the
+  Apache-2.0 notice distributed by this project;
 - version minimums are selected from tested security-supported releases during
   the spike, not guessed in this ADR.
 

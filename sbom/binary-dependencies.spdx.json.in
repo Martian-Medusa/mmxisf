@@ -1,0 +1,82 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "mmxisf-@PROJECT_VERSION@-@CMAKE_SYSTEM_NAME@-@CMAKE_SYSTEM_PROCESSOR@-@MMXISF_BINARY_LINKAGE@",
+  "documentNamespace": "https://github.com/Martian-Medusa/mmxisf/spdx/binary/@MMXISF_BINARY_SBOM_ID@",
+  "creationInfo": {
+    "created": "@MMXISF_SBOM_CREATED@",
+    "creators": ["Organization: Martian Medusa"]
+  },
+  "documentDescribes": ["SPDXRef-Package-mmxisf"],
+  "packages": [
+    {
+      "name": "mmxisf",
+      "SPDXID": "SPDXRef-Package-mmxisf",
+      "versionInfo": "@PROJECT_VERSION@",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "Copyright 2026 Martian Medusa",
+      "comment": "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@; @MMXISF_BUILD_CONFIGURATION@; @MMXISF_BINARY_LINKAGE@"
+    },
+    {
+      "name": "Expat",
+      "SPDXID": "SPDXRef-Package-Expat",
+      "versionInfo": "@MMXISF_EXPAT_VERSION@",
+      "downloadLocation": "https://github.com/libexpat/libexpat",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "zlib",
+      "SPDXID": "SPDXRef-Package-zlib",
+      "versionInfo": "@MMXISF_ZLIB_VERSION@",
+      "downloadLocation": "https://github.com/madler/zlib",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Zlib",
+      "licenseDeclared": "Zlib",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "LZ4",
+      "SPDXID": "SPDXRef-Package-LZ4",
+      "versionInfo": "@MMXISF_LZ4_VERSION@",
+      "downloadLocation": "https://github.com/lz4/lz4",
+      "filesAnalyzed": false,
+      "licenseConcluded": "BSD-2-Clause",
+      "licenseDeclared": "BSD-2-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "Zstandard",
+      "SPDXID": "SPDXRef-Package-Zstandard",
+      "versionInfo": "@MMXISF_ZSTD_VERSION@",
+      "downloadLocation": "https://github.com/facebook/zstd",
+      "filesAnalyzed": false,
+      "licenseConcluded": "BSD-3-Clause",
+      "licenseDeclared": "BSD-3-Clause",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "name": "OpenSSL",
+      "SPDXID": "SPDXRef-Package-OpenSSL",
+      "versionInfo": "@MMXISF_OPENSSL_VERSION@",
+      "downloadLocation": "https://github.com/openssl/openssl",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION"
+    }
+  ],
+  "relationships": [
+    {"spdxElementId":"SPDXRef-Package-mmxisf","relationshipType":"DEPENDS_ON","relatedSpdxElement":"SPDXRef-Package-Expat"},
+    {"spdxElementId":"SPDXRef-Package-mmxisf","relationshipType":"DEPENDS_ON","relatedSpdxElement":"SPDXRef-Package-zlib"},
+    {"spdxElementId":"SPDXRef-Package-mmxisf","relationshipType":"DEPENDS_ON","relatedSpdxElement":"SPDXRef-Package-LZ4"},
+    {"spdxElementId":"SPDXRef-Package-mmxisf","relationshipType":"DEPENDS_ON","relatedSpdxElement":"SPDXRef-Package-Zstandard"},
+    {"spdxElementId":"SPDXRef-Package-mmxisf","relationshipType":"DEPENDS_ON","relatedSpdxElement":"SPDXRef-Package-OpenSSL"}
+  ]
+}

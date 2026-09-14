@@ -6,7 +6,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 find_dependency(LZ4)
 find_dependency(ZSTD)
 list(POP_BACK CMAKE_MODULE_PATH)
-find_dependency(OpenSSL COMPONENTS Crypto)
+find_dependency(OpenSSL 3.0 COMPONENTS Crypto)
 find_dependency(ZLIB)
 
 include("${CMAKE_CURRENT_LIST_DIR}/mmxisfTargets.cmake")

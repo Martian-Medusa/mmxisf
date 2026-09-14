@@ -29,9 +29,31 @@ set(
 
 find_package(EXPAT 2.2 REQUIRED)
 find_package(LZ4 REQUIRED)
-find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+find_package(OpenSSL 3.0 REQUIRED COMPONENTS Crypto)
 find_package(ZLIB REQUIRED)
 find_package(ZSTD REQUIRED)
+
+include(cmake/ResolveDependencyVersions.cmake)
+string(TIMESTAMP MMXISF_SBOM_CREATED "%Y-%m-%dT%H:%M:%SZ" UTC)
+if(BUILD_SHARED_LIBS)
+  set(MMXISF_BINARY_LINKAGE "shared")
+else()
+  set(MMXISF_BINARY_LINKAGE "static")
+endif()
+if(CMAKE_BUILD_TYPE)
+  set(MMXISF_BUILD_CONFIGURATION "${CMAKE_BUILD_TYPE}")
+else()
+  set(MMXISF_BUILD_CONFIGURATION "multi-config")
+endif()
+string(
+  SHA256 MMXISF_BINARY_SBOM_ID
+  "${PROJECT_VERSION};${CMAKE_SYSTEM_NAME};${CMAKE_SYSTEM_PROCESSOR};${CMAKE_CXX_COMPILER_ID};${CMAKE_CXX_COMPILER_VERSION};${MMXISF_BUILD_CONFIGURATION};${MMXISF_BINARY_LINKAGE};${MMXISF_EXPAT_VERSION};${MMXISF_ZLIB_VERSION};${MMXISF_LZ4_VERSION};${MMXISF_ZSTD_VERSION};${MMXISF_OPENSSL_VERSION};${MMXISF_SBOM_CREATED}"
+)
+configure_file(
+  sbom/binary-dependencies.spdx.json.in
+  "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
+  @ONLY
+)
 
 if(MMXISF_BUILD_DOCS)
   find_package(Doxygen 1.9 REQUIRED)
@@ -142,6 +164,14 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSbom.cmake
   )
+  add_test(
+    NAME mmxisf.binary-sbom
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_BINARY_SBOM=${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json
+      -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateBinarySbom.cmake
+  )
 endif()
 
 if(MMXISF_BUILD_TOOLS)
@@ -218,7 +248,9 @@ install(
   DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf"
 )
 install(
-  FILES sbom/source-dependencies.spdx.json
+  FILES
+    sbom/source-dependencies.spdx.json
+    "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
   DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom"
 )
 if(MMXISF_BUILD_DOCS)

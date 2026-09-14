@@ -20,6 +20,10 @@
 - A checked SPDX 2.3 source-dependency SBOM names all five direct libraries,
   their declared licenses, and dependency relationships. A CTest gate ties its
   project version to CMake and rejects missing dependency licenses.
+- Every configured static/shared build generates a second SPDX 2.3 SBOM with
+  the exact Expat, zlib, LZ4, Zstandard, and OpenSSL versions parsed from the
+  headers that are actually compiled. The installed artifact records platform,
+  compiler, configuration, and linkage; missing versions fail closed.
 - A separate CI job produces the Git source archive twice, requires byte
   identity, computes SHA-256, and retains the archive/checksum for 14 days
   without creating a tag or release.
@@ -45,8 +49,6 @@
 ## Still required for public beta
 
 - Complete and record the first static/shared cross-platform CI matrix.
-- Extend the source-dependency SBOM with resolved binary package versions in
-  release builds.
 - Run longer continuous fuzz campaigns and preserve any minimized regressions.
 - Enable a private vulnerability-reporting channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
