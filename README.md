@@ -144,7 +144,9 @@ bootstrapped vcpkg binary is platform-specific.
 The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
 library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static
-consumers. With the default `MMXISF_BUILD_VIEWER=OFF`, no viewer source or
+consumers. Before 1.0, package compatibility is limited to the same minor
+version; from 1.0 onward it follows the same-major SemVer contract. With the
+default `MMXISF_BUILD_VIEWER=OFF`, no viewer source or
 preview-support target is compiled; viewer code and tests belong only to its
 explicit macOS build. Both library forms install the Apache-2.0 license,
 notices, security policy,

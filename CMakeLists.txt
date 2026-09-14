@@ -247,6 +247,13 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateBinarySbom.cmake
   )
+  add_test(
+    NAME mmxisf.package-version-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_PACKAGE_VERSION_FILE=${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePackageVersion.cmake
+  )
   if(BUILD_SHARED_LIBS AND UNIX)
     add_test(
       NAME mmxisf.shared-export-surface
@@ -322,10 +329,16 @@ configure_package_config_file(
     MMXISF_INSTALL_CONFORMANCE_DIR
 )
 
+if(PROJECT_VERSION_MAJOR EQUAL 0)
+  set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMinorVersion)
+else()
+  set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMajorVersion)
+endif()
+
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion
+  COMPATIBILITY ${MMXISF_PACKAGE_VERSION_COMPATIBILITY}
 )
 
 install(
