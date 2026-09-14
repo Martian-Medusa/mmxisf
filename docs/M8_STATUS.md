@@ -7,6 +7,12 @@
 - Started: 2026-09-14
 - Publication status: private repository; no tag or release
 
+The machine-checked `docs/production-readiness.json` ledger currently derives
+`NOT_READY` independently for standalone beta, standalone production, and PFI
+production. It prevents a documentation-only readiness claim while required
+candidate, interoperability, security, distribution, or product gates remain
+open; it does not turn historical evidence into exact-candidate evidence.
+
 ## Implemented distribution gates
 
 - Linux, macOS, and Windows Release builds in CI.

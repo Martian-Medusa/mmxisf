@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "candidate": {
+    "state": "UNFROZEN",
+    "commit": ""
+  },
+  "claims": {
+    "standaloneBeta": "NOT_READY",
+    "standaloneProduction": "NOT_READY",
+    "pfiProduction": "NOT_READY"
+  },
+  "gates": [
+    {
+      "id": "candidate.support-profile-frozen",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The exact candidate commit and final claimed conformance rows have not been frozen."
+    },
+    {
+      "id": "quality.local-macos-arm64",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "Exact commit d5a81ed566d02b1222e9e2baf51ecf2faffbef24 passed the maintained local static, shared, sanitizer, package, documentation, and viewer gate."
+    },
+    {
+      "id": "quality.exact-candidate-cross-platform",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate."
+    },
+    {
+      "id": "security.exact-candidate-long-fuzz",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "Historical long campaigns passed, but the frozen candidate campaign remains pending."
+    },
+    {
+      "id": "interop.independent-producer-reader",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "tests/interop/manifest.json",
+      "note": "Redistributable third-party-produced fixtures cover the declared scalar, color, codec, shuffle, and checksum reader profiles."
+    },
+    {
+      "id": "interop.independent-consumer-writer",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "tests/independent_producer_test.cpp",
+      "note": "Independent public-API consumers decode deterministic writer fixtures and verify exact values and descriptors."
+    },
+    {
+      "id": "interop.pixinsight-reader-gray",
+      "status": "PASS",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "One native Float32 Gray astrometric source has exact host and adapter pixel plus interpreted-metadata parity."
+    },
+    {
+      "id": "interop.pixinsight-reader-rgb",
+      "status": "NOT_TESTED",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "A corrected source-bound PJSR capture requires a fresh manual RGB rerun."
+    },
+    {
+      "id": "interop.pixinsight-writer-properties",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M6_STATUS.md",
+      "note": "The matrix, vector, string, and pixel fixture gate is prepared but has not been executed natively."
+    },
+    {
+      "id": "pfi.backend-selection-policy",
+      "status": "PASS",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "Host-default, explicit qualification and authorization, no-silent-fallback, and rollback-target contracts pass."
+    },
+    {
+      "id": "pfi.product-input-wiring",
+      "status": "NOT_TESTED",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "The optional adapter is not wired into the PFI product input path."
+    },
+    {
+      "id": "pfi.detection-fitting-scientific-parity",
+      "status": "NOT_TESTED",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "Identical decoded planes have not completed the staged detector, fitter, and scientific-result parity plan."
+    },
+    {
+      "id": "performance.local-representative-mono-rgb",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M3_STATUS.md",
+      "note": "Representative local mono and RGB throughput plus peak-memory observations passed their predeclared local budgets."
+    },
+    {
+      "id": "performance.supported-host-review",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneProduction", "pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "Representative performance has not been reviewed on every supported production host."
+    },
+    {
+      "id": "supply-chain.source-license-audit",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/SUPPLY_CHAIN_AUDIT.md",
+      "note": "The source dependency, license, notice, action-pin, and SBOM review is complete within its documented source-only scope."
+    },
+    {
+      "id": "security.exact-binary-vulnerability-audit",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/SUPPLY_CHAIN_AUDIT.md",
+      "note": "Exact candidate dependency and toolchain versions have not received the time-sensitive binary vulnerability review."
+    },
+    {
+      "id": "security.private-reporting-channel",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "SECURITY.md",
+      "note": "A public private-vulnerability reporting form is unavailable while the repository is private."
+    },
+    {
+      "id": "api.public-error-resource-review",
+      "status": "LIMITED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "Contracts and generated API documentation exist, but the frozen-candidate public API review remains open."
+    },
+    {
+      "id": "distribution.release-artifact-identity",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "No candidate source archive, final hashes, tag, or release assets have been approved."
+    },
+    {
+      "id": "distribution.viewer-signing-notarization",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneProduction"],
+      "evidence": "docs/SUPPLY_CHAIN_AUDIT.md",
+      "note": "The macOS viewer is a local ad-hoc-signed development artifact, not a notarized release bundle."
+    },
+    {
+      "id": "pfi.native-operator-acceptance",
+      "status": "NOT_TESTED",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The integrated native workflow has not received manual operator acceptance."
+    },
+    {
+      "id": "pfi.native-rollback-exercise",
+      "status": "NOT_TESTED",
+      "requiredFor": ["pfiProduction"],
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The product-wired rollback switch has not been exercised because product wiring is not implemented."
+    }
+  ]
+}

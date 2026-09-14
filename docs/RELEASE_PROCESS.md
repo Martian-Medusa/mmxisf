@@ -4,6 +4,13 @@ No release is valid merely because it compiles or has a tag. Publication is a
 separate, owner-approved operation performed only after the gates below pass on
 the exact candidate commit.
 
+`docs/production-readiness.json` is the machine-checked gate ledger for the
+standalone beta, standalone production, and PFI production claims. CTest rejects
+unknown states, duplicate gates, missing evidence paths, an unfrozen candidate
+with a commit, a frozen candidate without an exact commit, or any `READY` claim
+while a required gate is not `PASS`. The ledger records evidence; it does not
+grant publication authority or replace the checks below.
+
 ## Candidate gate
 
 1. Freeze the claimed reader/writer profile in the conformance matrix. Every

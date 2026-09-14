@@ -157,6 +157,21 @@ if(MMXISF_BUILD_TESTS)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePlanning.cmake
   )
   add_test(
+    NAME mmxisf.readiness
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateReadiness.cmake
+  )
+  add_test(
+    NAME mmxisf.readiness-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DMMXISF_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateReadinessTests.cmake
+  )
+  add_test(
     NAME mmxisf.sbom
     COMMAND
       ${CMAKE_COMMAND}
