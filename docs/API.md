@@ -92,6 +92,16 @@ referenced main-image associations. `Reader::read_thumbnail()` returns exact
 source-layout/source-endian pixels from local attachment or embedded blocks.
 It does not resample, reorient, convert, stretch, or color-manage them.
 
+`Document::table_structures()` and `Document::tables()` expose a bounded,
+ordered inspection model for `Structure`, `Field`, `Table`, `Row`, and `Cell`.
+Field identifiers/types, declared and actual shapes, cell serialization forms,
+inline or external block descriptors, exact XML-decoded text, and direct or
+`Reference`-resolved image associations are retained. Scalar and TimePoint cell
+syntax, vector/matrix extents, row width, structure references, and property-id
+uniqueness are validated. Cell data blocks are descriptors only in this
+profile: they are not decoded or integrity-verified, and external locations
+never trigger I/O.
+
 ## Cancellation and concurrency
 
 Decode and write calls accept `std::stop_token` and check it at bounded work

@@ -479,6 +479,11 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
       [NSString stringWithFormat:@"%lu", document.icc_profiles().size()], @"");
   add(@"Document", @"Summary", @"Thumbnails", @"Count",
       [NSString stringWithFormat:@"%lu", document.thumbnails().size()], @"");
+  add(@"Document", @"Summary", @"Table structures", @"Count",
+      [NSString stringWithFormat:@"%lu", document.table_structures().size()],
+      @"");
+  add(@"Document", @"Summary", @"Tables", @"Count",
+      [NSString stringWithFormat:@"%lu", document.tables().size()], @"");
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     NSString *scope = [NSString stringWithFormat:@"Image %lu", index];
@@ -684,6 +689,72 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   for (std::size_t index = 0; index < document.thumbnails().size(); ++index) {
     if (!bound_thumbnails[index]) {
       add_thumbnail(document.thumbnails()[index], index, @"Standalone", false);
+    }
+  }
+  for (std::size_t index = 0; index < document.table_structures().size();
+       ++index) {
+    const auto &structure = document.table_structures()[index];
+    NSString *scope = structure.table_index
+                          ? [NSString stringWithFormat:@"Table %lu",
+                                                       *structure.table_index]
+                          : @"Standalone";
+    add(scope, @"Table structure", @"Structure", @"Ordered fields",
+        [NSString stringWithFormat:@"%lu fields", structure.fields.size()],
+        structure.uid.empty()
+            ? [NSString stringWithFormat:@"Inventory index %lu", index]
+            : [NSString stringWithFormat:@"uid=%@ · inventory index %lu",
+                                         ns_string(structure.uid), index]);
+    for (std::size_t field_index = 0; field_index < structure.fields.size();
+         ++field_index) {
+      const auto &field = structure.fields[field_index];
+      NSString *comment = field.header.empty()
+                              ? @""
+                              : [NSString stringWithFormat:@"header=%@",
+                                                           ns_string(field.header)];
+      add(scope, @"Table field", ns_string(field.id), ns_string(field.type),
+          field.format.empty() ? @"" : ns_string(field.format), comment);
+    }
+  }
+  const auto add_table = [&](const mmxisf::TableInfo &table, std::size_t index,
+                             NSString *scope, bool by_reference) {
+    NSString *kind = by_reference ? @"Table · Reference" : @"Table";
+    NSString *shape = [NSString stringWithFormat:@"%lu rows",
+                                                  table.rows.size()];
+    if (table.structure_index &&
+        *table.structure_index < document.table_structures().size()) {
+      shape = [shape
+          stringByAppendingFormat:@" × %lu columns · structure %lu · %@",
+                                  document
+                                      .table_structures()[*table.structure_index]
+                                      .fields.size(),
+                                  *table.structure_index,
+                                  table.structure_by_reference ? @"Reference"
+                                                               : @"Direct"];
+    }
+    NSString *comment = table.caption.empty() ? ns_string(table.comment)
+                                              : ns_string(table.caption);
+    comment = table.uid.empty()
+                  ? [comment stringByAppendingFormat:@" · inventory index %lu",
+                                                    index]
+                  : [comment stringByAppendingFormat:@" · uid=%@ · inventory "
+                                                     "index %lu",
+                                                    ns_string(table.uid), index];
+    add(scope, kind, ns_string(table.id), @"Inspectable XISF table", shape,
+        comment);
+  };
+  std::vector<bool> bound_tables(document.tables().size(), false);
+  for (const auto &binding : document.table_bindings()) {
+    if (binding.table_index >= document.tables().size()) {
+      continue;
+    }
+    add_table(document.tables()[binding.table_index], binding.table_index,
+              [NSString stringWithFormat:@"Image %lu", binding.image_index],
+              binding.by_reference);
+    bound_tables[binding.table_index] = true;
+  }
+  for (std::size_t index = 0; index < document.tables().size(); ++index) {
+    if (!bound_tables[index]) {
+      add_table(document.tables()[index], index, @"Standalone", false);
     }
   }
   for (std::size_t index = 0; index < document.extension_elements().size();

@@ -68,3 +68,20 @@ insensitive `UTF-8` or `UTF8`. It still requires the declaration at byte zero,
 version `1.0`, and an explicit UTF-8 encoding; it rejects other versions,
 encodings, and `standalone` declarations. This compatibility choice changes no
 decoded text semantics and has dedicated positive and negative tests.
+
+## SN-005: table examples serialize String cells with `value`
+
+- Sections: 11.1, 11.3
+- Status: compatibility exception retained without coercion
+
+Section 11.1 requires String properties to use character data or a data block,
+not a `value` attribute. Section 11.3 says that Cells serialize values exactly
+like Properties except for omitted `id`, `type`, and `format` attributes, but
+its normative Messier catalog example serializes all String cells with a
+`value` attribute.
+
+The table inspection profile accepts all three demonstrated String Cell forms:
+`value`, character data, and a data block. It records the form and exact value,
+does not coerce between forms, and does not extend this exception to ordinary
+String Properties. This is the narrowest behavior compatible with both the
+prose and the official table example.

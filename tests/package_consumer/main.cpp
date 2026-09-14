@@ -24,6 +24,11 @@ int main() {
   mmxisf::RawIccProfile raw_icc_profile;
   mmxisf::ThumbnailInfo thumbnail;
   mmxisf::ThumbnailBinding thumbnail_binding;
+  mmxisf::TableFieldInfo table_field;
+  mmxisf::TableStructureInfo table_structure;
+  mmxisf::TableCellInfo table_cell;
+  mmxisf::TableInfo table;
+  mmxisf::TableBinding table_binding;
   mmxisf::ImageWriteView write_image;
   mmxisf::MetadataWriteEntry write_metadata;
   mmxisf::WriterOptions writer_options;
@@ -48,6 +53,11 @@ int main() {
                  options.max_thumbnail_dimension > 0 &&
                  options.max_serialized_thumbnail_bytes > 0 &&
                  options.max_decoded_thumbnail_bytes > 0 &&
+                 options.max_table_structures > 0 && options.max_tables > 0 &&
+                 options.max_table_fields > 0 && options.max_table_rows > 0 &&
+                 options.max_table_cells > 0 &&
+                 options.max_table_bindings > 0 &&
+                 options.max_table_text_bytes > 0 &&
                  binding.scope == mmxisf::MetadataBinding::Scope::xisf_unit &&
                  !binding.by_reference &&
                  extension_attribute.namespace_uri.empty() &&
@@ -59,12 +69,21 @@ int main() {
                  document.icc_profile_bindings().empty() &&
                  document.thumbnails().empty() &&
                  document.thumbnail_bindings().empty() &&
+                 document.table_structures().empty() &&
+                 document.tables().empty() &&
+                 document.table_bindings().empty() &&
                  ancillary.kind == mmxisf::AncillaryKind::rgb_working_space &&
                  ancillary_binding.object_index == 0 &&
                  icc_profile.block.kind == mmxisf::BlockKind::unknown &&
                  icc_binding.profile_index == 0 &&
                  thumbnail.image.block.kind == mmxisf::BlockKind::unknown &&
                  thumbnail_binding.thumbnail_index == 0 &&
+                 table_field.id.empty() && table_structure.fields.empty() &&
+                 table_cell.value_form ==
+                     mmxisf::TableCellInfo::ValueForm::attribute &&
+                 std::string_view(mmxisf::to_string(table_cell.value_form)) ==
+                     "Attribute" &&
+                 table.id.empty() && table_binding.table_index == 0 &&
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&

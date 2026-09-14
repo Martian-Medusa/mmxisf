@@ -75,6 +75,10 @@ int main(int argc, char **argv) {
             << "thumbnails: " << document.thumbnails().size() << "\n"
             << "thumbnail-bindings: " << document.thumbnail_bindings().size()
             << "\n"
+            << "table-structures: " << document.table_structures().size()
+            << "\n"
+            << "tables: " << document.tables().size() << "\n"
+            << "table-bindings: " << document.table_bindings().size() << "\n"
             << "extensions: " << document.extension_elements().size() << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
@@ -313,6 +317,56 @@ int main(int argc, char **argv) {
   for (const auto &binding : document.thumbnail_bindings()) {
     std::cout << "thumbnail-binding\tthumbnail[" << binding.thumbnail_index
               << "]\timage[" << binding.image_index << "]\t"
+              << (binding.by_reference ? "Reference" : "Direct") << '\n';
+  }
+  for (std::size_t index = 0; index < document.table_structures().size();
+       ++index) {
+    const auto &structure = document.table_structures()[index];
+    std::cout << "table-structure[" << index
+              << "]\tfields=" << structure.fields.size();
+    if (!structure.uid.empty()) {
+      std::cout << "\tuid=" << structure.uid;
+    }
+    if (structure.table_index) {
+      std::cout << "\ttable[" << *structure.table_index << ']';
+    }
+    std::cout << '\n';
+    for (std::size_t field_index = 0; field_index < structure.fields.size();
+         ++field_index) {
+      const auto &field = structure.fields[field_index];
+      std::cout << "table-structure[" << index << "].field[" << field_index
+                << "]\tid=" << field.id << "\ttype=" << field.type;
+      if (!field.header.empty()) {
+        std::cout << "\theader=" << std::quoted(field.header);
+      }
+      if (!field.format.empty()) {
+        std::cout << "\tformat=" << std::quoted(field.format);
+      }
+      std::cout << '\n';
+    }
+  }
+  for (std::size_t index = 0; index < document.tables().size(); ++index) {
+    const auto &table = document.tables()[index];
+    std::cout << "table[" << index << "]\tid=" << table.id
+              << "\trows=" << table.rows.size();
+    if (table.structure_index) {
+      std::cout << "\tstructure[" << *table.structure_index << "]\t"
+                << (table.structure_by_reference ? "Reference" : "Direct");
+    }
+    if (!table.uid.empty()) {
+      std::cout << "\tuid=" << table.uid;
+    }
+    if (table.image_index) {
+      std::cout << "\tdirect-image[" << *table.image_index << ']';
+    }
+    if (!table.caption.empty()) {
+      std::cout << "\tcaption=" << std::quoted(table.caption);
+    }
+    std::cout << '\n';
+  }
+  for (const auto &binding : document.table_bindings()) {
+    std::cout << "table-binding\ttable[" << binding.table_index << "]\timage["
+              << binding.image_index << "]\t"
               << (binding.by_reference ? "Reference" : "Direct") << '\n';
   }
   for (std::size_t index = 0; index < document.extension_elements().size();

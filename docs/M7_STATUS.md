@@ -39,6 +39,12 @@
 - Validated UInt8/UInt16 Gray/RGB Thumbnail descriptors, direct/referenced
   main-image associations, and exact attachment/embedded reads with independent
   count, binding, dimension, serialized-byte, and decoded-byte limits.
+- Bounded inspection of `Structure`, `Field`, `Table`, `Row`, and `Cell`, with
+  ordered schemas/data, exact text and block descriptors, direct/referenced
+  image associations, document-local standalone Structure resolution, and
+  structural/type-form/cardinality validation under dedicated limits.
+- Table Cell block payloads remain inspect-only: no external resolution,
+  decoding, integrity claim, or typed numeric convenience API is implied.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -80,10 +86,15 @@ scientific contract.
   106,800 bytes. Its decoded SHA-256
   `6bb8c5ff6acb91b5f7bd24afadda339a70a95d0b5d8f911d37f2870f6715c1a5`
   matches an independent raw file-range hash; redistribution remains unknown.
+- Synthetic Table tests cover standalone/referenced and inline Structures,
+  direct/referenced image associations, scalar/String/TimePoint/vector forms,
+  declared/actual shape agreement, field uniqueness, invalid references and
+  children, and every dedicated resource limit.
 
 ## Still required for M7
 
 - Obtain independently produced UInt64 and complex fixtures from another
   producer, with provenance and exact pixel hashes.
-- Decide the later `Structure`/`Table` profile and whether typed numeric
-  convenience accessors are justified without weakening raw-text provenance.
+- Obtain an independently produced `Structure`/`Table` fixture with provenance;
+  typed Cell payload decoding remains deliberately deferred until a consumer
+  requirement justifies its API and evidence cost.

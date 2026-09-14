@@ -70,6 +70,13 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_thumbnail_dimension = 1'024;
   options.max_serialized_thumbnail_bytes = 1024U * 1024U;
   options.max_decoded_thumbnail_bytes = 1024U * 1024U;
+  options.max_table_structures = 128;
+  options.max_tables = 128;
+  options.max_table_fields = 2'000;
+  options.max_table_rows = 2'000;
+  options.max_table_cells = 10'000;
+  options.max_table_bindings = 2'000;
+  options.max_table_text_bytes = 256U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
   options.max_serialized_property_bytes = 1024U * 1024U;
   options.max_decoded_property_bytes = 1024U * 1024U;
@@ -125,6 +132,10 @@ std::vector<std::uint8_t> seed_unit() {
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</ICCProfile>"
       "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
       "location=\"embedded\"><Data encoding=\"hex\">00</Data></Thumbnail>"
+      "<Structure uid=\"FuzzStructure\"><Field id=\"value\" "
+      "type=\"UInt8\"/></Structure><Table id=\"FuzzTable\" rows=\"1\" "
+      "columns=\"1\"><Reference ref=\"FuzzStructure\"/>"
+      "<Row><Cell value=\"1\"/></Row></Table>"
       "<Property id=\"test\" type=\"String\">value</Property>"
       "<Property id=\"Test:Boolean\" type=\"Boolean\" value=\"true\"/>"
       "<Property id=\"Test:Integer\" type=\"Int32\" value=\"-42\"/>"

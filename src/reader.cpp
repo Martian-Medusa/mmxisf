@@ -783,6 +783,16 @@ struct ThumbnailBindingEvent {
   std::size_t image_index{0};
 };
 
+struct TableBindingEvent {
+  std::size_t table_index{0};
+  std::size_t image_index{0};
+};
+
+struct TableStructureReferenceEvent {
+  std::size_t table_index{0};
+  std::string reference;
+};
+
 struct XmlElementName {
   std::string namespace_uri;
   std::string name;
@@ -801,6 +811,17 @@ struct XmlBuilder {
   std::vector<bool> embedded_thumbnail_data_seen;
   std::unordered_map<std::string, std::size_t> thumbnail_uids;
   std::vector<ThumbnailBindingEvent> thumbnail_binding_events;
+  std::vector<TableStructureInfo> table_structures;
+  std::unordered_map<std::string, std::size_t> table_structure_uids;
+  std::unordered_map<std::string, std::size_t> standalone_structure_uids;
+  std::vector<TableInfo> tables;
+  std::unordered_map<std::string, std::size_t> table_uids;
+  std::vector<TableBindingEvent> table_binding_events;
+  std::vector<TableStructureReferenceEvent> table_structure_references;
+  std::size_t table_field_count{0};
+  std::size_t table_row_count{0};
+  std::size_t table_cell_count{0};
+  std::size_t table_text_bytes{0};
   std::vector<bool> embedded_data_seen;
   std::vector<AttachedRange> attached_ranges;
   std::vector<MetadataEntry> metadata;
@@ -841,6 +862,10 @@ struct XmlBuilder {
   std::optional<std::size_t> inline_icc_profile_index;
   std::optional<std::size_t> embedded_thumbnail_index;
   std::optional<std::size_t> open_thumbnail_index;
+  std::optional<std::size_t> open_table_index;
+  std::optional<std::size_t> open_structure_index;
+  std::optional<std::size_t> open_table_row_index;
+  std::optional<std::size_t> open_table_cell_index;
   EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
   std::array<unsigned char, 4> base64_quartet{};
   std::size_t base64_quartet_size{0};
@@ -891,6 +916,19 @@ bool consume_ancillary_bytes(XmlBuilder &state, std::size_t count,
     return false;
   }
   state.ancillary_bytes += count;
+  return true;
+}
+
+bool consume_table_text_bytes(XmlBuilder &state, std::size_t count,
+                              std::string_view element) {
+  const auto limit = state.options.max_table_text_bytes;
+  const auto available = limit - std::min(state.table_text_bytes, limit);
+  if (count > available) {
+    state.fail(ErrorCode::resource_limit,
+               "Table text byte limit exceeded", std::string(element));
+    return false;
+  }
+  state.table_text_bytes += count;
   return true;
 }
 
@@ -1221,6 +1259,15 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     return;
   }
 
+  if (parent == "Cell" || parent == "Field" ||
+      (parent == "Row" && (!is_xisf_element || name != "Cell"))) {
+    state.fail(ErrorCode::invalid_xisf,
+               "Table Field and Cell cannot have children, and Row accepts "
+               "only Cell children",
+               name);
+    return;
+  }
+
   if (state.depth == 1) {
     if (state.saw_root || name != "xisf" ||
         namespace_name(qualified_name) != kXisfNamespace) {
@@ -1253,6 +1300,22 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       if (parent == "Thumbnail") {
         state.references_from_thumbnails.emplace_back(*reference);
       }
+      if (parent == "Table") {
+        if (!state.open_table_index) {
+          state.fail(ErrorCode::invalid_xisf,
+                     "Reference has no open Table parent", name);
+          return;
+        }
+        if (state.table_structure_references.size() >=
+            state.options.max_tables) {
+          state.fail(ErrorCode::resource_limit,
+                     "Table structure reference limit exceeded", name);
+          return;
+        }
+        state.table_structure_references.push_back(
+            TableStructureReferenceEvent{*state.open_table_index,
+                                         std::string(*reference)});
+      }
       if ((parent == "Image" && state.current_image()) ||
           parent == "Metadata") {
         if (state.metadata_binding_events.size() >=
@@ -1282,6 +1345,291 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
     }
+  }
+
+  if (is_xisf_element && name == "Table") {
+    const auto image_index = state.current_image();
+    const bool root_child = state.depth == 2 && parent == "xisf";
+    const bool image_child =
+        state.depth == 3 && parent == "Image" && image_index.has_value();
+    if (!root_child && !image_child) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Table must be a direct child of xisf or Image", name);
+      return;
+    }
+    if (state.tables.size() >= state.options.max_tables) {
+      state.fail(ErrorCode::resource_limit, "Table count limit exceeded",
+                 name);
+      return;
+    }
+    const auto identity = attribute(attributes, "id");
+    if (!identity || !is_valid_property_identifier(*identity)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Table requires a valid property identifier", name, "id");
+      return;
+    }
+    TableInfo table;
+    table.uid = std::string(attribute(attributes, "uid").value_or(""));
+    table.image_index = image_index;
+    table.id = std::string(*identity);
+    table.caption =
+        std::string(attribute(attributes, "caption").value_or(""));
+    table.comment =
+        std::string(attribute(attributes, "comment").value_or(""));
+    const auto parse_declared_extent = [&](std::string_view attribute_name,
+                                           std::optional<std::uint64_t> &out) {
+      const auto value = attribute(attributes, attribute_name);
+      if (!value) {
+        return true;
+      }
+      std::uint64_t parsed = 0;
+      if (!parse_unsigned(*value, parsed)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Table extent must be an unsigned integer", name,
+                   std::string(attribute_name));
+        return false;
+      }
+      out = parsed;
+      return true;
+    };
+    if (!parse_declared_extent("rows", table.declared_rows) ||
+        !parse_declared_extent("columns", table.declared_columns)) {
+      return;
+    }
+    const auto copied_bytes = table.uid.size() + table.id.size() +
+                              table.caption.size() + table.comment.size();
+    if (!consume_table_text_bytes(state, copied_bytes, name)) {
+      return;
+    }
+    const auto table_index = state.tables.size();
+    state.tables.push_back(std::move(table));
+    state.open_table_index = table_index;
+    if (!state.tables.back().uid.empty()) {
+      state.table_uids.emplace(state.tables.back().uid, table_index);
+    }
+    if (image_index) {
+      if (state.table_binding_events.size() >=
+          state.options.max_table_bindings) {
+        state.fail(ErrorCode::resource_limit,
+                   "Table binding limit exceeded", name);
+        return;
+      }
+      state.table_binding_events.push_back(
+          TableBindingEvent{table_index, *image_index});
+    }
+    return;
+  }
+
+  if (is_xisf_element && name == "Structure") {
+    const bool root_child = state.depth == 2 && parent == "xisf";
+    const bool table_child = state.depth >= 3 && parent == "Table" &&
+                             state.open_table_index.has_value();
+    if (!root_child && !table_child) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Structure must be a direct child of xisf or Table", name);
+      return;
+    }
+    if (state.table_structures.size() >= state.options.max_table_structures) {
+      state.fail(ErrorCode::resource_limit,
+                 "Table Structure count limit exceeded", name);
+      return;
+    }
+    const auto uid = attribute(attributes, "uid");
+    if (root_child && !uid) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Standalone Structure requires a uid", name, "uid");
+      return;
+    }
+    if (table_child &&
+        state.tables[*state.open_table_index].structure_index.has_value()) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Table cannot contain more than one Structure", name);
+      return;
+    }
+    TableStructureInfo structure;
+    structure.uid = std::string(uid.value_or(""));
+    structure.table_index =
+        table_child ? state.open_table_index : std::nullopt;
+    if (!consume_table_text_bytes(state, structure.uid.size(), name)) {
+      return;
+    }
+    const auto structure_index = state.table_structures.size();
+    state.table_structures.push_back(std::move(structure));
+    state.open_structure_index = structure_index;
+    if (!state.table_structures.back().uid.empty()) {
+      state.table_structure_uids.emplace(state.table_structures.back().uid,
+                                         structure_index);
+    }
+    if (root_child) {
+      state.standalone_structure_uids.emplace(
+          state.table_structures.back().uid, structure_index);
+    } else {
+      state.tables[*state.open_table_index].structure_index = structure_index;
+    }
+    return;
+  }
+
+  if (is_xisf_element && name == "Field") {
+    if (parent != "Structure" || !state.open_structure_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Field must be a direct child of Structure", name);
+      return;
+    }
+    if (state.table_field_count >= state.options.max_table_fields) {
+      state.fail(ErrorCode::resource_limit,
+                 "Table field limit exceeded", name);
+      return;
+    }
+    const auto identity = attribute(attributes, "id");
+    const auto type = attribute(attributes, "type");
+    if (!identity || !is_valid_property_identifier(*identity) || !type ||
+        classify_property_type(*type) == PropertyCategory::unknown) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Field requires a valid id and non-Table property type",
+                 name);
+      return;
+    }
+    TableFieldInfo field;
+    field.id = std::string(*identity);
+    field.type = std::string(*type);
+    field.format =
+        std::string(attribute(attributes, "format").value_or(""));
+    field.header =
+        std::string(attribute(attributes, "header").value_or(""));
+    const auto copied_bytes = field.id.size() + field.type.size() +
+                              field.format.size() + field.header.size();
+    if (!consume_table_text_bytes(state, copied_bytes, name)) {
+      return;
+    }
+    state.table_structures[*state.open_structure_index].fields.push_back(
+        std::move(field));
+    ++state.table_field_count;
+    return;
+  }
+
+  if (is_xisf_element && name == "Row") {
+    if (parent != "Table" || !state.open_table_index ||
+        state.open_table_row_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Row must be a direct child of Table", name);
+      return;
+    }
+    if (state.table_row_count >= state.options.max_table_rows) {
+      state.fail(ErrorCode::resource_limit, "Table row limit exceeded", name);
+      return;
+    }
+    auto &rows = state.tables[*state.open_table_index].rows;
+    rows.emplace_back();
+    state.open_table_row_index = rows.size() - 1;
+    ++state.table_row_count;
+    return;
+  }
+
+  if (is_xisf_element && name == "Cell") {
+    if (parent != "Row" || !state.open_table_index ||
+        !state.open_table_row_index || state.open_table_cell_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Cell must be a direct child of Row", name);
+      return;
+    }
+    if (state.table_cell_count >= state.options.max_table_cells) {
+      state.fail(ErrorCode::resource_limit, "Table cell limit exceeded",
+                 name);
+      return;
+    }
+    if (attribute(attributes, "id") || attribute(attributes, "type") ||
+        attribute(attributes, "format")) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Cell cannot declare id, type, or format", name);
+      return;
+    }
+    const auto value = attribute(attributes, "value");
+    const auto location = attribute(attributes, "location");
+    const auto byte_order_attribute = attribute(attributes, "byteOrder");
+    const auto compression_attribute = attribute(attributes, "compression");
+    const auto subblocks_attribute = attribute(attributes, "subblocks");
+    const auto checksum_attribute = attribute(attributes, "checksum");
+    if (value && location) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Cell cannot declare both value and location", name);
+      return;
+    }
+    if (!location && (byte_order_attribute || compression_attribute ||
+                      subblocks_attribute || checksum_attribute)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Cell data-block attributes require a location", name);
+      return;
+    }
+    TableCellInfo cell;
+    cell.value = std::string(value.value_or(""));
+    if (!consume_table_text_bytes(state, cell.value.size(), name)) {
+      return;
+    }
+    if (location) {
+      cell.block = parse_location(*location);
+      if (cell.block.kind == BlockKind::unknown ||
+          cell.block.kind == BlockKind::embedded) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Cell has an invalid data block location", name,
+                   "location");
+        return;
+      }
+      if (cell.block.kind == BlockKind::inline_data &&
+          cell.block.raw != "inline:base64" &&
+          cell.block.raw != "inline:hex") {
+        state.fail(ErrorCode::unsupported_feature,
+                   "Unsupported inline Cell block encoding", name,
+                   "location");
+        return;
+      }
+      cell.value_form = TableCellInfo::ValueForm::data_block;
+    } else if (!value) {
+      cell.value_form = TableCellInfo::ValueForm::character_data;
+    }
+    const auto byte_order = byte_order_attribute.value_or("little");
+    if (byte_order != "little" && byte_order != "big") {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Cell has an invalid byteOrder", name, "byteOrder");
+      return;
+    }
+    cell.byte_order = byte_order == "big" ? ByteOrder::big : ByteOrder::little;
+    cell.compression = std::string(compression_attribute.value_or(""));
+    cell.subblocks = std::string(subblocks_attribute.value_or(""));
+    cell.checksum = std::string(checksum_attribute.value_or(""));
+    if (!consume_table_text_bytes(state, cell.block.raw.size(), name) ||
+        !consume_table_text_bytes(state, cell.compression.size(), name) ||
+        !consume_table_text_bytes(state, cell.subblocks.size(), name) ||
+        !consume_table_text_bytes(state, cell.checksum.size(), name)) {
+      return;
+    }
+    const auto parse_extent = [&](std::string_view attribute_name,
+                                  std::optional<std::uint64_t> &out) {
+      const auto serialized = attribute(attributes, attribute_name);
+      if (!serialized) {
+        return true;
+      }
+      std::uint64_t parsed = 0;
+      if (!parse_unsigned(*serialized, parsed)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Cell extent must be an unsigned integer", name,
+                   std::string(attribute_name));
+        return false;
+      }
+      out = parsed;
+      return true;
+    };
+    if (!parse_extent("length", cell.length) ||
+        !parse_extent("rows", cell.rows) ||
+        !parse_extent("columns", cell.columns)) {
+      return;
+    }
+    auto &cells = state.tables[*state.open_table_index]
+                      .rows[*state.open_table_row_index]
+                      .cells;
+    cells.push_back(std::move(cell));
+    state.open_table_cell_index = cells.size() - 1;
+    ++state.table_cell_count;
+    return;
   }
 
   if (is_xisf_element && name == "ICCProfile") {
@@ -2266,6 +2614,46 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
       state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
     }
     state.text_metadata_index.reset();
+  } else if (is_xisf_element && name == "Cell") {
+    if (!state.open_table_cell_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Cell element", name);
+      return;
+    }
+    state.open_table_cell_index.reset();
+  } else if (is_xisf_element && name == "Row") {
+    if (!state.open_table_index || !state.open_table_row_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Row element", name);
+      return;
+    }
+    const auto &row = state.tables[*state.open_table_index]
+                          .rows[*state.open_table_row_index];
+    if (row.cells.empty()) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Table Row must contain at least one Cell", name);
+      return;
+    }
+    state.open_table_row_index.reset();
+  } else if (is_xisf_element && name == "Structure") {
+    if (!state.open_structure_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Structure element", name);
+      return;
+    }
+    if (state.table_structures[*state.open_structure_index].fields.empty()) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Structure must contain at least one Field", name);
+      return;
+    }
+    state.open_structure_index.reset();
+  } else if (is_xisf_element && name == "Table") {
+    if (!state.open_table_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Table element", name);
+      return;
+    }
+    state.open_table_index.reset();
   } else if (is_xisf_element && name == "Thumbnail") {
     if (!state.open_thumbnail_index) {
       state.fail(ErrorCode::invalid_xisf,
@@ -2323,6 +2711,29 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     decode_embedded_text(state, data);
     return;
   }
+  if (state.open_table_index && state.open_table_row_index &&
+      state.open_table_cell_index) {
+    auto &cell = state.tables[*state.open_table_index]
+                     .rows[*state.open_table_row_index]
+                     .cells[*state.open_table_cell_index];
+    const bool accepts_text =
+        cell.value_form == TableCellInfo::ValueForm::character_data ||
+        (cell.value_form == TableCellInfo::ValueForm::data_block &&
+         cell.block.kind == BlockKind::inline_data);
+    if (!accepts_text) {
+      if (contains_non_xml_whitespace(data)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Cell form cannot contain character data", "Cell");
+      }
+      return;
+    }
+    if (!consume_table_text_bytes(state, static_cast<std::size_t>(length),
+                                  "Cell")) {
+      return;
+    }
+    cell.value.append(text, static_cast<std::size_t>(length));
+    return;
+  }
   if (!state.extension_stack.empty() && state.extension_stack.back()) {
     const auto extension_index = *state.extension_stack.back();
     if (!consume_extension_bytes(
@@ -2362,6 +2773,14 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
                contains_non_xml_whitespace(data)) {
       state.fail(ErrorCode::invalid_xisf,
                  "Thumbnail cannot contain text outside Data", "Thumbnail");
+    } else if ((state.open_table_row_index || state.open_structure_index ||
+                state.open_table_index) &&
+               contains_non_xml_whitespace(data)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Table, Structure, and Row cannot contain text outside Cell",
+                 state.open_table_row_index   ? "Row"
+                 : state.open_structure_index ? "Structure"
+                                              : "Table");
     } else if (state.current_image() &&
                state.images[*state.current_image()].block.kind ==
                    BlockKind::embedded &&
@@ -2475,9 +2894,122 @@ Result<ParsedHeader> parse_header(std::string_view xml,
           "Thumbnail cannot contain a Reference to another Thumbnail");
     }
   }
+  for (const auto &structure : state.table_structures) {
+    std::unordered_set<std::string> field_ids;
+    for (const auto &field : structure.fields) {
+      if (!field_ids.emplace(field.id).second) {
+        return make_error(ErrorCode::invalid_xisf,
+                          "Table field identifiers must be unique");
+      }
+    }
+  }
+  std::vector<std::size_t> table_structure_reference_counts(
+      state.tables.size());
+  for (const auto &event : state.table_structure_references) {
+    if (event.table_index >= state.tables.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Table structure reference is outside the document");
+    }
+    auto &count = table_structure_reference_counts[event.table_index];
+    ++count;
+    if (count > 1 || state.tables[event.table_index].structure_index) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Table requires exactly one inline or referenced Structure");
+    }
+    const auto target = state.standalone_structure_uids.find(event.reference);
+    if (target == state.standalone_structure_uids.end()) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Table Reference must target a standalone Structure");
+    }
+    state.tables[event.table_index].structure_index = target->second;
+    state.tables[event.table_index].structure_by_reference = true;
+  }
+  for (auto &table : state.tables) {
+    if (!table.structure_index ||
+        *table.structure_index >= state.table_structures.size()) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Table requires exactly one inline or referenced Structure");
+    }
+    const auto &fields = state.table_structures[*table.structure_index].fields;
+    if (table.declared_rows && *table.declared_rows != table.rows.size()) {
+      return make_error(ErrorCode::invalid_xisf,
+                        "Table rows attribute does not match its Row count");
+    }
+    if (table.declared_columns &&
+        *table.declared_columns != fields.size()) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Table columns attribute does not match its Structure field count");
+    }
+    for (const auto &row : table.rows) {
+      if (row.cells.size() != fields.size()) {
+        return make_error(
+            ErrorCode::invalid_xisf,
+            "Table Row cell count does not match its Structure field count");
+      }
+      for (std::size_t column = 0; column < row.cells.size(); ++column) {
+        const auto &cell = row.cells[column];
+        const auto category = classify_property_type(fields[column].type);
+        const bool has_extents = cell.length || cell.rows || cell.columns;
+        switch (category) {
+        case PropertyCategory::scalar_or_complex:
+          if (cell.value_form != TableCellInfo::ValueForm::attribute ||
+              has_extents ||
+              !is_valid_scalar_or_complex_value(fields[column].type,
+                                                cell.value)) {
+            return make_error(
+                ErrorCode::invalid_xisf,
+                "Scalar or complex Table Cell has an invalid value form");
+          }
+          break;
+        case PropertyCategory::string:
+          if (has_extents) {
+            return make_error(ErrorCode::invalid_xisf,
+                              "String Table Cell cannot declare extents");
+          }
+          break;
+        case PropertyCategory::time_point:
+          if (cell.value_form != TableCellInfo::ValueForm::attribute ||
+              has_extents || !is_valid_time_point_value(cell.value)) {
+            return make_error(ErrorCode::invalid_xisf,
+                              "TimePoint Table Cell has an invalid value");
+          }
+          break;
+        case PropertyCategory::vector:
+          if (cell.value_form != TableCellInfo::ValueForm::data_block ||
+              !cell.length || cell.rows || cell.columns) {
+            return make_error(
+                ErrorCode::invalid_xisf,
+                "Vector Table Cell requires length and location");
+          }
+          break;
+        case PropertyCategory::matrix:
+          if (cell.value_form != TableCellInfo::ValueForm::data_block ||
+              cell.length || !cell.rows || !cell.columns) {
+            return make_error(
+                ErrorCode::invalid_xisf,
+                "Matrix Table Cell requires rows, columns, and location");
+          }
+          break;
+        case PropertyCategory::unknown:
+          return make_error(ErrorCode::invalid_xisf,
+                            "Table Field declares an unknown property type");
+        }
+      }
+    }
+  }
   std::vector<MetadataBinding> metadata_bindings;
   metadata_bindings.reserve(state.metadata_binding_events.size());
   for (const auto &event : state.metadata_binding_events) {
+    if (event.by_reference &&
+        state.table_structure_uids.contains(event.reference)) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Structure References can only be direct children of Table");
+    }
     auto metadata_index = event.metadata_index;
     if (!metadata_index) {
       const auto target = state.metadata_uids.find(event.reference);
@@ -2585,6 +3117,37 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     thumbnail_bindings.push_back(
         ThumbnailBinding{target->second, *event.image_index, true});
   }
+  std::vector<TableBinding> table_bindings;
+  table_bindings.reserve(state.table_binding_events.size());
+  for (const auto &event : state.table_binding_events) {
+    if (event.table_index >= state.tables.size() ||
+        event.image_index >= state.images.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Table binding is outside the document");
+    }
+    table_bindings.push_back(
+        TableBinding{event.table_index, event.image_index, false});
+  }
+  for (const auto &event : state.metadata_binding_events) {
+    if (!event.by_reference) {
+      continue;
+    }
+    const auto target = state.table_uids.find(event.reference);
+    if (target == state.table_uids.end()) {
+      continue;
+    }
+    if (event.scope != MetadataBinding::Scope::image || !event.image_index) {
+      return make_error(ErrorCode::invalid_xisf,
+                        "Table References can only associate Tables with "
+                        "Images");
+    }
+    if (table_bindings.size() >= options.max_table_bindings) {
+      return make_error(ErrorCode::resource_limit,
+                        "Table binding limit exceeded");
+    }
+    table_bindings.push_back(
+        TableBinding{target->second, *event.image_index, true});
+  }
   std::unordered_set<std::string> unit_property_ids;
   std::vector<std::unordered_set<std::string>> image_property_ids(
       state.images.size());
@@ -2605,6 +3168,17 @@ Result<ParsedHeader> parse_header(std::string_view xml,
           image_property_ids[*binding.image_index].emplace(entry.name).second;
     }
     if (!inserted) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Property identifiers must be unique within each association");
+    }
+  }
+  for (const auto &binding : table_bindings) {
+    if (binding.table_index >= state.tables.size() ||
+        binding.image_index >= image_property_ids.size() ||
+        !image_property_ids[binding.image_index]
+             .emplace(state.tables[binding.table_index].id)
+             .second) {
       return make_error(
           ErrorCode::invalid_xisf,
           "Property identifiers must be unique within each association");
@@ -2634,7 +3208,9 @@ Result<ParsedHeader> parse_header(std::string_view xml,
       std::move(metadata_bindings), std::move(state.extension_elements),
       std::move(state.ancillary_objects), std::move(ancillary_bindings),
       std::move(state.icc_profiles), std::move(icc_profile_bindings),
-      std::move(state.thumbnails), std::move(thumbnail_bindings));
+      std::move(state.thumbnails), std::move(thumbnail_bindings),
+      std::move(state.table_structures), std::move(state.tables),
+      std::move(table_bindings));
   return ParsedHeader{std::move(document),
                       std::move(state.embedded_blocks),
                       std::move(state.inline_metadata_blocks),
@@ -4525,6 +5101,18 @@ const char *to_string(MetadataEntry::ValueForm value_form) noexcept {
   case MetadataEntry::ValueForm::character_data:
     return "Character data";
   case MetadataEntry::ValueForm::data_block:
+    return "Data block";
+  }
+  return "Attribute";
+}
+
+const char *to_string(TableCellInfo::ValueForm value_form) noexcept {
+  switch (value_form) {
+  case TableCellInfo::ValueForm::attribute:
+    return "Attribute";
+  case TableCellInfo::ValueForm::character_data:
+    return "Character data";
+  case TableCellInfo::ValueForm::data_block:
     return "Data block";
   }
   return "Attribute";

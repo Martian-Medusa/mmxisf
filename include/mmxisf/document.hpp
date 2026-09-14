@@ -86,6 +86,58 @@ struct MetadataBinding {
   bool by_reference{false};
 };
 
+struct TableFieldInfo {
+  std::string id;
+  std::string type;
+  std::string format;
+  std::string header;
+};
+
+struct TableStructureInfo {
+  std::string uid;
+  // Empty for a standalone root Structure; set for an inline Table child.
+  std::optional<std::size_t> table_index;
+  std::vector<TableFieldInfo> fields;
+};
+
+struct TableCellInfo {
+  enum class ValueForm { attribute, character_data, data_block };
+
+  ValueForm value_form{ValueForm::attribute};
+  std::string value;
+  BlockLocation block;
+  ByteOrder byte_order{ByteOrder::little};
+  std::string compression;
+  std::string subblocks;
+  std::string checksum;
+  std::optional<std::uint64_t> length;
+  std::optional<std::uint64_t> rows;
+  std::optional<std::uint64_t> columns;
+};
+
+struct TableRowInfo {
+  std::vector<TableCellInfo> cells;
+};
+
+struct TableInfo {
+  std::string uid;
+  std::optional<std::size_t> image_index;
+  std::string id;
+  std::string caption;
+  std::string comment;
+  std::optional<std::uint64_t> declared_rows;
+  std::optional<std::uint64_t> declared_columns;
+  std::optional<std::size_t> structure_index;
+  bool structure_by_reference{false};
+  std::vector<TableRowInfo> rows;
+};
+
+struct TableBinding {
+  std::size_t table_index{0};
+  std::size_t image_index{0};
+  bool by_reference{false};
+};
+
 struct XmlAttribute {
   std::string namespace_uri;
   std::string name;
@@ -184,7 +236,10 @@ public:
            std::vector<IccProfileInfo> icc_profiles = {},
            std::vector<IccProfileBinding> icc_profile_bindings = {},
            std::vector<ThumbnailInfo> thumbnails = {},
-           std::vector<ThumbnailBinding> thumbnail_bindings = {})
+           std::vector<ThumbnailBinding> thumbnail_bindings = {},
+           std::vector<TableStructureInfo> table_structures = {},
+           std::vector<TableInfo> tables = {},
+           std::vector<TableBinding> table_bindings = {})
       : version_(std::move(version)), images_(std::move(images)),
         metadata_(std::move(metadata)), file_size_(file_size),
         header_length_(header_length),
@@ -195,7 +250,10 @@ public:
         icc_profiles_(std::move(icc_profiles)),
         icc_profile_bindings_(std::move(icc_profile_bindings)),
         thumbnails_(std::move(thumbnails)),
-        thumbnail_bindings_(std::move(thumbnail_bindings)) {}
+        thumbnail_bindings_(std::move(thumbnail_bindings)),
+        table_structures_(std::move(table_structures)),
+        tables_(std::move(tables)), table_bindings_(std::move(table_bindings)) {
+  }
 
   [[nodiscard]] const std::string &version() const noexcept { return version_; }
   [[nodiscard]] const std::vector<ImageInfo> &images() const noexcept {
@@ -235,6 +293,17 @@ public:
   thumbnail_bindings() const noexcept {
     return thumbnail_bindings_;
   }
+  [[nodiscard]] const std::vector<TableStructureInfo> &
+  table_structures() const noexcept {
+    return table_structures_;
+  }
+  [[nodiscard]] const std::vector<TableInfo> &tables() const noexcept {
+    return tables_;
+  }
+  [[nodiscard]] const std::vector<TableBinding> &
+  table_bindings() const noexcept {
+    return table_bindings_;
+  }
   [[nodiscard]] std::uint64_t file_size() const noexcept { return file_size_; }
   [[nodiscard]] std::uint32_t header_length() const noexcept {
     return header_length_;
@@ -254,6 +323,9 @@ private:
   std::vector<IccProfileBinding> icc_profile_bindings_;
   std::vector<ThumbnailInfo> thumbnails_;
   std::vector<ThumbnailBinding> thumbnail_bindings_;
+  std::vector<TableStructureInfo> table_structures_;
+  std::vector<TableInfo> tables_;
+  std::vector<TableBinding> table_bindings_;
 };
 
 [[nodiscard]] MMXISF_API const char *to_string(SampleFormat format) noexcept;
@@ -271,6 +343,8 @@ to_string(NominalChannelOrder order) noexcept;
 to_string(MetadataEntry::Scope scope) noexcept;
 [[nodiscard]] MMXISF_API const char *
 to_string(MetadataEntry::ValueForm value_form) noexcept;
+[[nodiscard]] MMXISF_API const char *
+to_string(TableCellInfo::ValueForm value_form) noexcept;
 [[nodiscard]] MMXISF_API const char *to_string(AncillaryKind kind) noexcept;
 
 } // namespace mmxisf

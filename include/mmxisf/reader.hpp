@@ -42,6 +42,13 @@ struct ReaderOptions {
   std::uint64_t max_thumbnail_dimension{4'096};
   std::uint64_t max_serialized_thumbnail_bytes{128ULL * 1024ULL * 1024ULL};
   std::uint64_t max_decoded_thumbnail_bytes{128ULL * 1024ULL * 1024ULL};
+  std::size_t max_table_structures{256};
+  std::size_t max_tables{256};
+  std::size_t max_table_fields{4'096};
+  std::size_t max_table_rows{100'000};
+  std::size_t max_table_cells{1'000'000};
+  std::size_t max_table_bindings{100'000};
+  std::size_t max_table_text_bytes{16U * 1024U * 1024U};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};

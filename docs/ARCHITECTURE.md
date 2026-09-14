@@ -53,6 +53,10 @@ The M1 pre-release API now supports:
 - `Document::thumbnails()` plus `Reader::read_thumbnail(index, stop_token)` for
   the bounded UInt8/UInt16 Gray/RGB image-like profile, retaining exact source
   representation and main-image association;
+- `Document::table_structures()`, `Document::tables()`, and
+  `Document::table_bindings()` for bounded structural inspection of table
+  fields, rows, cells, serialization forms, and direct/referenced image
+  associations without implicit typed coercion or external block access;
 - bounded chunk reads with cooperative cancellation;
 - exact UInt64 and complex image bytes, with component-wise native-endian
   conversion and no magnitude/phase interpretation;
@@ -111,6 +115,12 @@ Thumbnail descriptors and bindings are separate from main images so a consumer
 cannot accidentally treat preview pixels as scientific samples. Local reads
 share the image codec/integrity machinery but use independent count,
 dimension, serialized-byte, and decoded-byte limits.
+
+Table structures, tables, fields, rows, cells, bindings, and retained text use
+independent cumulative limits. The parser resolves only document-local
+standalone Structure references, verifies exact row/column cardinality and
+field types, and leaves cell block payloads inspect-only. This keeps hostile
+tables from bypassing general XML limits or causing file/network access.
 
 Compressed input is staged once so its checksum can be verified before any
 codec call. Unshuffled codec output is written directly to the caller's buffer.

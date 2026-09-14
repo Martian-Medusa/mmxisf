@@ -27,6 +27,13 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | thumbnail width or height | 4,096 pixels | Finite compatibility ceiling above the specification's 1,024-pixel recommendation |
 | serialized bytes per thumbnail | 128 MiB | Bound attachment/embedded staging before integrity and codec work |
 | decoded bytes per thumbnail | 128 MiB | Bound returned preview allocation before decompression |
+| table structures | 256 cumulative | Bound standalone and inline Structure records |
+| tables | 256 cumulative | Bound Table records and per-table row containers |
+| table fields | 4,096 cumulative | Bound heterogeneous schema width across Structures |
+| table rows | 100,000 cumulative | Bound row-vector overhead across Tables |
+| table cells | 1,000,000 cumulative | Bound heterogeneous cell descriptors |
+| table image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
+| table semantic text | 16 MiB cumulative | Bound copied ids, types, captions, headers, formats, values, and inline payload text |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects and bindings | 100,000 each | Preserve large legitimate metadata sets while bounding repeated references |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |
@@ -87,6 +94,12 @@ Thumbnail limits are independent from main-image limits. Geometry restrictions
 also cap channels at two for Gray and four for RGB. The default dimension cap
 does not redefine the XISF recommendation of at most 1024 pixels; applications
 can tighten it to 1024 when strict producer policy is desired.
+
+Table limits are cumulative across a document and independent from ordinary
+Property metadata limits. General XML header/node/depth/attribute caps remain
+authoritative. Inline Cell block text is retained only for inspection and is
+charged to the table text budget; no Table Cell block is decoded or resolved by
+the current profile.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

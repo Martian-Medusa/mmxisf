@@ -22,6 +22,7 @@
 | FITS keyword elements | 85-339 |
 | Thumbnail | present in one file |
 | Thumbnail decode | 400 x 267 UInt8 Gray, 106,800-byte attachment; decoded SHA-256 equals independent raw-range SHA-256 `6bb8c5ff6acb91b5f7bd24afadda339a70a95d0b5d8f911d37f2870f6715c1a5` |
+| Structure/Table | none observed; all 9/9 headers still open after bounded table validation was enabled |
 
 ## Planning consequences
 

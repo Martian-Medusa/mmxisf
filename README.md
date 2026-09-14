@@ -186,6 +186,13 @@ UInt8/UInt16 Gray/RGB preview descriptors and their main-image associations.
 pixels from attachment or embedded blocks; it never substitutes thumbnail
 pixels for scientific image data or applies display transforms.
 
+`Document::table_structures()`, `Document::tables()`, and
+`Document::table_bindings()` expose bounded ordered `Structure`/`Table`
+inspection. Schemas, rows, cells, declared shapes, serialization forms, and
+image associations are validated and retained without coercing heterogeneous
+values. Table Cell data blocks remain descriptors only and external locations
+are never resolved.
+
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
 and either layout explicitly. UInt64, Complex32, and Complex64 use the same raw
@@ -255,7 +262,8 @@ Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
 can still open a broader set of headers and displays inventoried extension
 elements/attributes, validated ancillary core objects, and ICC profile
-descriptors/associations plus Thumbnail records alongside metadata, while
+descriptors/associations plus Thumbnail and Structure/Table records alongside
+metadata, while
 unsupported image decoding fails closed.
 
 ## License

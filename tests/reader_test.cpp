@@ -2984,6 +2984,219 @@ int main() {
                                           mmxisf::ErrorCode::invalid_xisf,
          "Thumbnail rejects a child Reference to a Thumbnail");
 
+  const auto table_path = write_fixture(
+      "mmxisf-tables.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Structure uid=\"CatalogStructure\">"
+          "<Field id=\"number\" type=\"UInt8\" header=\"Number\"/>"
+          "<Field id=\"name\" type=\"String\"/>"
+          "<Field id=\"samples\" type=\"F32Vector\" "
+          "format=\"float:fixed;precision:2\"/>"
+          "</Structure>"
+          "<Table uid=\"SharedTable\" id=\"Catalog\" caption=\"Objects\" "
+          "rows=\"2\" columns=\"3\">"
+          "<Reference ref=\"CatalogStructure\"/>"
+          "<Row><Cell value=\"1\"/><Cell value=\"M1\"/>"
+          "<Cell length=\"2\" location=\"inline:hex\">0000803f00000040"
+          "</Cell></Row>"
+          "<Row><Cell value=\"2\"/><Cell> M2 </Cell>"
+          "<Cell length=\"2\" location=\"path(vectors.bin)\"/>"
+          "</Row></Table>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<Reference ref=\"SharedTable\"/></Image>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<Table id=\"Acquisition\" comment=\"direct\" rows=\"1\" "
+          "columns=\"1\"><Structure><Field id=\"when\" "
+          "type=\"TimePoint\"/></Structure><Row>"
+          "<Cell value=\"2026-09-14T01:02:03Z\"/></Row></Table></Image>") +
+          valid_metadata() + "</xisf>");
+  auto tables = mmxisf::Reader::open_file(table_path);
+  expect(tables.has_value(), "standalone/referenced and direct Tables open");
+  if (tables) {
+    const auto &document = tables.value().document();
+    expect(document.table_structures().size() == 2 &&
+               document.tables().size() == 2 &&
+               document.table_bindings().size() == 2,
+           "Table structures, values, and bindings retain document order");
+    if (document.table_structures().size() == 2) {
+      const auto &standalone = document.table_structures()[0];
+      const auto &inline_structure = document.table_structures()[1];
+      expect(standalone.uid == "CatalogStructure" && !standalone.table_index &&
+                 standalone.fields.size() == 3 &&
+                 standalone.fields[2].type == "F32Vector" &&
+                 standalone.fields[2].format == "float:fixed;precision:2",
+             "standalone Structure preserves ordered field descriptors");
+      expect(inline_structure.table_index == 1 &&
+                 inline_structure.fields.size() == 1 &&
+                 inline_structure.fields[0].type == "TimePoint",
+             "inline Structure retains its owning Table");
+    }
+    if (document.tables().size() == 2) {
+      const auto &shared = document.tables()[0];
+      const auto &direct = document.tables()[1];
+      expect(shared.id == "Catalog" && shared.caption == "Objects" &&
+                 shared.structure_index == 0 && shared.structure_by_reference &&
+                 shared.rows.size() == 2 && shared.rows[0].cells.size() == 3,
+             "referenced Table structure and declared shape are resolved");
+      expect(shared.rows[0].cells[0].value == "1" &&
+                 shared.rows[0].cells[1].value == "M1" &&
+                 shared.rows[0].cells[2].value_form ==
+                     mmxisf::TableCellInfo::ValueForm::data_block &&
+                 shared.rows[0].cells[2].block.raw == "inline:hex" &&
+                 shared.rows[0].cells[2].value == "0000803f00000040" &&
+                 shared.rows[1].cells[1].value == " M2 ",
+             "Table Cells preserve attribute, character, and inline forms");
+      expect(direct.image_index == 1 && direct.structure_index == 1 &&
+                 !direct.structure_by_reference && direct.comment == "direct",
+             "direct image Table retains provenance and inline Structure");
+    }
+    if (document.table_bindings().size() == 2) {
+      expect(document.table_bindings()[0].table_index == 1 &&
+                 document.table_bindings()[0].image_index == 1 &&
+                 !document.table_bindings()[0].by_reference,
+             "direct Table binding retains image association");
+      expect(document.table_bindings()[1].table_index == 0 &&
+                 document.table_bindings()[1].image_index == 0 &&
+                 document.table_bindings()[1].by_reference,
+             "referenced Table binding resolves image association");
+    }
+  }
+
+  const auto expect_table_resource_limit = [&](mmxisf::ReaderOptions options,
+                                               const char *message) {
+    auto opened = mmxisf::Reader::open_file(table_path, options);
+    expect(!opened && opened.error().code == mmxisf::ErrorCode::resource_limit,
+           message);
+  };
+  mmxisf::ReaderOptions one_table_structure;
+  one_table_structure.max_table_structures = 1;
+  expect_table_resource_limit(one_table_structure,
+                              "Table Structure count limit is enforced");
+  mmxisf::ReaderOptions one_table;
+  one_table.max_tables = 1;
+  expect_table_resource_limit(one_table, "Table count limit is enforced");
+  mmxisf::ReaderOptions three_fields;
+  three_fields.max_table_fields = 3;
+  expect_table_resource_limit(three_fields, "Table field limit is enforced");
+  mmxisf::ReaderOptions two_rows;
+  two_rows.max_table_rows = 2;
+  expect_table_resource_limit(two_rows, "Table row limit is enforced");
+  mmxisf::ReaderOptions six_cells;
+  six_cells.max_table_cells = 6;
+  expect_table_resource_limit(six_cells, "Table cell limit is enforced");
+  mmxisf::ReaderOptions one_table_binding;
+  one_table_binding.max_table_bindings = 1;
+  expect_table_resource_limit(one_table_binding,
+                              "Table binding limit is enforced");
+  mmxisf::ReaderOptions tiny_table_text;
+  tiny_table_text.max_table_text_bytes = 8;
+  expect_table_resource_limit(tiny_table_text,
+                              "Table text byte limit is enforced");
+
+  const auto invalid_table_xml = [&](std::string_view elements) {
+    return std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                       "version=\"1.0\">") +
+           std::string(elements) + valid_metadata() + "</xisf>";
+  };
+  const auto rejects_table = [&](const char *fixture_name,
+                                 std::string_view elements) {
+    auto opened = mmxisf::Reader::open_file(
+        write_fixture(fixture_name, invalid_table_xml(elements)));
+    return !opened && opened.error().code == mmxisf::ErrorCode::invalid_xisf;
+  };
+  expect(rejects_table("mmxisf-table-no-structure.xisf", "<Table id=\"T\"/>"),
+         "Table requires a Structure");
+  expect(rejects_table("mmxisf-empty-structure.xisf", "<Structure uid=\"S\"/>"),
+         "Structure requires at least one Field");
+  expect(rejects_table(
+             "mmxisf-table-duplicate-field.xisf",
+             "<Table id=\"T\"><Structure><Field id=\"x\" type=\"UInt8\"/>"
+             "<Field id=\"x\" type=\"String\"/></Structure></Table>"),
+         "Table Field identifiers are unique");
+  expect(rejects_table(
+             "mmxisf-table-row-width.xisf",
+             "<Table id=\"T\"><Structure><Field id=\"x\" type=\"UInt8\"/>"
+             "<Field id=\"y\" type=\"UInt8\"/></Structure>"
+             "<Row><Cell value=\"1\"/></Row></Table>"),
+         "Table Row width must match its Structure");
+  expect(rejects_table("mmxisf-table-declared-shape.xisf",
+                       "<Table id=\"T\" rows=\"2\" columns=\"1\"><Structure>"
+                       "<Field id=\"x\" type=\"UInt8\"/></Structure>"
+                       "<Row><Cell value=\"1\"/></Row></Table>"),
+         "Table declared row count must match data");
+  expect(rejects_table("mmxisf-table-declared-columns.xisf",
+                       "<Table id=\"T\" columns=\"2\"><Structure>"
+                       "<Field id=\"x\" type=\"UInt8\"/></Structure>"
+                       "<Row><Cell value=\"1\"/></Row></Table>"),
+         "Table declared column count must match its Structure");
+  expect(rejects_table("mmxisf-table-bad-reference.xisf",
+                       "<Table uid=\"Other\" id=\"Other\"><Structure>"
+                       "<Field id=\"x\" type=\"UInt8\"/></Structure></Table>"
+                       "<Table id=\"T\"><Reference ref=\"Other\"/></Table>"),
+         "Table Structure Reference cannot target a Table");
+  expect(rejects_table("mmxisf-table-two-structures.xisf",
+                       "<Structure uid=\"S\"><Field id=\"x\" type=\"UInt8\"/>"
+                       "</Structure><Table id=\"T\"><Reference ref=\"S\"/>"
+                       "<Structure><Field id=\"x\" type=\"UInt8\"/></Structure>"
+                       "</Table>"),
+         "Table cannot combine referenced and inline Structures");
+  expect(rejects_table(
+             "mmxisf-table-invalid-scalar.xisf",
+             "<Table id=\"T\"><Structure><Field id=\"x\" type=\"UInt8\"/>"
+             "</Structure><Row><Cell value=\"256\"/></Row></Table>"),
+         "Table scalar Cell syntax and range are validated");
+  expect(
+      rejects_table("mmxisf-table-invalid-vector.xisf",
+                    "<Table id=\"T\"><Structure><Field id=\"x\" "
+                    "type=\"UI16Vector\"/></Structure><Row>"
+                    "<Cell location=\"inline:hex\">0100</Cell></Row></Table>"),
+      "Table vector Cell requires a length");
+  expect(rejects_table(
+             "mmxisf-table-cell-forbidden-attributes.xisf",
+             "<Table id=\"T\"><Structure><Field id=\"x\" type=\"UInt8\"/>"
+             "</Structure><Row><Cell id=\"x\" value=\"1\"/></Row></Table>"),
+         "Table Cell rejects id, type, and format attributes");
+  expect(rejects_table(
+             "mmxisf-table-cell-child.xisf",
+             "<Table id=\"T\"><Structure><Field id=\"x\" type=\"String\"/>"
+             "</Structure><Row><Cell><Property id=\"x\" type=\"String\">"
+             "bad</Property></Cell></Row></Table>"),
+         "Table Cell cannot contain child elements");
+  expect(rejects_table("mmxisf-table-property-id-conflict.xisf",
+                       "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                       "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+                       "<Property id=\"Shared\" type=\"UInt8\" value=\"1\"/>"
+                       "<Table id=\"Shared\"><Structure><Field id=\"x\" "
+                       "type=\"UInt8\"/></Structure><Row><Cell value=\"1\"/>"
+                       "</Row></Table></Image>"),
+         "Table and Property identifiers are unique per image association");
+  expect(rejects_table(
+             "mmxisf-structure-reference-from-image.xisf",
+             "<Structure uid=\"S\"><Field id=\"x\" type=\"UInt8\"/>"
+             "</Structure><Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+             "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+             "<Reference ref=\"S\"/></Image>"),
+         "Structure References are only valid as direct Table children");
+  const auto table_from_metadata_path = write_fixture(
+      "mmxisf-table-reference-from-metadata.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Table uid=\"T\" id=\"T\"><Structure><Field id=\"x\" "
+          "type=\"UInt8\"/></Structure></Table><Metadata>"
+          "<Property id=\"XISF:CreationTime\" type=\"String\">"
+          "2026-09-14T01:02:03Z</Property>"
+          "<Property id=\"XISF:CreatorApplication\" type=\"String\">"
+          "mmxisf-test</Property><Reference ref=\"T\"/>"
+          "</Metadata></xisf>"));
+  auto table_from_metadata =
+      mmxisf::Reader::open_file(table_from_metadata_path);
+  expect(!table_from_metadata && table_from_metadata.error().code ==
+                                     mmxisf::ErrorCode::invalid_xisf,
+         "Table References cannot associate Tables with unit Metadata");
+
   const auto nonzero_trailing_path = write_fixture(
       "mmxisf-nonzero-trailing-space.xisf",
       std::string(
