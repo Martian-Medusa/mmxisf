@@ -166,7 +166,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install dependencies once
-        run: vcpkg install expat:x64-windows lz4:x64-windows openssl:x64-windows zlib:x64-windows zstd:x64-windows
+        run: vcpkg install --triplet x64-windows
       - name: Configure static library
         run: >-
           cmake -S . -B build-static -A x64
