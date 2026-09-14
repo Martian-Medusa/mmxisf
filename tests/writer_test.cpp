@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <barrier>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -20,6 +21,7 @@
 #include <stop_token>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -1347,6 +1349,49 @@ void test_rejection_and_cleanup() {
          "cancelled writer left a destination file");
 }
 
+void test_concurrent_no_overwrite_commit() {
+  constexpr std::size_t writer_count = 16;
+  const std::array<std::byte, 8> pixels{
+      std::byte{0x01}, std::byte{0x00}, std::byte{0x02}, std::byte{0x00},
+      std::byte{0x03}, std::byte{0x00}, std::byte{0x04}, std::byte{0x00}};
+  const auto image = gray_image(pixels);
+  const auto writer_options = options();
+  const auto destination = output_path("mmxisf-writer-concurrent.xisf");
+  auto temporary = destination;
+  temporary += ".mmxisf-tmp";
+
+  std::barrier start(static_cast<std::ptrdiff_t>(writer_count));
+  std::array<int, writer_count> outcomes{};
+  std::array<std::thread, writer_count> writers;
+  for (std::size_t index = 0; index < writers.size(); ++index) {
+    writers[index] = std::thread([&, index] {
+      start.arrive_and_wait();
+      auto result =
+          mmxisf::Writer::write_file(destination, image, writer_options);
+      outcomes[index] = result ? 1
+                        : result.error().code == mmxisf::ErrorCode::io_error
+                            ? 0
+                            : -1;
+    });
+  }
+  for (auto &writer : writers) {
+    writer.join();
+  }
+
+  expect(std::count(outcomes.begin(), outcomes.end(), 1) == 1 &&
+             std::count(outcomes.begin(), outcomes.end(), 0) ==
+                 static_cast<std::ptrdiff_t>(writer_count - 1) &&
+             !std::filesystem::exists(temporary),
+         "concurrent writers did not preserve exclusive commit semantics");
+  auto opened = mmxisf::Reader::open_file(destination);
+  expect(opened.has_value(), "concurrent writer result did not reopen");
+  auto decoded = opened.value().read_image(0);
+  expect(decoded.has_value() &&
+             decoded.value().pixels ==
+                 std::vector<std::byte>(pixels.begin(), pixels.end()),
+         "concurrent writer result changed pixel bytes");
+}
+
 void test_byte_sink_contract() {
   mmxisf::Result<void> success;
   expect(success.has_value(), "default Result<void> is not successful");
@@ -1495,6 +1540,7 @@ int main() {
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();
+    test_concurrent_no_overwrite_commit();
     test_byte_sink_contract();
     std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;

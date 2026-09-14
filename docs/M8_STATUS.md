@@ -87,6 +87,12 @@
   limit must be increased. This is an external billing block, not a code,
   workflow, action-pin, or test failure. The official `v7.0.1` tags resolve to
   the exact checkout and upload-artifact commits configured in the workflow.
+- A later exact-head attempt for row delivery, run
+  [`34800837295`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34800837295)
+  on commit `fe588161485c8852dd30946669a79ddb5a96c739`, produced the same
+  account-level billing/spending-limit annotation for all eight jobs before any
+  runner step. This independently confirms that the current CI blocker remains
+  external to repository code.
 
 ## Still required for public beta
 

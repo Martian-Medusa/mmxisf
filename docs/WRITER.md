@@ -92,7 +92,9 @@ copied into the final temporary XISF only after the exact serialized size and
 header layout are known. This avoids retaining a complete compressed image in
 RAM in addition to the caller's source pixels and per-subblock scratch. Spools
 are removed after success, cancellation, or failure. A stale spool is never
-overwritten and causes an explicit I/O error.
+overwritten and causes an explicit I/O error. Spools are acquired with an
+operating-system exclusive-create operation, and cleanup ownership begins only
+after that operation succeeds.
 
 ## Multiple images and metadata
 
@@ -182,12 +184,20 @@ per-image/cumulative byte budgets, compression subblock size/count, header
 size, identifiers, XML UTF-8, and metadata scope are validated before the
 destination is created. Output is written to a sibling temporary file, flushed,
 closed, and committed through a no-overwrite hard link. An existing destination
-or stale `.mmxisf-tmp` sibling is never replaced.
+or stale `.mmxisf-tmp` sibling is never replaced. The temporary is created
+atomically with exclusive-create semantics instead of a separate check followed
+by a truncating open. Concurrent cooperating writers for the same destination
+therefore fail closed, with at most one successful publication.
 
 Cancellations are cooperative between bounded write chunks and immediately
 before commit. A cancelled or failed `write_file` removes its incomplete
 temporary file and does not produce a successful destination. Filesystems that
 do not support hard links fail explicitly in the current profile.
+
+The destination and scratch directories are caller-controlled trust
+boundaries. They must not be writable by hostile actors able to unlink or
+replace entries during a write. The contract is atomic no-overwrite visibility;
+crash/power-loss durability remains dependent on the filesystem and volume.
 
 `WriteSummary::image_blocks` reports every attached block. The legacy
 `image_block` field aliases the first block for source compatibility with the

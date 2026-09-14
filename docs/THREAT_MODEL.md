@@ -41,6 +41,7 @@ be bounded, structured, and safe for unattended PFI batch processing.
 | Heterogeneous Table amplification, malformed schemas, or external Cell resolution | Dedicated structure/table/field/row/cell/binding/text limits, exact cardinality and type-form validation, document-local Structure resolution, descriptor-only Cell blocks, and no external I/O | positive, malformed, reference, uniqueness, and zero/tiny-limit tests |
 | Path traversal, symlink escape or SSRF | External path/URL locations rejected in the initial profile; future resolver is explicit opt-in | API and negative tests |
 | File changed during parsing | Stable handle, initial identity/size snapshot, optional final identity check | mutation test |
+| Writer temporary/spool collision | OS exclusive-create; cleanup ownership only after successful creation; no-overwrite hard-link commit | stale-path and concurrent-writer tests |
 | Non-finite or invalid numeric metadata | Grammar-aware parsing and explicit invalid state; no default substitution | value corpus |
 | Diagnostic memory/data disclosure | Bounded messages; offsets and identifiers only; no large payload echo | diagnostic tests |
 | Codec/parser supply-chain compromise | Pin releases/hashes, SBOM, license audit, update policy, CI scanners | release gate |
@@ -67,3 +68,10 @@ be bounded, structured, and safe for unattended PFI batch processing.
 Distributed units, remote retrieval, XML digital signatures, credential
 handling, and persistent caches require separate threat models. They cannot be
 enabled by a convenience flag added to the initial reader.
+
+Writer destination and scratch directories are assumed to be controlled by the
+caller. A hostile or privileged process that can unlink and replace directory
+entries during a write is outside the current portable filesystem contract.
+Power-loss durability is also filesystem-specific; the writer guarantees
+atomic no-overwrite publication during normal operation, not durable directory
+journaling on every supported platform.

@@ -38,8 +38,10 @@
 - Multi-subblock compressed output is staged through bounded sibling spool
   files instead of retaining the complete serialized image in RAM.
 - A sibling temporary file is linked into a previously absent destination only
-  after a successful flush. Existing destination and stale temporary paths are
-  never overwritten; failed/cancelled writes remove incomplete temporary data.
+  after a successful flush. Temporary and spool files use OS-level exclusive
+  creation, and cleanup owns only paths the writer successfully created.
+  Existing destination and stale temporary paths are never overwritten;
+  failed/cancelled writes remove incomplete temporary data.
 - A caller-owned sequential `ByteSink` can receive identical serializer output
   with bounded partial-write loops, explicit flush/error propagation, and no
   implicit close or rollback. Multi-subblock calls require an explicit scratch
@@ -131,6 +133,9 @@
   outputs. Sink write, zero-progress, impossible write count, flush,
   cancellation, missing scratch, and stale scratch cases fail with the
   documented partial-output boundary.
+- Sixteen simultaneous writers targeting one output yield exactly one complete,
+  reopenable file, fifteen explicit I/O failures, and no leaked temporary. This
+  compiled regression guards the exclusive-create/no-overwrite contract.
 
 ## Still required for M6
 

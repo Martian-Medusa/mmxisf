@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <charconv>
 #include <cmath>
 #include <exception>
@@ -21,6 +22,16 @@
 #include <string_view>
 #include <system_error>
 #include <unordered_set>
+
+#if defined(_WIN32)
+#include <fcntl.h>
+#include <io.h>
+#include <share.h>
+#include <sys/stat.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 namespace mmxisf {
 namespace {
@@ -986,29 +997,112 @@ make_header(std::span<const ImageWriteView> images,
   return header;
 }
 
-class OstreamByteSink final : public ByteSink {
+class ExclusiveFileByteSink final : public ByteSink {
 public:
-  explicit OstreamByteSink(std::ofstream &output) : output_(output) {}
+  static Result<std::unique_ptr<ExclusiveFileByteSink>>
+  create(const std::filesystem::path &path) {
+    int descriptor = -1;
+#if defined(_WIN32)
+    const auto open_error =
+        _wsopen_s(&descriptor, path.c_str(),
+                  _O_WRONLY | _O_CREAT | _O_EXCL | _O_BINARY | _O_NOINHERIT,
+                  _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    if (open_error != 0 || descriptor < 0) {
+      return make_error(ErrorCode::io_error,
+                        "Unable to exclusively create writer file");
+    }
+#else
+    auto flags = O_WRONLY | O_CREAT | O_EXCL;
+#if defined(O_CLOEXEC)
+    flags |= O_CLOEXEC;
+#endif
+    do {
+      descriptor = ::open(path.c_str(), flags, 0666);
+    } while (descriptor < 0 && errno == EINTR);
+    if (descriptor < 0) {
+      return make_error(ErrorCode::io_error,
+                        "Unable to exclusively create writer file");
+    }
+#endif
+    return std::unique_ptr<ExclusiveFileByteSink>(
+        new ExclusiveFileByteSink(descriptor));
+  }
+
+  ExclusiveFileByteSink(const ExclusiveFileByteSink &) = delete;
+  ExclusiveFileByteSink &operator=(const ExclusiveFileByteSink &) = delete;
+
+  ~ExclusiveFileByteSink() override {
+    if (descriptor_ >= 0) {
+#if defined(_WIN32)
+      static_cast<void>(_close(descriptor_));
+#else
+      static_cast<void>(::close(descriptor_));
+#endif
+    }
+  }
 
   Result<std::size_t> write(std::span<const std::byte> source) override {
-    output_.write(reinterpret_cast<const char *>(source.data()),
-                  static_cast<std::streamsize>(source.size()));
-    if (!output_) {
+    if (descriptor_ < 0) {
+      return make_error(ErrorCode::io_error, "Writer file is closed");
+    }
+    if (source.empty()) {
+      return std::size_t{0};
+    }
+#if defined(_WIN32)
+    const auto count = static_cast<unsigned int>(std::min<std::size_t>(
+        source.size(), std::numeric_limits<unsigned int>::max()));
+    const auto written = _write(descriptor_, source.data(), count);
+#else
+    ssize_t written = -1;
+    do {
+      written = ::write(descriptor_, source.data(), source.size());
+    } while (written < 0 && errno == EINTR);
+#endif
+    if (written < 0) {
       return make_error(ErrorCode::io_error, "Unable to write XISF bytes");
     }
-    return source.size();
+    return static_cast<std::size_t>(written);
   }
 
   Result<void> flush() override {
-    output_.flush();
-    if (!output_) {
+    if (descriptor_ < 0) {
+      return make_error(ErrorCode::io_error, "Writer file is closed");
+    }
+    int result = -1;
+#if defined(_WIN32)
+    result = _commit(descriptor_);
+#else
+    do {
+      result = ::fsync(descriptor_);
+    } while (result < 0 && errno == EINTR);
+#endif
+    if (result != 0) {
       return make_error(ErrorCode::io_error, "Unable to flush XISF bytes");
     }
     return {};
   }
 
+  Result<void> close() {
+    if (descriptor_ < 0) {
+      return {};
+    }
+    const auto descriptor = descriptor_;
+    descriptor_ = -1;
+#if defined(_WIN32)
+    const auto result = _close(descriptor);
+#else
+    const auto result = ::close(descriptor);
+#endif
+    if (result != 0) {
+      return make_error(ErrorCode::io_error, "Unable to close writer file");
+    }
+    return {};
+  }
+
 private:
-  std::ofstream &output_;
+  explicit ExclusiveFileByteSink(int descriptor) : descriptor_(descriptor) {}
+
+  int descriptor_{-1};
 };
 
 Result<std::uint64_t> write_all(ByteSink &output,
@@ -1148,7 +1242,7 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
 
     std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
     const bool use_spool = decoded_size > chunk_limit;
-    std::ofstream spool_output;
+    std::unique_ptr<ExclusiveFileByteSink> spool_sink;
     if (use_spool) {
       if (destination.empty()) {
         return make_error(
@@ -1158,19 +1252,13 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       }
       block.spool_path = destination;
       block.spool_path += request.spool_suffix;
-      if (!path_is_available(block.spool_path)) {
-        return make_error(
-            ErrorCode::io_error,
-            "Writer compression spool already exists or cannot be checked");
+      auto opened = ExclusiveFileByteSink::create(block.spool_path);
+      if (!opened) {
+        return opened.error();
       }
+      spool_sink = std::move(opened).value();
       cleanup.track(block.spool_path);
-      spool_output.open(block.spool_path, std::ios::binary | std::ios::trunc);
-      if (!spool_output) {
-        return make_error(ErrorCode::io_error,
-                          "Unable to create writer compression spool");
-      }
     }
-    OstreamByteSink spool_sink(spool_output);
 
     std::uint64_t input_offset = 0;
     std::uint64_t serialized_so_far = 0;
@@ -1215,7 +1303,7 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       const auto compressed_size =
           static_cast<std::uint64_t>(compressed.value().size());
       if (use_spool) {
-        auto spooled = write_all(spool_sink, compressed.value(), stop_token);
+        auto spooled = write_all(*spool_sink, compressed.value(), stop_token);
         if (!spooled) {
           return spooled.error();
         }
@@ -1227,14 +1315,13 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       input_offset += uncompressed_size;
     }
     if (use_spool) {
-      auto flushed = spool_sink.flush();
+      auto flushed = spool_sink->flush();
       if (!flushed) {
         return flushed.error();
       }
-      spool_output.close();
-      if (!spool_output) {
-        return make_error(ErrorCode::io_error,
-                          "Unable to close writer compression spool");
+      auto closed = spool_sink->close();
+      if (!closed) {
+        return closed.error();
       }
     }
     block.serialized_size = serialized_so_far;
@@ -1607,12 +1694,6 @@ write_impl(const std::filesystem::path &destination_or_scratch,
     }
     temporary = destination_or_scratch;
     temporary += ".mmxisf-tmp";
-    if (!path_is_available(temporary)) {
-      return make_error(
-          ErrorCode::io_error,
-          "Writer temporary path already exists or cannot be checked");
-    }
-    cleanup.track(temporary);
   }
 
   std::vector<PreparedBlock> prepared(images.size());
@@ -1808,16 +1889,15 @@ write_impl(const std::filesystem::path &destination_or_scratch,
   }
   const auto file_size = file_size_result.value();
 
-  std::ofstream output_file;
-  std::unique_ptr<OstreamByteSink> file_sink;
+  std::unique_ptr<ExclusiveFileByteSink> file_sink;
   ByteSink *output = external_sink;
   if (writes_file) {
-    output_file.open(temporary, std::ios::binary | std::ios::trunc);
-    if (!output_file) {
-      return make_error(ErrorCode::io_error,
-                        "Unable to create temporary XISF file");
+    auto opened = ExclusiveFileByteSink::create(temporary);
+    if (!opened) {
+      return opened.error();
     }
-    file_sink = std::make_unique<OstreamByteSink>(output_file);
+    file_sink = std::move(opened).value();
+    cleanup.track(temporary);
     output = file_sink.get();
   }
   if (output == nullptr) {
@@ -1909,9 +1989,9 @@ write_impl(const std::filesystem::path &destination_or_scratch,
     return flushed.error();
   }
   if (writes_file) {
-    output_file.close();
-    if (!output_file) {
-      return make_error(ErrorCode::io_error, "Unable to close XISF file");
+    auto closed = file_sink->close();
+    if (!closed) {
+      return closed.error();
     }
   }
   if (stop_token.stop_requested()) {
