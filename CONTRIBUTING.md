@@ -41,6 +41,18 @@ The maintained one-command local gate is:
 tools/run_local_quality_gates.sh
 ```
 
+On a Docker-capable Linux host, the pinned Ubuntu 24.04 amd64 environment and
+the same maintained gate can be built and run with:
+
+```sh
+tools/run_linux_docker_gate.sh
+```
+
+The container mounts only the current checkout at `/work`, writes its build
+tree to `build-linux-docker-gates/`, and does not require or modify any running
+application service. The image digest and package installation recipe are
+versioned under `containers/`.
+
 Do not treat an incremental successful compile alone as equivalent to this
 static/shared/install/sanitizer/documentation/viewer gate.
 
