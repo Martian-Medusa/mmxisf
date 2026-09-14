@@ -1,6 +1,7 @@
 # M8 progress: hardening and distribution
 
-- Status: IMPLEMENTATION_IN_PROGRESS; PUBLICATION_NOT_AUTHORIZED
+- Status: FIRST_LONG_FUZZ_PASS; CURRENT_HEAD_MATRIX_PENDING;
+  PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
 - Publication status: private repository; no tag or release
 
@@ -52,14 +53,23 @@
   PASS.
 - Export-table inspection exposes the public Reader, Writer, version, and enum
   string functions while hidden visibility remains enabled.
+- The first retained 15-minute ASan/UBSan reader campaign passed on exact
+  commit `44d91da46655deb73c7b258a1204e757bb9bb90e` in run
+  [`34792034236`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34792034236):
+  2,793,891 executions, final `cov: 10844`, `ft: 30853`, 764 live corpus
+  units/1,119 KiB, 505 MiB RSS, and no crash, timeout, or sanitizer finding.
+  The 785-file evolved-corpus artifact has ID `10328078617` and
+  workflow-reported ZIP SHA-256
+  `d629c94c8b581c6535840115cebc9a8d5b9fe82af565697350b261a7eaf02b30`.
+  Later SHA-3 and CI-only changes are outside this historical campaign.
 - Cross-platform shared-library evidence is pending the first CI run containing
   this matrix.
 
 ## Still required for public beta
 
 - Complete and record the first static/shared cross-platform CI matrix.
-- Complete and record the first long candidate fuzz campaign; preserve and
-  promote any minimized regressions.
+- Repeat the long campaign on the exact release candidate and preserve/promote
+  any minimized regressions; the first retained campaign is complete.
 - Enable a private vulnerability-reporting channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
   profiles; UI automation remains intentionally excluded.

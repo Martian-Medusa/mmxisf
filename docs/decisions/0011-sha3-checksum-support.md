@@ -28,5 +28,6 @@ continue to fail explicitly.
 This closes the implementation gap for the standard checksum family without
 changing PFI's image/sample profile. It does not make a claim about producer
 authenticity: all supported hashes provide integrity against a digest declared
-inside the same file. Cross-platform CI and an independent/native fixture are
-still required before a public conformance claim.
+inside the same file. An independent consumer accepted a committed SHA3-256
+descriptor and exact pixels, but native PixInsight and cross-platform CI remain
+required before a public conformance claim.

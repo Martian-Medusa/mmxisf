@@ -35,3 +35,19 @@ the milestone evidence.
 One successful bounded campaign is evidence for the tested build and seed
 corpus, not a proof of parser safety. Re-run after parser, codec, metadata, or
 resource-limit changes and use additional sanitizers/platforms when available.
+
+## First retained campaign
+
+The first manual campaign completed successfully on commit
+`44d91da46655deb73c7b258a1204e757bb9bb90e` in GitHub Actions run
+[`34792034236`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34792034236).
+ASan/UBSan executed 2,793,891 inputs in 15 minutes without a crash, timeout, or
+sanitizer finding. libFuzzer ended at `cov: 10844`, `ft: 30853`, a 764-unit
+1,119 KiB live corpus, about 3,100 executions/second, and 505 MiB RSS.
+
+The retained upload contains 785 files (551,031 compressed bytes), artifact ID
+`10328078617`, with workflow-reported ZIP SHA-256
+`d629c94c8b581c6535840115cebc9a8d5b9fe82af565697350b261a7eaf02b30`.
+No failure artifact was produced. This is a historical PASS for that exact
+reader commit and seed set; SHA-3 support and later changes still require a
+fresh candidate campaign.

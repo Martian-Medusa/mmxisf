@@ -56,6 +56,10 @@
 - Static SHA-1, SHA-256, SHA-512, SHA3-256, and SHA3-512 vectors, including
   both SHA-1 aliases:
   PASS.
+- A committed mmxisf writer fixture with Zstandard+shuffle+SHA3-256 verifies
+  its digest and source-order pixels in compiled tests. Independent package
+  `xisf` 0.9.7 accepted the exact descriptor and returned all 12 RGB values;
+  its own digest-verification behavior is not claimed.
 - Deliberately corrupted compressed bytes with a valid digest for the original
   block return `checksum_mismatch`, rather than a codec error: PASS for the
   checksum-before-decompression invariant.

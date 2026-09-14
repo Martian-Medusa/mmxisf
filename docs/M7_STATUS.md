@@ -37,6 +37,10 @@ scientific contract.
 - The documented `XISF.write` API of independent package `xisf` 0.9.7 was
   probed with NumPy `uint64`, `complex64`, and `complex128` arrays. It rejected
   all three as unimplemented sample formats, so no external oracle is claimed.
+- Independent package `xisf` 0.9.7 accepted a writer-produced
+  Zstandard+shuffle+SHA3-256 descriptor and returned an exact 2x2x3 UInt16 RGB
+  value matrix. The committed fixture is reverified by mmxisf, including its
+  digest; independent digest verification itself is not inferred.
 
 ## Still required for M7
 

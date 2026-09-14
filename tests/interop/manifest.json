@@ -156,6 +156,18 @@
       "conformanceRows": ["writer.baseline-monolithic", "writer.deterministic", "image.uint16", "image.rgb", "image.planar"],
       "expectedOutcome": "ACCEPT",
       "expectedArtifact": "Independent public-API read: shape 2x2x3, dtype uint16, all 12 samples exact; serialized SHA-256 951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10; pixel SHA-256 9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"
+    },
+    {
+      "id": "mmxisf-writer-sha3-rgb",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-sha3-rgb.xisf.b64"},
+      "sha256": "2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0+1b696a627e1f11cc9e85d4e3b517a6d98a461af5"},
+      "generationProcedure": "Invoke Writer::write_file with a 2x2 little-endian Planar UInt16 RGB array whose channel planes contain 1..4, 5..8, and 9..12; fixed 2026-09-14T00:00:00Z creation time; creator 'mmxisf SHA-3 black-box oracle'; Zstandard compression; byte shuffle; and SHA3-256.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.compression-integrity", "compression.zstd-shuffle", "checksum.sha3", "checksum.before-decompression", "image.uint16", "image.rgb", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "mmxisf verifies checksum sha3-256:1a4a14880e0c29187dc19f47cbd5e09c983450f2bc71cc029da03cef7b616f8c and source-order pixel SHA-256 adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6; independent xisf 0.9.7 public-API read returns 2x2x3 uint16 values [[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]] and exposes the exact descriptor; serialized SHA-256 2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5"
     }
   ]
 }

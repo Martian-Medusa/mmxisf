@@ -141,7 +141,8 @@ void check_fixture(
     std::string_view expected_compression, mmxisf::SampleFormat expected_format,
     std::string_view expected_color, std::uint64_t expected_width,
     std::uint64_t expected_height, std::uint64_t expected_channels,
-    std::size_t expected_pixel_bytes, std::string_view expected_pixel_sha256) {
+    std::size_t expected_pixel_bytes, std::string_view expected_pixel_sha256,
+    std::string_view expected_checksum = {}) {
   auto bytes = load_base64(path);
   expect(sha256_hex(bytes) == expected_source_sha256,
          "independent-producer fixture identity changed");
@@ -168,12 +169,21 @@ void check_fixture(
              : descriptor.compression.starts_with(
                    std::string(expected_compression) + ":"),
          "independent fixture codec changed");
+  if (!expected_checksum.empty()) {
+    expect(descriptor.checksum == expected_checksum,
+           "independent fixture checksum descriptor changed");
+  }
   auto decoded = opened.value().read_image(0);
   expect(decoded.has_value(), "independent fixture did not decode");
   expect(decoded.value().pixels.size() == expected_pixel_bytes,
          "independent fixture decoded byte count changed");
   expect(sha256_hex(decoded.value().pixels) == expected_pixel_sha256,
          "independent fixture decoded bytes differ from the source array");
+  if (!expected_checksum.empty()) {
+    expect(decoded.value().checksum_verification ==
+               mmxisf::ChecksumVerification::verified,
+           "independent fixture checksum was not verified");
+  }
 }
 
 void check_multi_writer_fixture(const std::filesystem::path &path) {
@@ -285,8 +295,9 @@ int main() {
       std::uint64_t channels{1};
       std::size_t pixel_bytes;
       std::string_view pixel_sha256;
+      std::string_view checksum{};
     };
-    const auto fixtures = std::array<Fixture, 10>{
+    const auto fixtures = std::array<Fixture, 11>{
         {{"gray-u8-zstd-sh.xisf.b64",
           "97b1d65ed17d088a694661be3879fe93152ed7d8fed59222552ca5a12d5365b8",
           "zstd+sh", mmxisf::SampleFormat::uint8, "Gray", 257, 193, 1, 49601,
@@ -326,13 +337,19 @@ int main() {
          {"mmxisf-writer-rgb-u16.xisf.b64",
           "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",
           "", mmxisf::SampleFormat::uint16, "RGB", 2, 2, 3, 24,
-          "9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"}}};
+          "9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"},
+         {"mmxisf-writer-sha3-rgb.xisf.b64",
+          "2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5",
+          "zstd+sh", mmxisf::SampleFormat::uint16, "RGB", 2, 2, 3, 24,
+          "adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6",
+          "sha3-256:"
+          "1a4a14880e0c29187dc19f47cbd5e09c983450f2bc71cc029da03cef7b616f8c"}}};
     for (const auto &fixture : fixtures) {
       check_fixture(root / fixture.name, fixture.source_sha256,
                     fixture.compression, fixture.sample_format,
                     fixture.color_space, fixture.width, fixture.height,
-                    fixture.channels, fixture.pixel_bytes,
-                    fixture.pixel_sha256);
+                    fixture.channels, fixture.pixel_bytes, fixture.pixel_sha256,
+                    fixture.checksum);
     }
     check_multi_writer_fixture(root / "mmxisf-writer-multi-scalars.xisf.b64");
     check_metadata_writer_fixture(root / "mmxisf-writer-metadata.xisf.b64");

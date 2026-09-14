@@ -62,3 +62,12 @@ deterministic 12,292-byte probe had SHA-256
 `4da1d1bef566e6cbe626522cf938d738db667e7b2648a26bc1a2c376eb125abb`.
 The compiled writer test regenerates and verifies its stronger self-round-trip
 contract; the external package is not a project dependency.
+
+The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
+writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
+serialized checksum and recovers source-order pixel SHA-256
+`adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6`.
+The independent package `xisf` 0.9.7 exposed the exact checksum descriptor and
+returned channels-last values `[[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]]` as a
+2x2x3 `uint16` array. That proves external acceptance and pixel identity, not
+that the independent package itself verified the digest.
