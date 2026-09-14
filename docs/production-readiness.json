@@ -126,8 +126,8 @@
       "id": "security.production-dependency-baseline-control",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-vcpkg-macos-arm64.json",
-      "note": "Exact commit 269d676aecb459b6d3a09284de7c44e38e0c18b2 passed a fresh isolated macOS arm64 build with the pinned vcpkg graph, fail-closed dated floors, 12/12 tests, install, installed consumer 1/1, system-only viewer linkage, and strict ad-hoc signature verification. Cross-platform and frozen-candidate audits remain separate gates."
+      "evidence": "docs/security-audits/2026-09-14-vcpkg-linux-amd64.json",
+      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact commit 50fc120391e7f156c069bfdd13e41e4942be2ccf passed static/shared 12/12, installed consumers 1/1, documentation, binary SBOM, and standard-runtime-only dynamic-linkage checks. Windows, frozen-candidate, and final advisory audits remain separate gates."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",

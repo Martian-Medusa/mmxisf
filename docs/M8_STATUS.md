@@ -283,6 +283,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   system packages are intentionally recorded as compatibility evidence only:
   they do not satisfy the separate conservative production dependency floor,
   and this is not Windows or frozen-candidate evidence.
+- The same extracted source at `50fc120391e7f156c069bfdd13e41e4942be2ccf`
+  then passed a Linux amd64 production-dependency gate using the exact official
+  vcpkg baseline `a1cae005c39be7b18ba319fced856b68d7276271`.
+  The resolved graph is Expat 2.8.4, zlib 1.3.2#2, LZ4 1.10.0,
+  Zstandard 1.5.7, and OpenSSL 3.6.4. GCC 13 warnings-as-errors static/shared
+  suites passed 12/12 each, both installed consumers passed 1/1, dependency
+  floors and generated documentation passed, and the shared library linked
+  dynamically only to the standard Linux runtime. Exact binary/SBOM identities
+  are retained in
+  `docs/security-audits/2026-09-14-vcpkg-linux-amd64.json`. This remains local
+  development evidence; Windows, a frozen candidate, and the final advisory
+  review are still open.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

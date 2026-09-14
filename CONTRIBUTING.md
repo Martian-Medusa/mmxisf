@@ -61,6 +61,19 @@ build container because LLVM ThreadSanitizer must call `personality()` before
 the test process enters project code. No host devices, Docker socket, network
 service data, or application-service volumes are mounted into the container.
 
+For a production-dependency rehearsal, prepare a dedicated Linux-bootstrapped
+official vcpkg checkout at the exact `builtin-baseline` from `vcpkg.json`, then
+run:
+
+```sh
+MMXISF_VCPKG_ROOT=/path/to/linux-vcpkg \
+  tools/run_vcpkg_linux_docker_gate.sh
+```
+
+This separate gate keeps the vcpkg checkout/cache outside the disposable
+container, refuses stale build directories, enforces the dated dependency
+floor, and tests static/shared installs plus their isolated consumers.
+
 Do not treat an incremental successful compile alone as equivalent to this
 static/shared/install/sanitizer/documentation/viewer gate.
 

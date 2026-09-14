@@ -123,6 +123,21 @@ MMXISF_VCPKG_ROOT=/path/to/vcpkg \
   tools/run_vcpkg_macos_arm64_gate.sh
 ```
 
+On a Linux amd64 Docker host, use a dedicated official vcpkg checkout at the
+manifest's exact `builtin-baseline`, bootstrap it for Linux, and run the static
+and shared production-baseline builds plus both installed-package consumers:
+
+```sh
+MMXISF_VCPKG_ROOT=/path/to/linux-vcpkg \
+  tools/run_vcpkg_linux_docker_gate.sh
+```
+
+The wrapper builds the pinned Ubuntu image, refuses to reuse a gate directory,
+and verifies that the vcpkg checkout commit equals the manifest baseline. The
+checkout and downloaded vcpkg cache stay outside the container for deliberate
+reuse; use a checkout dedicated to Linux because the bootstrapped vcpkg binary
+is platform-specific.
+
 The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
 library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static

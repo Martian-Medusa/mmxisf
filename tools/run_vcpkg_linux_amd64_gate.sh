@@ -1,0 +1,87 @@
+#!/bin/sh
+
+set -eu
+
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH= cd -- "$script_directory/.." && pwd)
+vcpkg_root=${MMXISF_VCPKG_ROOT:-}
+build_root=${MMXISF_VCPKG_BUILD_ROOT:-"$repository_root/build-vcpkg-linux-amd64"}
+parallel_jobs=${MMXISF_VCPKG_JOBS:-2}
+warning_flags=${MMXISF_VCPKG_CXX_FLAGS:-"-Wall -Wextra -Wpedantic -Werror -Wno-missing-field-initializers"}
+
+if [ "$(uname -s)" != Linux ] || [ "$(uname -m)" != x86_64 ]; then
+  printf '%s\n' "This gate requires Linux amd64" >&2
+  exit 2
+fi
+
+if [ -z "$vcpkg_root" ] ||
+   [ ! -x "$vcpkg_root/vcpkg" ] ||
+   [ ! -f "$vcpkg_root/scripts/buildsystems/vcpkg.cmake" ]; then
+  printf '%s\n' \
+    "Set MMXISF_VCPKG_ROOT to a Linux-bootstrapped official vcpkg checkout" >&2
+  exit 2
+fi
+
+expected_baseline=$(sed -n \
+  's/.*"builtin-baseline": "\([0-9a-f][0-9a-f]*\)".*/\1/p' \
+  "$repository_root/vcpkg.json")
+actual_baseline=$(git -C "$vcpkg_root" rev-parse HEAD)
+if [ ${#expected_baseline} -ne 40 ] || [ "$actual_baseline" != "$expected_baseline" ]; then
+  printf '%s\n' \
+    "vcpkg checkout does not match the manifest builtin-baseline" >&2
+  printf '%s\n' "expected: $expected_baseline" "actual:   $actual_baseline" >&2
+  exit 2
+fi
+
+if [ -e "$build_root" ]; then
+  printf '%s\n' "Refusing to reuse existing gate directory: $build_root" >&2
+  exit 2
+fi
+
+toolchain="$vcpkg_root/scripts/buildsystems/vcpkg.cmake"
+installed_directory="$build_root/vcpkg_installed"
+
+run_variant() {
+  variant=$1
+  shared=$2
+  build_directory="$build_root/$variant"
+  install_directory="$build_root/install-$variant"
+  consumer_directory="$build_root/consumer-$variant"
+
+  cmake -S "$repository_root" -B "$build_directory" \
+    -G Ninja \
+    "-DCMAKE_TOOLCHAIN_FILE=$toolchain" \
+    "-DVCPKG_INSTALLED_DIR=$installed_directory" \
+    -DVCPKG_TARGET_TRIPLET=x64-linux \
+    -DMMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE=ON \
+    -DMMXISF_BUILD_TESTS=ON \
+    -DMMXISF_BUILD_TOOLS=ON \
+    -DMMXISF_BUILD_VIEWER=OFF \
+    -DMMXISF_BUILD_DOCS=ON \
+    "-DBUILD_SHARED_LIBS=$shared" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$build_directory" --parallel "$parallel_jobs"
+  ctest --test-dir "$build_directory" --output-on-failure
+  cmake --install "$build_directory" --prefix "$install_directory"
+
+  cmake -S "$repository_root/tests/package_consumer" \
+    -B "$consumer_directory" \
+    -G Ninja \
+    "-DCMAKE_PREFIX_PATH=$install_directory;$installed_directory/x64-linux" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$consumer_directory" --parallel "$parallel_jobs"
+  ctest --test-dir "$consumer_directory" --output-on-failure
+
+  test -s "$build_directory/binary-dependencies.spdx.json"
+  test -s "$install_directory/share/mmxisf/sbom/binary-dependencies.spdx.json"
+}
+
+export VCPKG_DISABLE_METRICS=1
+run_variant static OFF
+run_variant shared ON
+
+test -s "$build_root/install-static/lib/libmmxisf.a"
+test -s "$build_root/install-shared/lib/libmmxisf.so"
+printf '%s\n' "mmxisf vcpkg Linux amd64 production-baseline gate: PASS"

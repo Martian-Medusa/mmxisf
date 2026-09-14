@@ -56,6 +56,16 @@ from the GitHub Actions pins. The fresh exact-commit local result is retained in
 12/12 tests, install, installed consumer 1/1, binary SBOM, system-only viewer
 linkage, and strict deep ad-hoc signature verification passed.
 
+The same exact registry baseline then passed a separate extracted-source Linux
+amd64 Docker gate in both static and shared forms. Both library suites passed
+12/12, both installed-package consumers passed 1/1, the generated API reference
+passed, and the shared library exposed no non-system runtime dependency because
+the five vcpkg libraries were linked statically. Exact library and SBOM hashes
+are retained in
+[`security-audits/2026-09-14-vcpkg-linux-amd64.json`](security-audits/2026-09-14-vcpkg-linux-amd64.json).
+This adds Linux development evidence; it does not freeze a candidate or replace
+the final time-sensitive vulnerability review.
+
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain
    binary is not claimed to be reproducible from the source archive alone.

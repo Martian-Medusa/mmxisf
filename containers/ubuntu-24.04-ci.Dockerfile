@@ -8,6 +8,7 @@ RUN apt-get update \
        ca-certificates \
        clang \
        cmake \
+       curl \
        doxygen \
        git \
        libclang-rt-18-dev \
@@ -17,6 +18,11 @@ RUN apt-get update \
        libzstd-dev \
        llvm-18 \
        ninja-build \
+       perl \
+       pkg-config \
+       tar \
+       unzip \
+       zip \
        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 

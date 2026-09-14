@@ -1,0 +1,88 @@
+{
+  "schema": "mmxisf.production-dependency-gate/1.0.0",
+  "date": "2026-09-14",
+  "result": "PASS_LOCAL_LINUX_AMD64_NOT_FROZEN",
+  "publicationAuthorized": false,
+  "source": {
+    "commit": "50fc120391e7f156c069bfdd13e41e4942be2ccf",
+    "archive": {
+      "name": "mmxisf-0.1.0-source-50fc120391e7.tar.gz",
+      "sizeBytes": 283730,
+      "sha256": "f6912c49d58ac815c13b52b3b3c69cc042556163b9a68115003b96b016d3314c",
+      "buildInput": "EXTRACTED_ARCHIVE_ONLY"
+    }
+  },
+  "platform": {
+    "host": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1",
+    "containerBase": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "containerImageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "compiler": "GCC 13.3.0",
+    "cmake": "3.28.3",
+    "vcpkgBootstrapCmake": "4.4.3"
+  },
+  "registry": {
+    "name": "Microsoft vcpkg builtin registry",
+    "commit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "trackedCheckoutClean": true,
+    "vcpkgVersion": "2026-07-27-98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d"
+  },
+  "dependencies": [
+    {"name": "Expat", "version": "2.8.4"},
+    {"name": "zlib", "version": "1.3.2", "portVersion": 2},
+    {"name": "LZ4", "version": "1.10.0"},
+    {"name": "Zstandard", "version": "1.5.7"},
+    {"name": "OpenSSL", "version": "3.6.4"}
+  ],
+  "gates": {
+    "warningsAsErrors": {
+      "result": "PASS",
+      "acceptedException": "-Wno-missing-field-initializers for intentional C++20 aggregate defaults"
+    },
+    "static": {
+      "ctest": {"result": "PASS", "passed": 12, "total": 12},
+      "install": "PASS",
+      "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+      "library": {
+        "sizeBytes": 807198,
+        "sha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c"
+      },
+      "binarySbom": {
+        "sizeBytes": 3043,
+        "sha256": "b9947c2088f64ee7819a689327d1cf5d3e564145825073c32bbd421a00e56c0e"
+      }
+    },
+    "shared": {
+      "ctest": {"result": "PASS", "passed": 12, "total": 12},
+      "install": "PASS",
+      "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+      "library": {
+        "file": "libmmxisf.so.0.1.0",
+        "sizeBytes": 9346216,
+        "sha256": "2b1812827b6a6d897190050c20f57311e148fa358415569dbe1e9ada19699121"
+      },
+      "binarySbom": {
+        "sizeBytes": 3043,
+        "sha256": "c106b756d0a4794ce4a71906e4ab14caf6c56a91dec7de8efefbc5c2ecf9640c"
+      },
+      "nonSystemRuntimeDependencies": []
+    },
+    "productionDependencyFloor": "PASS",
+    "generatedApiDocumentation": "PASS"
+  },
+  "retainedServerEvidence": {
+    "path": "/home/matt/mmxisf-gates/50fc120391e7/source/build-vcpkg-linux-50fc120",
+    "buildTreeLogicalSizeDisplay": "164M",
+    "committed": false,
+    "published": false
+  },
+  "limitations": [
+    "This is a local Linux amd64 dependency-baseline gate, not a frozen release-candidate audit.",
+    "The shared mmxisf library embeds the five static vcpkg dependencies and dynamically links only the standard Linux runtime libraries observed in the container.",
+    "Windows using the pinned graph remains NOT_TESTED.",
+    "A fresh official-advisory review is still required immediately before publication."
+  ]
+}
