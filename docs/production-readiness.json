@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-90771c2.json",
-      "note": "Exact development commit 90771c20ee81909701fdc7a24bf08ce79663e8a0 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 13/13, shared 14/14, installed and embedded consumers 1/1 each for both linkage forms, all nine public headers compiled independently in each consumer mode, dependency floors, documentation, and binary SBOM checks. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-6edba5f.json",
+      "note": "Exact development commit 6edba5fd7fe2b12fbf30a598b7ff1b7615014ce3 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 14/14, shared 15/15, installed, relocated, and embedded consumers 1/1 each for both linkage forms, all nine public headers compiled independently, the pre-1.0 package-version contract, dependency floors, documentation, and binary SBOM checks. Shared consumers configured with discovery of all five private development dependencies explicitly disabled. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-90771c2.json",
-      "note": "Exact development commit 90771c20ee81909701fdc7a24bf08ce79663e8a0 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 13/13 and shared 14/14 suites, installed and embedded consumers 1/1 each, independent compilation of all nine public headers in both linkage forms, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-6edba5f.json",
+      "note": "Exact development commit 6edba5fd7fe2b12fbf30a598b7ff1b7615014ce3 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 14/14 and shared 15/15 suites, installed, relocated, and embedded consumers 1/1 each, independent compilation of all nine public headers, the pre-1.0 version contract, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. Shared consumers required no private development dependency discovery. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",

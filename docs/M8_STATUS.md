@@ -79,6 +79,21 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `6edba5fd7fe2b12fbf30a598b7ff1b7615014ce3` produced a deterministic
+  316,685-byte source archive with SHA-256
+  `f72528dd4456b7d3a2dce95ae15d79a72af6c7118d3073f06fdcaa8534ad0d90`.
+  Its extracted-source Linux amd64 production-dependency gate passed static
+  14/14 and shared 15/15, direct and relocated installed consumers 1/1, and
+  embedded consumers 1/1 for both linkage forms. Shared consumers configured
+  with discovery of Expat, LZ4, OpenSSL, zlib, and Zstandard explicitly
+  disabled, proving those private implementation targets do not cross the
+  shared package's build interface. All nine public headers, the pre-1.0
+  package-version rule, documentation, dependency floors, SBOMs, and the exact
+  39-of-39 shared-export surface also passed. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-6edba5f.json`; the viewer was not
+  built and contributes nothing to this result.
+
+- Exact development commit
   `90771c20ee81909701fdc7a24bf08ce79663e8a0` produced a deterministic
   312,291-byte source archive with SHA-256
   `bbf66d474614ada352a999534ac4cb4cad0732b0f17d8e1b5a6d6eea22081d57`.
