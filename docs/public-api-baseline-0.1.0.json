@@ -1,0 +1,44 @@
+{
+  "schema": "mmxisf.public-api-baseline/1.0.0",
+  "projectVersion": "0.1.0",
+  "auditedCommit": "85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f",
+  "abiPolicy": "NO_ABI_PROMISE_BEFORE_1.0",
+  "headers": [
+    {
+      "path": "include/mmxisf/byte_sink.hpp",
+      "sha256": "b42dafb3e99a9e9e55e777a3389cad429092f6f133adc7592644b423fd8f56b6"
+    },
+    {
+      "path": "include/mmxisf/byte_source.hpp",
+      "sha256": "a7076e46625c8891a543df5d0152b78166d26aa244913d31ab21bfe654e766e6"
+    },
+    {
+      "path": "include/mmxisf/document.hpp",
+      "sha256": "eb96f861a6b46c0b0332de16c4f6426a558b973611a5f57bf2ded0e24110bfb5"
+    },
+    {
+      "path": "include/mmxisf/error.hpp",
+      "sha256": "68f7cdd1beed95f6687c30b459820e71e6fa7c10894c3148513fe49d8e53ec22"
+    },
+    {
+      "path": "include/mmxisf/export.hpp",
+      "sha256": "de5dae6ebc33f912a8ca465d377b87b69af5f9fd5a2da6de07fe0dd45867a169"
+    },
+    {
+      "path": "include/mmxisf/reader.hpp",
+      "sha256": "b578f154ed122189a4ecf31197339a9af9ff6d70dc01ed0631eccf67d52343c3"
+    },
+    {
+      "path": "include/mmxisf/result.hpp",
+      "sha256": "8bb1e3b66e7e5fefcc17d9766e3d3b4c8a29e9806ceb2a05f0b4b8a16cb9823e"
+    },
+    {
+      "path": "include/mmxisf/version.hpp",
+      "sha256": "833ac45057da0d25f0f7d28bbdba13f10299ebd6026e03d7f7c11805af7c570b"
+    },
+    {
+      "path": "include/mmxisf/writer.hpp",
+      "sha256": "0d911b8a0738b6056c9d9deb73ddf6bb7a2a1d8d6d0d25f97bc8b76dfd31aa1b"
+    }
+  ]
+}

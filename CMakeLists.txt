@@ -250,6 +250,21 @@ if(MMXISF_BUILD_TESTS)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSourceCandidateTests.cmake
   )
   add_test(
+    NAME mmxisf.public-api-baseline
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePublicApiBaseline.cmake
+  )
+  add_test(
+    NAME mmxisf.public-api-baseline-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DMMXISF_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePublicApiBaselineTests.cmake
+  )
+  add_test(
     NAME mmxisf.sbom
     COMMAND
       ${CMAKE_COMMAND}
@@ -409,6 +424,7 @@ if(MMXISF_INSTALL)
   install(
     FILES
       docs/support-profile-0.1.0.json
+      docs/public-api-baseline-0.1.0.json
       docs/conformance/xisf-1.0-matrix.json
       docs/specification-baseline.json
     DESTINATION "${MMXISF_INSTALL_CONFORMANCE_DIR}"

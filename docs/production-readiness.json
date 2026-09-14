@@ -148,7 +148,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/PUBLIC_API_AUDIT.md",
-      "note": "The current pre-1.0 headers, exports, errors, ownership, resource limits, cancellation, and concurrency contracts passed a source and compiled-contract audit."
+      "note": "The current pre-1.0 headers, exports, errors, ownership, resource limits, cancellation, and concurrency contracts passed a source and compiled-contract audit. A machine-checked baseline now binds the complete nine-header public source surface byte-for-byte to that audit, ships with the installed package, and is rechecked after package relocation. Intentional public API changes require explicit baseline review; no ABI promise is made before 1.0."
     },
     {
       "id": "api.exact-candidate-diff-review",

@@ -86,6 +86,17 @@ sanitizers on the exact frozen candidate, and confirm that release notes state
 the pre-1.0 ABI policy. This open exact-candidate check is independent of the
 current audit PASS.
 
+## Machine-enforced 0.1 header baseline
+
+`docs/public-api-baseline-0.1.0.json` records all nine public header paths and
+their SHA-256 values at the audited commit above. Every test-enabled build now
+requires the source header set and every byte of each header to match that
+baseline. Negative contracts reject a changed hash, duplicate or missing
+header, and an invented stable-ABI policy. This turns accidental public API
+drift into a failing test while preserving the documented pre-1.0 ABI policy.
+An intentional API change requires a new review and explicit baseline update;
+the exact frozen-candidate diff review remains a separate release gate.
+
 ## Linux shared-export follow-up
 
 The production-dependency Linux build exposed a packaging defect after the

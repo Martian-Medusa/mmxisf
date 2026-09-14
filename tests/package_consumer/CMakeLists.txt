@@ -21,6 +21,7 @@ if(NOT DEFINED mmxisf_BINARY_SBOM OR NOT EXISTS "${mmxisf_BINARY_SBOM}")
 endif()
 foreach(_contract_variable
     mmxisf_SUPPORT_PROFILE
+    mmxisf_PUBLIC_API_BASELINE
     mmxisf_CONFORMANCE_MATRIX
     mmxisf_SPECIFICATION_BASELINE
     mmxisf_EXAMPLES_DIR)
@@ -51,6 +52,8 @@ if(DEFINED MMXISF_EXPECTED_PACKAGE_PREFIX)
   mmxisf_require_path_in_expected_prefix(
     "${mmxisf_SUPPORT_PROFILE}" "Support profile")
   mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_PUBLIC_API_BASELINE}" "Public API baseline")
+  mmxisf_require_path_in_expected_prefix(
     "${mmxisf_CONFORMANCE_MATRIX}" "Conformance matrix")
   mmxisf_require_path_in_expected_prefix(
     "${mmxisf_SPECIFICATION_BASELINE}" "Specification baseline")
@@ -78,6 +81,35 @@ if(DEFINED MMXISF_EXPECTED_PACKAGE_PREFIX)
   if(NOT _checked_imported_artifact)
     message(FATAL_ERROR "Installed mmxisf target exports no package artifact")
   endif()
+endif()
+
+file(READ "${mmxisf_PUBLIC_API_BASELINE}" _public_api_baseline)
+string(JSON _public_api_schema GET "${_public_api_baseline}" schema)
+if(NOT _public_api_schema STREQUAL "mmxisf.public-api-baseline/1.0.0")
+  message(FATAL_ERROR "Installed mmxisf public API baseline has wrong schema")
+endif()
+if(DEFINED MMXISF_EXPECTED_PACKAGE_PREFIX)
+  string(JSON _public_header_count LENGTH "${_public_api_baseline}" headers)
+  math(EXPR _last_public_header "${_public_header_count} - 1")
+  foreach(_index RANGE ${_last_public_header})
+    string(JSON _public_header_path GET "${_public_api_baseline}" headers
+      ${_index} path)
+    string(JSON _public_header_sha256 GET "${_public_api_baseline}" headers
+      ${_index} sha256)
+    set(_installed_public_header
+      "${_expected_package_prefix}/${_public_header_path}")
+    if(NOT EXISTS "${_installed_public_header}")
+      message(FATAL_ERROR
+        "Installed public API baseline header is missing: ${_public_header_path}")
+    endif()
+    file(SHA256 "${_installed_public_header}"
+      _installed_public_header_sha256)
+    if(NOT _installed_public_header_sha256 STREQUAL
+       _public_header_sha256)
+      message(FATAL_ERROR
+        "Installed public API header does not match baseline: ${_public_header_path}")
+    endif()
+  endforeach()
 endif()
 
 file(READ "${mmxisf_SUPPORT_PROFILE}" _support_profile)
