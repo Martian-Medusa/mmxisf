@@ -99,6 +99,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `31b0b43fd73d991927a7aca4d1050c764a3722da` passed the new supplemental
+  Windows amd64 cross-gate from its deterministic extracted source archive on
+  `mllse`. MinGW GCC 13 warnings-as-errors static 18/18 and shared 19/19 suites
+  ran under 64-bit Wine, as did direct and relocated installed consumers 2/2
+  and embedded consumers 1/1. The DLL exposes exactly 39 named `mmxisf`
+  symbols, and distinct builds produced byte-identical static libraries, DLLs,
+  and import libraries. The pinned production dependency graph and binary SBOM
+  gates also passed. Exact source, container, toolchain, artifact, and retained
+  path evidence is recorded in
+  `docs/quality-runs/2026-09-14-mingw-amd64-31b0b43.json`. This is a useful
+  Windows-target compatibility result, but MinGW/Wine is not native Windows or
+  MSVC evidence and does not close the frozen-candidate platform gate.
+
+- Exact development commit
   `bec3e79ae48e0e8381abd7c22bbe588baa815e86` produced a deterministic
   334,413-byte source archive with SHA-256
   `2c73cc0674093caa25c5745b69b86de6cc67920c26bf39fcf0f173aea99507fa`.

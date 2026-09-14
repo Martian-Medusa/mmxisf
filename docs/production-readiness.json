@@ -36,7 +36,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate."
+      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate. Exact development commit 31b0b43fd73d991927a7aca4d1050c764a3722da passed the supplemental MinGW/Wine Windows-target gate, but that is not native MSVC or frozen-candidate evidence."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
@@ -127,7 +127,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json",
-      "note": "The pinned vcpkg graph and fail-closed dated floors passed exact extracted-source macOS arm64 and Linux amd64 gates. On macOS exact development commit bec3e79ae48e0e8381abd7c22bbe588baa815e86 passed static 18/18, shared 19/19, direct and relocated installed consumers, embedded consumers, documentation, binary SBOMs, system-runtime-only dynamic linkage, and byte-identical library reproduction. The retained Linux gate provides independent GCC/container evidence. Windows, frozen-candidate, and final advisory audits remain separate gates."
+      "note": "The pinned vcpkg graph and fail-closed dated floors passed exact extracted-source macOS arm64 and Linux amd64 gates. On macOS exact development commit bec3e79ae48e0e8381abd7c22bbe588baa815e86 passed static 18/18, shared 19/19, direct and relocated installed consumers, embedded consumers, documentation, binary SBOMs, system-runtime-only dynamic linkage, and byte-identical library reproduction. The retained Linux gate provides independent GCC/container evidence. Exact development commit 31b0b43fd73d991927a7aca4d1050c764a3722da additionally passed the same pinned graph for Windows amd64 targets under MinGW/Wine, including static/shared tests, consumers, SBOMs, exact exports, and reproducibility; native MSVC, frozen-candidate, and final advisory audits remain separate gates."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
