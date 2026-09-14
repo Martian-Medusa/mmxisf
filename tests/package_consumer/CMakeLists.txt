@@ -4,6 +4,7 @@ project(mmxisf_package_consumer LANGUAGES CXX)
 
 enable_testing()
 find_package(mmxisf 0.1 REQUIRED CONFIG)
+include("${CMAKE_CURRENT_LIST_DIR}/../cmake/AddPublicHeaderSelfContainment.cmake")
 if(NOT DEFINED mmxisf_BINARY_SBOM OR NOT EXISTS "${mmxisf_BINARY_SBOM}")
   message(FATAL_ERROR
     "Installed mmxisf package did not export its binary dependency SBOM")
@@ -39,5 +40,8 @@ endif()
 
 add_executable(mmxisf_package_consumer main.cpp)
 target_link_libraries(mmxisf_package_consumer PRIVATE mmxisf::mmxisf)
+mmxisf_add_public_header_self_containment_test(
+  mmxisf_installed_public_headers_self_containment
+  "${CMAKE_CURRENT_LIST_DIR}/../../include/mmxisf")
 
 add_test(NAME mmxisf.package-consumer COMMAND mmxisf_package_consumer)

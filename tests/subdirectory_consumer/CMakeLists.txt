@@ -10,6 +10,7 @@ if(NOT DEFINED MMXISF_SOURCE_DIR OR
 endif()
 
 add_subdirectory("${MMXISF_SOURCE_DIR}" mmxisf-source EXCLUDE_FROM_ALL)
+include("${CMAKE_CURRENT_LIST_DIR}/../cmake/AddPublicHeaderSelfContainment.cmake")
 
 foreach(_unexpected_target IN ITEMS
     mmxisf_version_test
@@ -32,6 +33,9 @@ endforeach()
 
 add_executable(mmxisf_subdirectory_consumer main.cpp)
 target_link_libraries(mmxisf_subdirectory_consumer PRIVATE mmxisf::mmxisf)
+mmxisf_add_public_header_self_containment_test(
+  mmxisf_embedded_public_headers_self_containment
+  "${MMXISF_SOURCE_DIR}/include/mmxisf")
 
 enable_testing()
 add_test(NAME mmxisf.subdirectory-consumer
