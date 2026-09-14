@@ -2,6 +2,7 @@
 
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
+  SOURCE_CANDIDATE_REHEARSAL_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
@@ -73,6 +74,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
+  deterministic unpublished source archive
+  `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
+  270,930-byte archive has SHA-256
+  `f0523b278ba3a3970acbdaa4027da9864e082a9c2593c9011bf0d25cb0fd03fe`.
+  A clean-room macOS arm64 Release build extracted only from that archive
+  passed `-Wall -Wextra -Wpedantic -Werror`, 11/11 library tests, installation,
+  and the separately configured installed-package consumer 1/1. The manifest
+  remained `PREPARED_NOT_PUBLISHED` with `publicationAuthorized: false`; this
+  rehearsal neither freezes a candidate nor validates Linux/Windows or final
+  release assets.
 - The pre-1.0 public API, error, ownership, resource, cancellation, concurrency,
   dependency-boundary, and shared-export review passed for exact commit
   `85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f`. Its complete local macOS gate

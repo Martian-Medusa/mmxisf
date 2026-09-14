@@ -37,6 +37,12 @@ commit, version, archive name/size/SHA-256, prefix, determinism result, and
 `publicationAuthorized: false` to `source-candidate.json`. Preparing this
 manifest never creates a tag or authorizes publication.
 
+The preparation mechanism has a retained clean-room rehearsal on exact commit
+`75b1cc588254d01f801efe4de597a9b66a1347f1`: the archive was extracted outside
+the repository, built with warnings as errors, tested, installed, and consumed
+through only its installed CMake package. This validates the packaging path,
+not a future frozen candidate or final release asset.
+
 ## Version and artifact gate
 
 Before tagging, update and cross-check the version in `CMakeLists.txt`,

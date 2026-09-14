@@ -144,6 +144,13 @@
       "note": "The final public-header and export-table diff review must run after the candidate commit and support profile are frozen."
     },
     {
+      "id": "distribution.source-candidate-rehearsal",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/M8_STATUS.md",
+      "note": "Exact commit 75b1cc588254d01f801efe4de597a9b66a1347f1 produced a deterministic source archive that passed an archive-only warning-clean macOS build, 11/11 tests, install, and installed-package consumer 1/1."
+    },
+    {
       "id": "distribution.release-artifact-identity",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
