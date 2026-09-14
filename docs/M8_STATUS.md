@@ -75,6 +75,13 @@
   Apple Clang 21 compiler/sanitizers used an LLVM 17 libFuzzer runtime archive
   and the external symbolizer was unavailable. Exact evidence is retained in
   `docs/fuzz-campaigns/2026-09-14-local-macos-arm64.json`.
+- The maintained `tools/run_local_quality_gates.sh` completed on exact commit
+  `33da19ec13a2e045944012088a76e6f2ca789d5b`: warning-as-error static and
+  shared suites 8/8 each, installed-package consumers 1/1 each, ASan/UBSan
+  suite 8/8, deterministic 20,000-case mutation smoke, generated API reference,
+  and a freshly built macOS bundle with strict deep code-signature verification
+  all passed. This is the reproducible routine macOS gate, not a cross-platform
+  substitute.
 - Fresh macOS Release shared build with warnings-as-errors: 6/6 tests PASS.
 - Fresh shared install plus separately configured public package consumer: 1/1
   PASS.
