@@ -22,6 +22,11 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | ICC image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
 | serialized bytes per ICC profile | 64 MiB | Bound attachment/inline staging before integrity and codec work |
 | decoded bytes per ICC profile | 64 MiB | Bound returned profile allocation before decompression |
+| thumbnails | 256 cumulative | Bound image-like preview descriptors and embedded-storage slots |
+| thumbnail image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
+| thumbnail width or height | 4,096 pixels | Finite compatibility ceiling above the specification's 1,024-pixel recommendation |
+| serialized bytes per thumbnail | 128 MiB | Bound attachment/embedded staging before integrity and codec work |
+| decoded bytes per thumbnail | 128 MiB | Bound returned preview allocation before decompression |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects and bindings | 100,000 each | Preserve large legitimate metadata sets while bounding repeated references |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |
@@ -77,6 +82,11 @@ ICC profile limits are independent from image and Property limits. Inline
 decoded bytes are charged against the serialized ICC limit while parsing;
 compressed output is checked against the decoded ICC limit before codec work.
 The general XML-header and encoded-character limits remain authoritative.
+
+Thumbnail limits are independent from main-image limits. Geometry restrictions
+also cap channels at two for Gray and four for RGB. The default dimension cap
+does not redefine the XISF recommendation of at most 1024 pixels; applications
+can tighten it to 1024 when strict producer policy is desired.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

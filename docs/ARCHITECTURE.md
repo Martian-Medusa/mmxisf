@@ -50,6 +50,9 @@ The M1 pre-release API now supports:
 - `Document::icc_profiles()` plus `Reader::read_icc_profile(index, stop_token)`
   for bounded, byte-exact attachment/inline ICC blocks and direct/referenced
   image associations, without color-management execution;
+- `Document::thumbnails()` plus `Reader::read_thumbnail(index, stop_token)` for
+  the bounded UInt8/UInt16 Gray/RGB image-like profile, retaining exact source
+  representation and main-image association;
 - bounded chunk reads with cooperative cancellation;
 - exact UInt64 and complex image bytes, with component-wise native-endian
   conversion and no magnitude/phase interpretation;
@@ -103,6 +106,11 @@ ICC profile records and image bindings have independent limits. Decoding uses
 the shared integrity/compression path, preserves the big-endian byte stream,
 and performs only bounded header screening. External profile locations remain
 descriptive and cannot trigger file-system or network access.
+
+Thumbnail descriptors and bindings are separate from main images so a consumer
+cannot accidentally treat preview pixels as scientific samples. Local reads
+share the image codec/integrity machinery but use independent count,
+dimension, serialized-byte, and decoded-byte limits.
 
 Compressed input is staged once so its checksum can be verified before any
 codec call. Unshuffled codec output is written directly to the caller's buffer.

@@ -15,7 +15,8 @@ first public release, while ABI stability is not promised before 1.0.
    caller-owned span. Use `mmxisf::ImageReadOptions` when native byte order or a
    specific Planar/Normal layout is required.
 4. Read block-backed metadata with `mmxisf::Reader::read_property_block` and
-   ICC profile bytes with `mmxisf::Reader::read_icc_profile`.
+   ICC profile bytes with `mmxisf::Reader::read_icc_profile`, or a producer
+   thumbnail with `mmxisf::Reader::read_thumbnail`.
 5. Write deterministic local monolithic files with
    `mmxisf::Writer::write_file` and explicit `mmxisf::WriterOptions` budgets.
 
@@ -84,6 +85,12 @@ local attachment and inline Base64/Base16 bytes, verifies declared integrity
 before decompression, and never performs an endian or color transform. It
 checks the ICC size field, `acsp` signature, and embedded-profile flag; this is
 not full ICC semantic validation or profile authentication.
+
+`Document::thumbnails()` exposes validated UInt8/UInt16 Gray/RGB image-like
+descriptors, and `Document::thumbnail_bindings()` preserves direct and
+referenced main-image associations. `Reader::read_thumbnail()` returns exact
+source-layout/source-endian pixels from local attachment or embedded blocks.
+It does not resample, reorient, convert, stretch, or color-manage them.
 
 ## Cancellation and concurrency
 

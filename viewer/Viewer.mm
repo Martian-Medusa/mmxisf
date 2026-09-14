@@ -477,6 +477,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
       @"");
   add(@"Document", @"Summary", @"ICC profiles", @"Count",
       [NSString stringWithFormat:@"%lu", document.icc_profiles().size()], @"");
+  add(@"Document", @"Summary", @"Thumbnails", @"Count",
+      [NSString stringWithFormat:@"%lu", document.thumbnails().size()], @"");
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     NSString *scope = [NSString stringWithFormat:@"Image %lu", index];
@@ -647,6 +649,41 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     if (!bound_icc_profiles[index]) {
       add_icc_profile(document.icc_profiles()[index], index, @"Standalone",
                       false);
+    }
+  }
+  const auto add_thumbnail = [&](const mmxisf::ThumbnailInfo &thumbnail,
+                                 std::size_t index, NSString *scope,
+                                 bool by_reference) {
+    NSString *kind = by_reference ? @"Thumbnail · Reference" : @"Thumbnail";
+    NSString *descriptor = [NSString
+        stringWithFormat:@"%@ · %@ · %@",
+                         geometry_string(thumbnail.image),
+                         ns_string(thumbnail.image.sample_format_name),
+                         ns_string(thumbnail.image.color_space)];
+    add(scope, kind, @"Thumbnail", @"Image-like XISF core object", descriptor,
+        thumbnail.uid.empty()
+            ? [NSString stringWithFormat:@"location=%@ · inventory index %lu",
+                                         ns_string(thumbnail.image.block.raw),
+                                         index]
+            : [NSString
+                  stringWithFormat:@"uid=%@ · location=%@ · inventory index %lu",
+                                   ns_string(thumbnail.uid),
+                                   ns_string(thumbnail.image.block.raw), index]);
+  };
+  std::vector<bool> bound_thumbnails(document.thumbnails().size(), false);
+  for (const auto &binding : document.thumbnail_bindings()) {
+    if (binding.thumbnail_index >= document.thumbnails().size()) {
+      continue;
+    }
+    add_thumbnail(
+        document.thumbnails()[binding.thumbnail_index], binding.thumbnail_index,
+        [NSString stringWithFormat:@"Image %lu", binding.image_index],
+        binding.by_reference);
+    bound_thumbnails[binding.thumbnail_index] = true;
+  }
+  for (std::size_t index = 0; index < document.thumbnails().size(); ++index) {
+    if (!bound_thumbnails[index]) {
+      add_thumbnail(document.thumbnails()[index], index, @"Standalone", false);
     }
   }
   for (std::size_t index = 0; index < document.extension_elements().size();

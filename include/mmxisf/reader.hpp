@@ -37,6 +37,11 @@ struct ReaderOptions {
   std::size_t max_icc_profile_bindings{100'000};
   std::uint64_t max_serialized_icc_profile_bytes{64ULL * 1024ULL * 1024ULL};
   std::uint64_t max_decoded_icc_profile_bytes{64ULL * 1024ULL * 1024ULL};
+  std::size_t max_thumbnails{256};
+  std::size_t max_thumbnail_bindings{100'000};
+  std::uint64_t max_thumbnail_dimension{4'096};
+  std::uint64_t max_serialized_thumbnail_bytes{128ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_decoded_thumbnail_bytes{128ULL * 1024ULL * 1024ULL};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};
@@ -140,6 +145,9 @@ public:
   [[nodiscard]] Result<RawIccProfile>
   read_icc_profile(std::size_t profile_index,
                    std::stop_token stop_token = {}) const;
+  [[nodiscard]] Result<RawImage>
+  read_thumbnail(std::size_t thumbnail_index,
+                 std::stop_token stop_token = {}) const;
 
 private:
   struct Impl;

@@ -1,6 +1,6 @@
 # M7 progress: broader image sample coverage
 
-- Status: EXTENDED_SAMPLE_AND_EXTENSION_INSPECTION_IMPLEMENTED;
+- Status: EXTENDED_SAMPLE_AND_CORE_INSPECTION_IMPLEMENTED;
   EXTERNAL_SAMPLE_ORACLE_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 11.5.1
@@ -36,6 +36,9 @@
 - ICC bytes share checksum-before-decompression and bounded codec paths, remain
   big-endian and untransformed, and receive limited header/signature/embedded-
   flag screening rather than a full color-management interpretation.
+- Validated UInt8/UInt16 Gray/RGB Thumbnail descriptors, direct/referenced
+  main-image associations, and exact attachment/embedded reads with independent
+  count, binding, dimension, serialized-byte, and decoded-byte limits.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -70,11 +73,17 @@ scientific contract.
   SHA-256 verification, exact decoded bytes, direct/referenced associations,
   forbidden `byteOrder`, invalid placement/content, external read rejection,
   header screening, and dedicated resource limits.
+- Synthetic Thumbnail tests cover UInt8/UInt16, Gray/RGB/alpha channel rules,
+  source representation, attachment and compressed embedded blocks, checksum,
+  direct/referenced associations, forbidden forms, cancellation, and limits.
+- One native PixInsight-produced 400 x 267 UInt8 Gray attachment decodes to
+  106,800 bytes. Its decoded SHA-256
+  `6bb8c5ff6acb91b5f7bd24afadda339a70a95d0b5d8f911d37f2870f6715c1a5`
+  matches an independent raw file-range hash; redistribution remains unknown.
 
 ## Still required for M7
 
 - Obtain independently produced UInt64 and complex fixtures from another
   producer, with provenance and exact pixel hashes.
-- Add an explicit image-like block inspection/decode policy for `Thumbnail`.
 - Decide the later `Structure`/`Table` profile and whether typed numeric
   convenience accessors are justified without weakening raw-text provenance.

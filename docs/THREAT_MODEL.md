@@ -36,6 +36,7 @@ be bounded, structured, and safe for unattended PFI batch processing.
 | Extension-driven memory growth or hidden behavior | Semantic-only immutable inventory with independent element/attribute/byte limits; no extension execution or resolution | nested extension and zero/tiny-limit tests |
 | Ancillary-object ambiguity or resource amplification | Required syntax/placement validation, document-local reference resolution, independent object/attribute/binding/byte limits, and no synthesized defaults or pixel transforms | positive, malformed, reference, and tiny-limit tests |
 | Malformed or oversized ICC profile | Dedicated descriptor/binding/serialized/decoded limits, checksum-before-decompression, no external resolution or color execution, and bounded ICC header screening | attachment/inline, malformed header, reference, and limit tests |
+| Thumbnail confused with scientific pixels or used for resource amplification | Separate model/API, restricted formats/channels, dedicated count/binding/dimension/byte limits, and no implicit transforms | synthetic grammar/limit tests plus native raw-range hash |
 | Path traversal, symlink escape or SSRF | External path/URL locations rejected in the initial profile; future resolver is explicit opt-in | API and negative tests |
 | File changed during parsing | Stable handle, initial identity/size snapshot, optional final identity check | mutation test |
 | Non-finite or invalid numeric metadata | Grammar-aware parsing and explicit invalid state; no default substitution | value corpus |

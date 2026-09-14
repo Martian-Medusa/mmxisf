@@ -65,6 +65,11 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_icc_profile_bindings = 2'000;
   options.max_serialized_icc_profile_bytes = 1024U * 1024U;
   options.max_decoded_icc_profile_bytes = 1024U * 1024U;
+  options.max_thumbnails = 128;
+  options.max_thumbnail_bindings = 2'000;
+  options.max_thumbnail_dimension = 1'024;
+  options.max_serialized_thumbnail_bytes = 1024U * 1024U;
+  options.max_decoded_thumbnail_bytes = 1024U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
   options.max_serialized_property_bytes = 1024U * 1024U;
   options.max_decoded_property_bytes = 1024U * 1024U;
@@ -93,6 +98,11 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
     for (std::size_t index = 0; index < profiles; ++index) {
       (void)reader.value().read_icc_profile(index);
     }
+    const auto thumbnails = std::min<std::size_t>(
+        reader.value().document().thumbnails().size(), 16);
+    for (std::size_t index = 0; index < thumbnails; ++index) {
+      (void)reader.value().read_thumbnail(index);
+    }
   }
   return 0;
 }
@@ -113,6 +123,8 @@ std::vector<std::uint8_t> seed_unit() {
       "AAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYWNzcAAAAAAAAAAB"
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</ICCProfile>"
+      "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+      "location=\"embedded\"><Data encoding=\"hex\">00</Data></Thumbnail>"
       "<Property id=\"test\" type=\"String\">value</Property>"
       "<Property id=\"Test:Boolean\" type=\"Boolean\" value=\"true\"/>"
       "<Property id=\"Test:Integer\" type=\"Int32\" value=\"-42\"/>"

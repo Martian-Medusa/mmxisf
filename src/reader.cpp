@@ -778,6 +778,11 @@ struct IccProfileBindingEvent {
   std::size_t image_index{0};
 };
 
+struct ThumbnailBindingEvent {
+  std::size_t thumbnail_index{0};
+  std::size_t image_index{0};
+};
+
 struct XmlElementName {
   std::string namespace_uri;
   std::string name;
@@ -791,6 +796,11 @@ struct XmlBuilder {
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
+  std::vector<ThumbnailInfo> thumbnails;
+  std::vector<std::vector<std::byte>> embedded_thumbnail_blocks;
+  std::vector<bool> embedded_thumbnail_data_seen;
+  std::unordered_map<std::string, std::size_t> thumbnail_uids;
+  std::vector<ThumbnailBindingEvent> thumbnail_binding_events;
   std::vector<bool> embedded_data_seen;
   std::vector<AttachedRange> attached_ranges;
   std::vector<MetadataEntry> metadata;
@@ -823,11 +833,14 @@ struct XmlBuilder {
   bool saw_creator_application{false};
   std::unordered_set<std::string> core_uids;
   std::vector<std::string> references;
+  std::vector<std::string> references_from_thumbnails;
   std::unordered_map<std::string, std::size_t> metadata_uids;
   std::vector<MetadataBindingEvent> metadata_binding_events;
   std::optional<std::size_t> embedded_image_index;
   std::optional<std::size_t> inline_metadata_index;
   std::optional<std::size_t> inline_icc_profile_index;
+  std::optional<std::size_t> embedded_thumbnail_index;
+  std::optional<std::size_t> open_thumbnail_index;
   EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
   std::array<unsigned char, 4> base64_quartet{};
   std::size_t base64_quartet_size{0};
@@ -940,15 +953,19 @@ std::optional<unsigned char> base64_value(char character) {
 bool append_inline_byte(XmlBuilder &state, unsigned char value) {
   const bool metadata_block = state.inline_metadata_index.has_value();
   const bool icc_profile_block = state.inline_icc_profile_index.has_value();
+  const bool thumbnail_block = state.embedded_thumbnail_index.has_value();
   auto &output =
       metadata_block
           ? state.inline_metadata_blocks[*state.inline_metadata_index]
       : icc_profile_block
           ? state.inline_icc_profile_blocks[*state.inline_icc_profile_index]
+      : thumbnail_block
+          ? state.embedded_thumbnail_blocks[*state.embedded_thumbnail_index]
           : state.embedded_blocks[*state.embedded_image_index];
   const auto limit =
       metadata_block      ? state.options.max_serialized_property_bytes
       : icc_profile_block ? state.options.max_serialized_icc_profile_bytes
+      : thumbnail_block   ? state.options.max_serialized_thumbnail_bytes
                           : state.options.max_decoded_image_bytes;
   const auto element = metadata_block      ? "Property"
                        : icc_profile_block ? "ICCProfile"
@@ -1198,7 +1215,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
   }
 
   if (state.embedded_image_index || state.inline_metadata_index ||
-      state.inline_icc_profile_index) {
+      state.inline_icc_profile_index || state.embedded_thumbnail_index) {
     state.fail(ErrorCode::invalid_xisf,
                "Encoded data blocks cannot contain child elements", name);
     return;
@@ -1233,6 +1250,9 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
       state.references.emplace_back(*reference);
+      if (parent == "Thumbnail") {
+        state.references_from_thumbnails.emplace_back(*reference);
+      }
       if ((parent == "Image" && state.current_image()) ||
           parent == "Metadata") {
         if (state.metadata_binding_events.size() >=
@@ -1546,17 +1566,180 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     return;
   }
 
-  if (is_xisf_element && name == "Data") {
-    const auto image_index = state.current_image();
-    if (state.depth != 3 || parent != "Image" || !image_index ||
-        state.images[*image_index].block.kind != BlockKind::embedded) {
+  if (is_xisf_element && name == "Thumbnail") {
+    const auto containing_image = state.current_image();
+    const bool root_child = state.depth == 2 && parent == "xisf";
+    const bool image_child =
+        state.depth == 3 && parent == "Image" && containing_image.has_value();
+    if (!root_child && !image_child) {
       state.fail(ErrorCode::invalid_xisf,
-                 "Data must be a direct child of an embedded Image", name);
+                 "Thumbnail must be a direct child of xisf or Image", name);
       return;
     }
-    if (state.embedded_data_seen[*image_index]) {
+    if (state.thumbnails.size() >= state.options.max_thumbnails) {
+      state.fail(ErrorCode::resource_limit, "Thumbnail count limit exceeded",
+                 name);
+      return;
+    }
+    const auto geometry = attribute(attributes, "geometry");
+    const auto sample_format = attribute(attributes, "sampleFormat");
+    const auto location = attribute(attributes, "location");
+    if (!geometry || !sample_format || !location) {
       state.fail(ErrorCode::invalid_xisf,
-                 "Embedded Image must contain exactly one Data element", name);
+                 "Thumbnail is missing a required attribute", name);
+      return;
+    }
+    if (attribute(attributes, "bounds")) {
+      state.fail(ErrorCode::invalid_xisf, "Thumbnail cannot declare bounds",
+                 name, "bounds");
+      return;
+    }
+    auto parsed_geometry = parse_geometry(*geometry);
+    if (!parsed_geometry || parsed_geometry.value().size() != 3) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Thumbnail must have two dimensions and channels", name,
+                 "geometry");
+      return;
+    }
+    if (parsed_geometry.value()[0] > state.options.max_thumbnail_dimension ||
+        parsed_geometry.value()[1] > state.options.max_thumbnail_dimension) {
+      state.fail(ErrorCode::resource_limit,
+                 "Thumbnail dimensions exceed the configured limit", name,
+                 "geometry");
+      return;
+    }
+    if (*sample_format != "UInt8" && *sample_format != "UInt16") {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Thumbnail sampleFormat must be UInt8 or UInt16", name,
+                 "sampleFormat");
+      return;
+    }
+    ImageInfo image;
+    image.geometry = std::move(parsed_geometry).value();
+    image.sample_format_name = std::string(*sample_format);
+    image.sample_format =
+        *sample_format == "UInt8" ? SampleFormat::uint8 : SampleFormat::uint16;
+    image.color_space =
+        std::string(attribute(attributes, "colorSpace").value_or("Gray"));
+    const auto channels = image.geometry[2];
+    if ((image.color_space == "Gray" && channels != 1 && channels != 2) ||
+        (image.color_space == "RGB" && channels != 3 && channels != 4) ||
+        (image.color_space != "Gray" && image.color_space != "RGB")) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Thumbnail colorSpace and channel count are incompatible",
+                 name, "geometry");
+      return;
+    }
+    if (image.color_space == "RGB") {
+      image.nominal_channel_order =
+          NominalChannelOrder::red_green_blue_then_alpha;
+    }
+    const auto orientation = attribute(attributes, "orientation");
+    if (orientation) {
+      if (*orientation == "0") {
+        image.orientation = ImageOrientation::identity;
+      } else if (*orientation == "flip") {
+        image.orientation = ImageOrientation::flip;
+      } else if (*orientation == "90") {
+        image.orientation = ImageOrientation::rotate_90;
+      } else if (*orientation == "90;flip") {
+        image.orientation = ImageOrientation::rotate_90_flip;
+      } else if (*orientation == "-90") {
+        image.orientation = ImageOrientation::rotate_minus_90;
+      } else if (*orientation == "-90;flip") {
+        image.orientation = ImageOrientation::rotate_minus_90_flip;
+      } else if (*orientation == "180") {
+        image.orientation = ImageOrientation::rotate_180;
+      } else if (*orientation == "180;flip") {
+        image.orientation = ImageOrientation::rotate_180_flip;
+      } else {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Invalid Thumbnail orientation value", name, "orientation");
+        return;
+      }
+    }
+    image.id = std::string(attribute(attributes, "id").value_or(""));
+    const auto pixel_storage =
+        attribute(attributes, "pixelStorage").value_or("Planar");
+    if (pixel_storage != "Planar" && pixel_storage != "Normal") {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Invalid Thumbnail pixelStorage value", name, "pixelStorage");
+      return;
+    }
+    image.pixel_storage =
+        pixel_storage == "Normal" ? PixelStorage::normal : PixelStorage::planar;
+    const auto byte_order =
+        attribute(attributes, "byteOrder").value_or("little");
+    if (byte_order != "little" && byte_order != "big") {
+      state.fail(ErrorCode::invalid_xisf, "Invalid Thumbnail byteOrder value",
+                 name, "byteOrder");
+      return;
+    }
+    image.byte_order = byte_order == "big" ? ByteOrder::big : ByteOrder::little;
+    image.block = parse_location(*location);
+    if (image.block.kind == BlockKind::inline_data ||
+        image.block.kind == BlockKind::unknown) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Thumbnail has an invalid data block location", name,
+                 "location");
+      return;
+    }
+    image.compression =
+        std::string(attribute(attributes, "compression").value_or(""));
+    image.subblocks =
+        std::string(attribute(attributes, "subblocks").value_or(""));
+    image.checksum =
+        std::string(attribute(attributes, "checksum").value_or(""));
+
+    ThumbnailInfo thumbnail;
+    thumbnail.uid = std::string(attribute(attributes, "uid").value_or(""));
+    thumbnail.image_index = containing_image;
+    thumbnail.image = std::move(image);
+    const auto thumbnail_index = state.thumbnails.size();
+    state.thumbnails.push_back(std::move(thumbnail));
+    state.embedded_thumbnail_blocks.emplace_back();
+    state.embedded_thumbnail_data_seen.push_back(false);
+    state.open_thumbnail_index = thumbnail_index;
+    if (!state.thumbnails.back().uid.empty()) {
+      state.thumbnail_uids.emplace(state.thumbnails.back().uid,
+                                   thumbnail_index);
+    }
+    if (containing_image) {
+      if (state.thumbnail_binding_events.size() >=
+          state.options.max_thumbnail_bindings) {
+        state.fail(ErrorCode::resource_limit,
+                   "Thumbnail binding limit exceeded", name);
+        return;
+      }
+      state.thumbnail_binding_events.push_back(
+          ThumbnailBindingEvent{thumbnail_index, *containing_image});
+    }
+    return;
+  }
+
+  if (is_xisf_element && name == "Data") {
+    const auto image_index = state.current_image();
+    const bool image_data =
+        state.depth == 3 && parent == "Image" && image_index &&
+        state.images[*image_index].block.kind == BlockKind::embedded;
+    const bool thumbnail_data =
+        parent == "Thumbnail" && state.open_thumbnail_index &&
+        state.thumbnails[*state.open_thumbnail_index].image.block.kind ==
+            BlockKind::embedded;
+    if (!image_data && !thumbnail_data) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Data must be a direct child of an embedded Image or "
+                 "Thumbnail",
+                 name);
+      return;
+    }
+    if ((image_data && state.embedded_data_seen[*image_index]) ||
+        (thumbnail_data &&
+         state.embedded_thumbnail_data_seen[*state.open_thumbnail_index])) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded Image or Thumbnail must contain exactly one Data "
+                 "element",
+                 name);
       return;
     }
     const auto encoding = attribute(attributes, "encoding");
@@ -1565,7 +1748,9 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                  "Data requires a base64 or hex encoding", name, "encoding");
       return;
     }
-    auto &image = state.images[*image_index];
+    auto &image = image_data
+                      ? state.images[*image_index]
+                      : state.thumbnails[*state.open_thumbnail_index].image;
     if (!image.compression.empty() || !image.subblocks.empty() ||
         !image.checksum.empty()) {
       state.fail(ErrorCode::invalid_xisf,
@@ -1578,8 +1763,13 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         std::string(attribute(attributes, "subblocks").value_or(""));
     image.checksum =
         std::string(attribute(attributes, "checksum").value_or(""));
-    state.embedded_data_seen[*image_index] = true;
-    state.embedded_image_index = *image_index;
+    if (image_data) {
+      state.embedded_data_seen[*image_index] = true;
+      state.embedded_image_index = *image_index;
+    } else {
+      state.embedded_thumbnail_data_seen[*state.open_thumbnail_index] = true;
+      state.embedded_thumbnail_index = *state.open_thumbnail_index;
+    }
     state.embedded_encoding = *encoding == "base64"
                                   ? XmlBuilder::EmbeddedEncoding::base64
                                   : XmlBuilder::EmbeddedEncoding::hex;
@@ -2028,7 +2218,7 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
   const std::string name(local_name(qualified_name));
   const bool is_xisf_element = namespace_name(qualified_name) == kXisfNamespace;
   if (is_xisf_element && name == "Data") {
-    if (!state.embedded_image_index) {
+    if (!state.embedded_image_index && !state.embedded_thumbnail_index) {
       state.fail(ErrorCode::invalid_xisf, "Unexpected closing Data element",
                  name);
       return;
@@ -2043,6 +2233,7 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
       return;
     }
     state.embedded_image_index.reset();
+    state.embedded_thumbnail_index.reset();
     state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
   } else if (is_xisf_element && name == "ICCProfile") {
     if (state.inline_icc_profile_index) {
@@ -2075,6 +2266,21 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
       state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
     }
     state.text_metadata_index.reset();
+  } else if (is_xisf_element && name == "Thumbnail") {
+    if (!state.open_thumbnail_index) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Unexpected closing Thumbnail element", name);
+      return;
+    }
+    const auto thumbnail_index = *state.open_thumbnail_index;
+    if (state.thumbnails[thumbnail_index].image.block.kind ==
+            BlockKind::embedded &&
+        !state.embedded_thumbnail_data_seen[thumbnail_index]) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Embedded Thumbnail requires exactly one Data child", name);
+      return;
+    }
+    state.open_thumbnail_index.reset();
   } else if (is_xisf_element && name == "Image") {
     if (!state.image_stack.empty()) {
       const auto image_index = state.image_stack.back();
@@ -2113,7 +2319,7 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
   }
   const std::string_view data(text, static_cast<std::size_t>(length));
   if (state.embedded_image_index || state.inline_metadata_index ||
-      state.inline_icc_profile_index) {
+      state.inline_icc_profile_index || state.embedded_thumbnail_index) {
     decode_embedded_text(state, data);
     return;
   }
@@ -2152,6 +2358,10 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
         contains_non_xml_whitespace(data)) {
       state.fail(ErrorCode::invalid_xisf,
                  "The XISF root cannot contain character data", "xisf");
+    } else if (state.open_thumbnail_index &&
+               contains_non_xml_whitespace(data)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Thumbnail cannot contain text outside Data", "Thumbnail");
     } else if (state.current_image() &&
                state.images[*state.current_image()].block.kind ==
                    BlockKind::embedded &&
@@ -2185,6 +2395,7 @@ struct ParsedHeader {
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
+  std::vector<std::vector<std::byte>> embedded_thumbnail_blocks;
   std::vector<AttachedRange> attached_ranges;
 };
 
@@ -2255,6 +2466,13 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     if (!state.core_uids.contains(reference)) {
       return make_error(ErrorCode::invalid_xisf,
                         "Reference points to an undefined core element uid");
+    }
+  }
+  for (const auto &reference : state.references_from_thumbnails) {
+    if (state.thumbnail_uids.contains(reference)) {
+      return make_error(
+          ErrorCode::invalid_xisf,
+          "Thumbnail cannot contain a Reference to another Thumbnail");
     }
   }
   std::vector<MetadataBinding> metadata_bindings;
@@ -2340,6 +2558,33 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     icc_profile_bindings.push_back(
         IccProfileBinding{target->second, *event.image_index, true});
   }
+  std::vector<ThumbnailBinding> thumbnail_bindings;
+  thumbnail_bindings.reserve(state.thumbnail_binding_events.size());
+  for (const auto &event : state.thumbnail_binding_events) {
+    if (event.thumbnail_index >= state.thumbnails.size() ||
+        event.image_index >= state.images.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Thumbnail binding is outside the document");
+    }
+    thumbnail_bindings.push_back(
+        ThumbnailBinding{event.thumbnail_index, event.image_index, false});
+  }
+  for (const auto &event : state.metadata_binding_events) {
+    if (!event.by_reference || event.scope != MetadataBinding::Scope::image ||
+        !event.image_index) {
+      continue;
+    }
+    const auto target = state.thumbnail_uids.find(event.reference);
+    if (target == state.thumbnail_uids.end()) {
+      continue;
+    }
+    if (thumbnail_bindings.size() >= options.max_thumbnail_bindings) {
+      return make_error(ErrorCode::resource_limit,
+                        "Thumbnail binding limit exceeded");
+    }
+    thumbnail_bindings.push_back(
+        ThumbnailBinding{target->second, *event.image_index, true});
+  }
   std::unordered_set<std::string> unit_property_ids;
   std::vector<std::unordered_set<std::string>> image_property_ids(
       state.images.size());
@@ -2388,10 +2633,13 @@ Result<ParsedHeader> parse_header(std::string_view xml,
       std::move(state.metadata), file_size, header_length,
       std::move(metadata_bindings), std::move(state.extension_elements),
       std::move(state.ancillary_objects), std::move(ancillary_bindings),
-      std::move(state.icc_profiles), std::move(icc_profile_bindings));
-  return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
+      std::move(state.icc_profiles), std::move(icc_profile_bindings),
+      std::move(state.thumbnails), std::move(thumbnail_bindings));
+  return ParsedHeader{std::move(document),
+                      std::move(state.embedded_blocks),
                       std::move(state.inline_metadata_blocks),
                       std::move(state.inline_icc_profile_blocks),
+                      std::move(state.embedded_thumbnail_blocks),
                       std::move(state.attached_ranges)};
 }
 
@@ -2944,6 +3192,87 @@ plan_image_read(const Document &document, const ReaderOptions &options,
   }
   if (image.block.kind == BlockKind::embedded) {
     embedded_block = &embedded_blocks[image_index];
+  }
+  return ImageReadPlan{&image,
+                       embedded_block,
+                       channels,
+                       sample_count,
+                       *sample_size,
+                       *component_size,
+                       expected_bytes,
+                       serialized_bytes,
+                       std::move(compression).value(),
+                       std::move(checksum).value()};
+}
+
+Result<ImageReadPlan>
+plan_thumbnail_read(const Document &document, const ReaderOptions &options,
+                    const std::vector<std::vector<std::byte>> &embedded_blocks,
+                    std::size_t thumbnail_index) {
+  if (thumbnail_index >= document.thumbnails().size()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "Thumbnail index is outside the document");
+  }
+  const auto &image = document.thumbnails()[thumbnail_index].image;
+  if (image.block.kind != BlockKind::attachment &&
+      image.block.kind != BlockKind::embedded) {
+    return make_error(
+        ErrorCode::unsupported_feature,
+        "Only attachment and embedded Thumbnail blocks are readable");
+  }
+  if (image.geometry.size() != 3) {
+    return make_error(ErrorCode::invalid_block,
+                      "Thumbnail geometry is not two-dimensional");
+  }
+  const auto sample_size = bytes_per_sample(image.sample_format);
+  const auto component_size = endian_component_size(image.sample_format);
+  if (!sample_size || !component_size) {
+    return make_error(ErrorCode::unsupported_feature,
+                      "Thumbnail sample format is not readable");
+  }
+  const std::uint64_t channels = image.geometry[2];
+  std::uint64_t sample_count = 0;
+  std::uint64_t expected_bytes = 0;
+  if (!checked_multiply(image.geometry[0], image.geometry[1], sample_count) ||
+      !checked_multiply(sample_count, channels, sample_count) ||
+      !checked_multiply(sample_count, *sample_size, expected_bytes)) {
+    return make_error(ErrorCode::overflow,
+                      "Thumbnail geometry overflows its byte size");
+  }
+  if (expected_bytes > options.max_decoded_thumbnail_bytes ||
+      expected_bytes > std::numeric_limits<std::size_t>::max()) {
+    return make_error(ErrorCode::resource_limit,
+                      "Thumbnail exceeds the decoded byte limit");
+  }
+  if (image.block.kind == BlockKind::embedded &&
+      thumbnail_index >= embedded_blocks.size()) {
+    return make_error(ErrorCode::internal_error,
+                      "Embedded Thumbnail storage is inconsistent");
+  }
+  const std::vector<std::byte> *embedded_block = nullptr;
+  const std::uint64_t serialized_bytes =
+      image.block.kind == BlockKind::attachment
+          ? image.block.size
+          : static_cast<std::uint64_t>(embedded_blocks[thumbnail_index].size());
+  auto compression = parse_compression_plan(
+      image.compression, image.subblocks, serialized_bytes, expected_bytes,
+      options, *sample_size, options.max_serialized_thumbnail_bytes,
+      options.max_decoded_thumbnail_bytes);
+  if (!compression) {
+    return compression.error();
+  }
+  auto checksum = parse_checksum_plan(image.checksum);
+  if (!checksum) {
+    return checksum.error();
+  }
+  if (image.block.kind == BlockKind::attachment &&
+      (image.block.offset > document.file_size() ||
+       image.block.size > document.file_size() - image.block.offset)) {
+    return make_error(ErrorCode::invalid_block,
+                      "Thumbnail attachment extends beyond the source");
+  }
+  if (image.block.kind == BlockKind::embedded) {
+    embedded_block = &embedded_blocks[thumbnail_index];
   }
   return ImageReadPlan{&image,
                        embedded_block,
@@ -3539,6 +3868,7 @@ struct Reader::Impl {
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
+  std::vector<std::vector<std::byte>> embedded_thumbnail_blocks;
 };
 
 Reader::Reader(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -3637,6 +3967,8 @@ Result<Reader> Reader::open_source(std::shared_ptr<const ByteSource> source,
         std::move(parsed_header.inline_metadata_blocks);
     impl->inline_icc_profile_blocks =
         std::move(parsed_header.inline_icc_profile_blocks);
+    impl->embedded_thumbnail_blocks =
+        std::move(parsed_header.embedded_thumbnail_blocks);
     return Reader(std::move(impl));
   } catch (const std::bad_alloc &) {
     return make_error(ErrorCode::resource_limit,
@@ -3961,6 +4293,78 @@ Reader::read_icc_profile(std::size_t profile_index,
   } catch (const std::exception &exception) {
     return make_error(ErrorCode::internal_error,
                       std::string("Unexpected ICC profile read failure: ") +
+                          exception.what());
+  }
+}
+
+Result<RawImage> Reader::read_thumbnail(std::size_t thumbnail_index,
+                                        std::stop_token stop_token) const {
+  try {
+    auto plan =
+        plan_thumbnail_read(impl_->document, impl_->options,
+                            impl_->embedded_thumbnail_blocks, thumbnail_index);
+    if (!plan) {
+      return plan.error();
+    }
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Thumbnail read was cancelled");
+    }
+    RawImage result;
+    result.width = plan.value().image->geometry[0];
+    result.height = plan.value().image->geometry[1];
+    result.channels = plan.value().channels;
+    result.sample_format = plan.value().image->sample_format;
+    result.orientation = plan.value().image->orientation;
+    result.pixel_origin = plan.value().image->pixel_origin;
+    result.pixel_traversal = plan.value().image->pixel_traversal;
+    result.nominal_channel_order = plan.value().image->nominal_channel_order;
+    result.pixel_storage = plan.value().image->pixel_storage;
+    result.byte_order = plan.value().image->byte_order;
+    result.pixels.resize(static_cast<std::size_t>(plan.value().expected_bytes));
+
+    const bool needs_serialized_staging =
+        plan.value().compression.codec != CompressionCodec::none ||
+        plan.value().checksum.algorithm != ChecksumAlgorithm::none;
+    if (needs_serialized_staging) {
+      std::vector<std::byte> serialized(
+          static_cast<std::size_t>(plan.value().serialized_bytes));
+      auto copied =
+          copy_serialized_image(*impl_->source, plan.value(), serialized,
+                                stop_token, thumbnail_index);
+      if (!copied) {
+        return copied.error();
+      }
+      auto verified = verify_checksum(plan.value().checksum, serialized);
+      if (!verified) {
+        return verified.error();
+      }
+      if (plan.value().compression.codec != CompressionCodec::none) {
+        auto decoded = decode_compressed_block(
+            serialized, plan.value().compression, result.pixels, stop_token);
+        if (!decoded) {
+          return decoded.error();
+        }
+      } else {
+        std::copy(serialized.begin(), serialized.end(), result.pixels.begin());
+      }
+    } else {
+      auto copied =
+          copy_serialized_image(*impl_->source, plan.value(), result.pixels,
+                                stop_token, thumbnail_index);
+      if (!copied) {
+        return copied.error();
+      }
+    }
+    if (plan.value().checksum.algorithm != ChecksumAlgorithm::none) {
+      result.checksum_verification = ChecksumVerification::verified;
+    }
+    return result;
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Memory allocation failed while reading Thumbnail");
+  } catch (const std::exception &exception) {
+    return make_error(ErrorCode::internal_error,
+                      std::string("Unexpected Thumbnail read failure: ") +
                           exception.what());
   }
 }

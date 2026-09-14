@@ -2568,6 +2568,20 @@ int main() {
   expect(metadata_reference_with_no_ancillary_budget.has_value(),
          "ordinary metadata references do not consume ancillary bindings");
 
+  mmxisf::ReaderOptions no_icc_profile_bindings;
+  no_icc_profile_bindings.max_icc_profile_bindings = 0;
+  auto metadata_reference_with_no_icc_budget = mmxisf::Reader::open_file(
+      forward_reference_path, no_icc_profile_bindings);
+  expect(metadata_reference_with_no_icc_budget.has_value(),
+         "ordinary metadata references do not consume ICC profile bindings");
+
+  mmxisf::ReaderOptions no_thumbnail_bindings;
+  no_thumbnail_bindings.max_thumbnail_bindings = 0;
+  auto metadata_reference_with_no_thumbnail_budget =
+      mmxisf::Reader::open_file(forward_reference_path, no_thumbnail_bindings);
+  expect(metadata_reference_with_no_thumbnail_budget.has_value(),
+         "ordinary metadata references do not consume Thumbnail bindings");
+
   std::vector<std::byte> icc_profile_bytes(128, std::byte{0});
   icc_profile_bytes[3] = std::byte{0x80};
   icc_profile_bytes[36] = std::byte{'a'};
@@ -2759,6 +2773,216 @@ int main() {
     expect(!profile && profile.error().code == mmxisf::ErrorCode::invalid_block,
            "invalid ICC signature fails closed at profile read");
   }
+
+  const std::vector<std::byte> attached_thumbnail_bytes{
+      std::byte{0x00}, std::byte{0x01}, std::byte{0x00},
+      std::byte{0x02}, std::byte{0x00}, std::byte{0x03}};
+  const std::vector<std::byte> embedded_thumbnail_bytes{
+      std::byte{0x01}, std::byte{0x02}, std::byte{0x03},
+      std::byte{0x04}, std::byte{0x05}, std::byte{0x06}};
+  const auto thumbnail_path = write_fixture(
+      "mmxisf-thumbnails.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Thumbnail uid=\"SharedThumbnail\" geometry=\"1:1:3\" "
+          "sampleFormat=\"UInt16\" colorSpace=\"RGB\" byteOrder=\"big\" "
+          "location=\"attachment:4096:6\"/>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<Reference ref=\"SharedThumbnail\"/></Image>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<Thumbnail geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" pixelStorage=\"Normal\" "
+          "location=\"embedded\"><Data encoding=\"base64\" "
+          "compression=\"zlib:6\" "
+          "checksum=\"sha-256:"
+          "2fc3146104370f94342cbabfe10ecc0f019cfb1196541460372fd8fec537a314\">"
+          "eJxjZGJmYWUDAAA+ABY=</Data></Thumbnail></Image>") +
+          valid_metadata() + "</xisf>",
+      attached_thumbnail_bytes, 4096);
+  auto thumbnails = mmxisf::Reader::open_file(thumbnail_path);
+  expect(thumbnails.has_value(),
+         "attached and compressed embedded Thumbnails open");
+  if (thumbnails) {
+    const auto &document = thumbnails.value().document();
+    expect(document.thumbnails().size() == 2,
+           "Thumbnails retain document order");
+    expect(document.thumbnail_bindings().size() == 2,
+           "direct and referenced Thumbnail associations are retained");
+    if (document.thumbnails().size() == 2) {
+      const auto &shared = document.thumbnails()[0];
+      const auto &direct = document.thumbnails()[1];
+      expect(shared.uid == "SharedThumbnail" && !shared.image_index &&
+                 shared.image.geometry ==
+                     std::vector<std::uint64_t>({1, 1, 3}) &&
+                 shared.image.sample_format == mmxisf::SampleFormat::uint16 &&
+                 shared.image.byte_order == mmxisf::ByteOrder::big,
+             "standalone Thumbnail descriptor preserves raster semantics");
+      expect(direct.image_index == 1 &&
+                 direct.image.pixel_storage == mmxisf::PixelStorage::normal &&
+                 direct.image.compression == "zlib:6",
+             "direct embedded Thumbnail provenance is explicit");
+    }
+    if (document.thumbnail_bindings().size() == 2) {
+      expect(document.thumbnail_bindings()[0].thumbnail_index == 1 &&
+                 document.thumbnail_bindings()[0].image_index == 1 &&
+                 !document.thumbnail_bindings()[0].by_reference,
+             "direct Thumbnail binding preserves its image");
+      expect(document.thumbnail_bindings()[1].thumbnail_index == 0 &&
+                 document.thumbnail_bindings()[1].image_index == 0 &&
+                 document.thumbnail_bindings()[1].by_reference,
+             "referenced Thumbnail binding resolves to its image");
+    }
+    auto attached_thumbnail = thumbnails.value().read_thumbnail(0);
+    expect(attached_thumbnail &&
+               attached_thumbnail.value().pixels == attached_thumbnail_bytes &&
+               attached_thumbnail.value().sample_format ==
+                   mmxisf::SampleFormat::uint16 &&
+               attached_thumbnail.value().byte_order == mmxisf::ByteOrder::big,
+           "attached Thumbnail bytes and representation remain exact");
+    auto embedded_thumbnail = thumbnails.value().read_thumbnail(1);
+    expect(embedded_thumbnail &&
+               embedded_thumbnail.value().pixels == embedded_thumbnail_bytes &&
+               embedded_thumbnail.value().pixel_storage ==
+                   mmxisf::PixelStorage::normal &&
+               embedded_thumbnail.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified,
+           "compressed embedded Thumbnail is verified and decoded exactly");
+    auto outside_thumbnail = thumbnails.value().read_thumbnail(2);
+    expect(!outside_thumbnail && outside_thumbnail.error().code ==
+                                     mmxisf::ErrorCode::invalid_argument,
+           "out-of-range Thumbnail read is rejected");
+    std::stop_source thumbnail_stop_source;
+    thumbnail_stop_source.request_stop();
+    auto cancelled_thumbnail =
+        thumbnails.value().read_thumbnail(0, thumbnail_stop_source.get_token());
+    expect(!cancelled_thumbnail &&
+               cancelled_thumbnail.error().code == mmxisf::ErrorCode::cancelled,
+           "pre-cancelled Thumbnail read is rejected at a safe boundary");
+  }
+
+  mmxisf::ReaderOptions one_thumbnail;
+  one_thumbnail.max_thumbnails = 1;
+  auto thumbnail_count_limit =
+      mmxisf::Reader::open_file(thumbnail_path, one_thumbnail);
+  expect(!thumbnail_count_limit && thumbnail_count_limit.error().code ==
+                                       mmxisf::ErrorCode::resource_limit,
+         "Thumbnail count limit is enforced");
+  mmxisf::ReaderOptions one_thumbnail_binding;
+  one_thumbnail_binding.max_thumbnail_bindings = 1;
+  auto thumbnail_binding_limit =
+      mmxisf::Reader::open_file(thumbnail_path, one_thumbnail_binding);
+  expect(!thumbnail_binding_limit && thumbnail_binding_limit.error().code ==
+                                         mmxisf::ErrorCode::resource_limit,
+         "Thumbnail binding limit is enforced");
+  mmxisf::ReaderOptions tiny_thumbnail_dimension;
+  tiny_thumbnail_dimension.max_thumbnail_dimension = 1;
+  auto thumbnail_dimension_limit =
+      mmxisf::Reader::open_file(thumbnail_path, tiny_thumbnail_dimension);
+  expect(!thumbnail_dimension_limit && thumbnail_dimension_limit.error().code ==
+                                           mmxisf::ErrorCode::resource_limit,
+         "Thumbnail dimension limit is enforced");
+  mmxisf::ReaderOptions tiny_serialized_thumbnail;
+  tiny_serialized_thumbnail.max_serialized_thumbnail_bytes = 13;
+  auto thumbnail_serialized_limit =
+      mmxisf::Reader::open_file(thumbnail_path, tiny_serialized_thumbnail);
+  expect(!thumbnail_serialized_limit &&
+             thumbnail_serialized_limit.error().code ==
+                 mmxisf::ErrorCode::resource_limit,
+         "embedded Thumbnail serialized byte limit is enforced");
+  mmxisf::ReaderOptions tiny_decoded_thumbnail;
+  tiny_decoded_thumbnail.max_decoded_thumbnail_bytes = 5;
+  auto thumbnail_decoded_limit =
+      mmxisf::Reader::open_file(thumbnail_path, tiny_decoded_thumbnail);
+  expect(thumbnail_decoded_limit.has_value(),
+         "Thumbnail decoded limit is deferred until read");
+  if (thumbnail_decoded_limit) {
+    auto thumbnail = thumbnail_decoded_limit.value().read_thumbnail(1);
+    expect(!thumbnail &&
+               thumbnail.error().code == mmxisf::ErrorCode::resource_limit,
+           "Thumbnail decoded byte limit is enforced before decompression");
+  }
+
+  const auto invalid_thumbnail_xml = [&](std::string_view element) {
+    return std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                       "version=\"1.0\">") +
+           std::string(element) + valid_metadata() + "</xisf>";
+  };
+  const auto rejects_thumbnail = [&](const std::string &fixture_name,
+                                     std::string_view element) {
+    auto opened = mmxisf::Reader::open_file(
+        write_fixture(fixture_name, invalid_thumbnail_xml(element)));
+    return !opened && opened.error().code == mmxisf::ErrorCode::invalid_xisf;
+  };
+  expect(rejects_thumbnail(
+             "mmxisf-thumbnail-float.xisf",
+             "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"Float32\" "
+             "location=\"embedded\"><Data encoding=\"hex\">00000000</Data>"
+             "</Thumbnail>"),
+         "Thumbnail rejects non-integer sample formats");
+  expect(rejects_thumbnail(
+             "mmxisf-thumbnail-bounds.xisf",
+             "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+             "bounds=\"0:1\" location=\"embedded\"><Data encoding=\"hex\">00"
+             "</Data></Thumbnail>"),
+         "Thumbnail rejects bounds");
+  expect(rejects_thumbnail(
+             "mmxisf-thumbnail-channels.xisf",
+             "<Thumbnail geometry=\"1:1:2\" sampleFormat=\"UInt8\" "
+             "colorSpace=\"RGB\" location=\"embedded\"><Data encoding=\"hex\">"
+             "0000</Data></Thumbnail>"),
+         "Thumbnail rejects incompatible color-space channel counts");
+  expect(
+      rejects_thumbnail("mmxisf-thumbnail-inline.xisf",
+                        "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                        "location=\"inline:hex\">00</Thumbnail>"),
+      "Thumbnail rejects inline image blocks");
+  expect(
+      rejects_thumbnail("mmxisf-thumbnail-missing-data.xisf",
+                        "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                        "location=\"embedded\"/>"),
+      "embedded Thumbnail requires one Data child");
+  expect(
+      rejects_thumbnail("mmxisf-thumbnail-nested.xisf",
+                        "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                        "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+                        "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                        "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+                        "</Thumbnail></Thumbnail>"),
+      "nested Thumbnail is rejected");
+  expect(rejects_thumbnail(
+             "mmxisf-thumbnail-cfa.xisf",
+             "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+             "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+             "<ColorFilterArray pattern=\"R\" width=\"1\" height=\"1\"/>"
+             "</Thumbnail>"),
+         "Thumbnail rejects a child ColorFilterArray");
+  auto external_thumbnail = mmxisf::Reader::open_file(
+      write_fixture("mmxisf-thumbnail-external.xisf",
+                    invalid_thumbnail_xml(
+                        "<Thumbnail geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                        "location=\"path(/thumbnail.bin)\"/>")));
+  expect(external_thumbnail.has_value(),
+         "external Thumbnail remains inspectable");
+  if (external_thumbnail) {
+    auto thumbnail = external_thumbnail.value().read_thumbnail(0);
+    expect(!thumbnail &&
+               thumbnail.error().code == mmxisf::ErrorCode::unsupported_feature,
+           "external Thumbnail read fails explicitly");
+  }
+  auto thumbnail_self_reference = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-thumbnail-reference.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Thumbnail uid=\"NestedThumbnail\" geometry=\"1:1:1\" "
+          "sampleFormat=\"UInt8\" location=\"embedded\">"
+          "<Data encoding=\"hex\">00</Data>"
+          "<Reference ref=\"NestedThumbnail\"/></Thumbnail>") +
+          valid_metadata() + "</xisf>"));
+  expect(!thumbnail_self_reference && thumbnail_self_reference.error().code ==
+                                          mmxisf::ErrorCode::invalid_xisf,
+         "Thumbnail rejects a child Reference to a Thumbnail");
 
   const auto nonzero_trailing_path = write_fixture(
       "mmxisf-nonzero-trailing-space.xisf",

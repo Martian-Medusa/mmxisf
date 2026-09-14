@@ -22,6 +22,8 @@ int main() {
   mmxisf::IccProfileInfo icc_profile;
   mmxisf::IccProfileBinding icc_binding;
   mmxisf::RawIccProfile raw_icc_profile;
+  mmxisf::ThumbnailInfo thumbnail;
+  mmxisf::ThumbnailBinding thumbnail_binding;
   mmxisf::ImageWriteView write_image;
   mmxisf::MetadataWriteEntry write_metadata;
   mmxisf::WriterOptions writer_options;
@@ -41,6 +43,11 @@ int main() {
                  options.max_icc_profile_bindings > 0 &&
                  options.max_serialized_icc_profile_bytes > 0 &&
                  options.max_decoded_icc_profile_bytes > 0 &&
+                 options.max_thumbnails > 0 &&
+                 options.max_thumbnail_bindings > 0 &&
+                 options.max_thumbnail_dimension > 0 &&
+                 options.max_serialized_thumbnail_bytes > 0 &&
+                 options.max_decoded_thumbnail_bytes > 0 &&
                  binding.scope == mmxisf::MetadataBinding::Scope::xisf_unit &&
                  !binding.by_reference &&
                  extension_attribute.namespace_uri.empty() &&
@@ -50,10 +57,14 @@ int main() {
                  document.ancillary_bindings().empty() &&
                  document.icc_profiles().empty() &&
                  document.icc_profile_bindings().empty() &&
+                 document.thumbnails().empty() &&
+                 document.thumbnail_bindings().empty() &&
                  ancillary.kind == mmxisf::AncillaryKind::rgb_working_space &&
                  ancillary_binding.object_index == 0 &&
                  icc_profile.block.kind == mmxisf::BlockKind::unknown &&
                  icc_binding.profile_index == 0 &&
+                 thumbnail.image.block.kind == mmxisf::BlockKind::unknown &&
+                 thumbnail_binding.thumbnail_index == 0 &&
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&

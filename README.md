@@ -85,6 +85,7 @@ build/mmxisf-inspect --decode path/to/image.xisf
 build/mmxisf-inspect --decode-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-properties-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-icc-sha256 path/to/image.xisf
+build/mmxisf-inspect --decode-thumbnails-sha256 path/to/image.xisf
 ```
 
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
@@ -179,6 +180,12 @@ profiles through the bounded integrity/decompression pipeline and returns their
 exact big-endian bytes. It performs limited ICC header screening but does not
 execute color management or claim complete ICC semantic validation.
 
+`Document::thumbnails()` and `Document::thumbnail_bindings()` expose validated
+UInt8/UInt16 Gray/RGB preview descriptors and their main-image associations.
+`Reader::read_thumbnail(index, stop_token)` returns exact source-representation
+pixels from attachment or embedded blocks; it never substitutes thumbnail
+pixels for scientific image data or applies display transforms.
+
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
 and either layout explicitly. UInt64, Complex32, and Complex64 use the same raw
@@ -202,6 +209,8 @@ source-representation pixel bytes for differential producer/PFI comparisons.
 for every block-backed Property without decoding image pixels.
 `--decode-icc-sha256` performs the bounded profile decode, structural screening,
 and hash for every locally readable ICC profile.
+`--decode-thumbnails-sha256` performs the bounded thumbnail decode and exact
+source-representation pixel hash.
 The normal inspector output also lists the bounded semantic inventory of
 non-XISF XML extension elements and their namespace-aware attributes; this is
 inspection data, not a byte-identical XML round-trip representation.
@@ -246,8 +255,8 @@ Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
 can still open a broader set of headers and displays inventoried extension
 elements/attributes, validated ancillary core objects, and ICC profile
-descriptors/associations alongside metadata, while unsupported image decoding
-fails closed.
+descriptors/associations plus Thumbnail records alongside metadata, while
+unsupported image decoding fails closed.
 
 ## License
 

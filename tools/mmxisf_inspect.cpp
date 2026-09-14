@@ -36,15 +36,18 @@ int main(int argc, char **argv) {
       argc == 3 && std::string(argv[1]) == "--decode-properties-sha256";
   const bool decode_icc =
       argc == 3 && std::string(argv[1]) == "--decode-icc-sha256";
+  const bool decode_thumbnails =
+      argc == 3 && std::string(argv[1]) == "--decode-thumbnails-sha256";
   const bool decode = argc == 3 && (std::string(argv[1]) == "--decode" ||
                                     std::string(argv[1]) == "--decode-sha256");
   const bool decode_sha256 =
       decode && std::string(argv[1]) == "--decode-sha256";
-  const bool has_option = decode || decode_properties || decode_icc;
+  const bool has_option =
+      decode || decode_properties || decode_icc || decode_thumbnails;
   if ((!has_option && argc != 2) || (argc == 3 && !has_option)) {
     std::cerr << "Usage: mmxisf-inspect "
                  "[--decode|--decode-sha256|--decode-properties-sha256|"
-                 "--decode-icc-sha256] "
+                 "--decode-icc-sha256|--decode-thumbnails-sha256] "
                  "<file.xisf>\n";
     return EXIT_FAILURE;
   }
@@ -69,6 +72,9 @@ int main(int argc, char **argv) {
             << "icc-profiles: " << document.icc_profiles().size() << "\n"
             << "icc-profile-bindings: "
             << document.icc_profile_bindings().size() << "\n"
+            << "thumbnails: " << document.thumbnails().size() << "\n"
+            << "thumbnail-bindings: " << document.thumbnail_bindings().size()
+            << "\n"
             << "extensions: " << document.extension_elements().size() << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
@@ -254,6 +260,58 @@ int main(int argc, char **argv) {
   }
   for (const auto &binding : document.icc_profile_bindings()) {
     std::cout << "icc-profile-binding\tprofile[" << binding.profile_index
+              << "]\timage[" << binding.image_index << "]\t"
+              << (binding.by_reference ? "Reference" : "Direct") << '\n';
+  }
+  for (std::size_t index = 0; index < document.thumbnails().size(); ++index) {
+    const auto &thumbnail = document.thumbnails()[index];
+    std::cout << "thumbnail[" << index << "]\tgeometry=";
+    for (std::size_t axis = 0; axis < thumbnail.image.geometry.size(); ++axis) {
+      if (axis != 0) {
+        std::cout << ':';
+      }
+      std::cout << thumbnail.image.geometry[axis];
+    }
+    std::cout << "\tsample=" << thumbnail.image.sample_format_name
+              << "\tcolor=" << thumbnail.image.color_space << "\tstorage="
+              << mmxisf::to_string(thumbnail.image.pixel_storage)
+              << "\tlocation=" << thumbnail.image.block.raw;
+    if (!thumbnail.uid.empty()) {
+      std::cout << "\tuid=" << thumbnail.uid;
+    }
+    if (thumbnail.image_index) {
+      std::cout << "\tdirect-image[" << *thumbnail.image_index << ']';
+    }
+    if (!thumbnail.image.compression.empty()) {
+      std::cout << "\tcompression=" << thumbnail.image.compression;
+    }
+    if (!thumbnail.image.checksum.empty()) {
+      std::cout << "\tchecksum=" << thumbnail.image.checksum;
+    }
+    std::cout << '\n';
+    if (decode_thumbnails) {
+      auto decoded = result.value().read_thumbnail(index);
+      if (!decoded) {
+        std::cerr << "thumbnail[" << index
+                  << "] decode: " << mmxisf::to_string(decoded.error().code)
+                  << ": " << decoded.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      const auto digest = sha256(decoded.value().pixels);
+      if (digest.empty()) {
+        std::cerr << "thumbnail[" << index
+                  << "] decode: unable to compute pixel SHA-256\n";
+        return EXIT_FAILURE;
+      }
+      std::cout << "thumbnail[" << index
+                << "] decoded-bytes: " << decoded.value().pixels.size()
+                << " checksum: "
+                << mmxisf::to_string(decoded.value().checksum_verification)
+                << " pixel-sha256: " << digest << '\n';
+    }
+  }
+  for (const auto &binding : document.thumbnail_bindings()) {
+    std::cout << "thumbnail-binding\tthumbnail[" << binding.thumbnail_index
               << "]\timage[" << binding.image_index << "]\t"
               << (binding.by_reference ? "Reference" : "Direct") << '\n';
   }
