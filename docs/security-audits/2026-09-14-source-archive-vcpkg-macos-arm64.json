@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "mmxisf.source-archive-gate/1.0.0",
+  "auditedAt": "2026-09-14",
+  "status": "PASS_REHEARSAL_NOT_FROZEN_NOT_PUBLISHED",
+  "platform": "macOS-arm64",
+  "source": {
+    "version": "0.1.0",
+    "commit": "ba360cc53b97bcdff3e198f576bfe82bca5d5a44",
+    "trackedAndUntrackedState": "CLEAN",
+    "archive": {
+      "name": "mmxisf-0.1.0-source-ba360cc53b97.tar.gz",
+      "sizeBytes": 281410,
+      "sha256": "ed2dceaaa4536b0bda8694b4be17ef9d7f50d193b8295fd95c6456db41796558",
+      "prefix": "mmxisf-0.1.0/"
+    },
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "buildInput": "EXTRACTED_ARCHIVE_ONLY"
+  },
+  "dependencyGraph": {
+    "vcpkgRegistryCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "productionBaseline": "PASS",
+    "packages": [
+      { "name": "Expat", "version": "2.8.4" },
+      { "name": "zlib", "version": "1.3.2" },
+      { "name": "LZ4", "version": "1.10.0" },
+      { "name": "Zstandard", "version": "1.5.7" },
+      { "name": "OpenSSL", "version": "3.6.4" }
+    ],
+    "binarySbom": {
+      "spdxVersion": "SPDX-2.3",
+      "sizeBytes": 3059,
+      "sha256": "bf9c0b368ece1e9cd3fc93179519ddd9231e95b7c81875027bb0e057eacf8815"
+    }
+  },
+  "verification": {
+    "warningsAsErrors": true,
+    "libraryCTest": { "passed": 12, "failed": 0 },
+    "install": "PASS",
+    "installedPackageConsumerCTest": { "passed": 1, "failed": 0 },
+    "viewer": {
+      "architecture": "arm64",
+      "runtimeLinkage": "SYSTEM_ONLY",
+      "signature": "PASS_ADHOC_STRICT",
+      "executableSizeBytes": 5698032,
+      "executableSha256": "90561aa0c1b44e2f642a1c068dc3c4ae0ea8dc99e5abaa3f3ed713619da27663"
+    }
+  },
+  "authority": {
+    "sourceArchiveRehearsal": "PASS",
+    "frozenCandidate": false,
+    "linuxValidation": "NOT_TESTED",
+    "windowsValidation": "NOT_TESTED",
+    "developerIdSigning": "NOT_IMPLEMENTED",
+    "notarization": "NOT_IMPLEMENTED",
+    "publicationAuthorized": false
+  }
+}

@@ -144,6 +144,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
   remained `PREPARED_NOT_PUBLISHED` with `publicationAuthorized: false`; this
   rehearsal neither freezes a candidate nor validates Linux/Windows or final
   release assets.
+- The current source-archive rehearsal supersedes that package checkpoint at
+  exact commit `ba360cc53b97bcdff3e198f576bfe82bca5d5a44`. Two byte-identical
+  281,410-byte archives have SHA-256
+  `ed2dceaaa4536b0bda8694b4be17ef9d7f50d193b8295fd95c6456db41796558`.
+  A build using only the extracted archive and the pinned production vcpkg
+  graph passed warnings-as-errors, 12/12 tests, install, installed consumer
+  1/1, binary SBOM validation, system-only viewer linkage, and strict ad-hoc
+  signature verification. The exact evidence is retained in
+  `docs/security-audits/2026-09-14-source-archive-vcpkg-macos-arm64.json`.
+  This is still an unpublished macOS rehearsal, not a frozen candidate or
+  Linux/Windows release-artifact result.
 - The pre-1.0 public API, error, ownership, resource, cancellation, concurrency,
   dependency-boundary, and shared-export review passed for exact commit
   `85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f`. Its complete local macOS gate

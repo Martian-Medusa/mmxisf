@@ -154,8 +154,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "Exact commit 75b1cc588254d01f801efe4de597a9b66a1347f1 produced a deterministic source archive that passed an archive-only warning-clean macOS build, 11/11 tests, install, and installed-package consumer 1/1."
+      "evidence": "docs/security-audits/2026-09-14-source-archive-vcpkg-macos-arm64.json",
+      "note": "Exact commit ba360cc53b97bcdff3e198f576bfe82bca5d5a44 produced two byte-identical source archives. A build using only the extracted archive and pinned production dependency graph passed warnings-as-errors, 12/12 tests, install, installed-package consumer 1/1, binary SBOM validation, system-only viewer linkage, and strict ad-hoc signing on macOS arm64."
     },
     {
       "id": "distribution.release-artifact-identity",
