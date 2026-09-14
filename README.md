@@ -166,7 +166,10 @@ only the library by default; developer tests, tools, fuzzers, documentation,
 and the optional viewer remain off unless the consumer explicitly enables
 their `MMXISF_BUILD_*` options. Maintained external-consumer gates compile and
 run both static and shared source-subdirectory variants independently from the
-installed-package tests and reject accidental developer targets.
+installed-package tests and reject accidental developer targets. Both consumer
+modes also compile every public header in its own translation unit; the gate
+fails if a header depends on another public header being included first or if
+the checked public-header inventory becomes stale.
 
 Each manually dispatched full CI revision uses
 `cmake/PrepareSourceCandidate.cmake` to create the source archive twice, require

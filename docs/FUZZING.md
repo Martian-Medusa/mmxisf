@@ -103,3 +103,22 @@ The image lacked an external LLVM symbolizer, so a hypothetical failure would
 have required offline stack symbolization. This is
 `PASS_DEVELOPMENT_NOT_FROZEN`: it strengthens Linux parser evidence but does
 not satisfy the exact frozen-candidate gate or the production dependency floor.
+
+## Versioned-runner Linux campaign
+
+The shared local/CI runner was then exercised from a deterministic source
+archive for exact commit
+`ed594d2583ff15df0cd4d2bc34bf2d2e36569cdf` in the updated pinned Ubuntu
+24.04 Docker environment. Matching Clang 18 ASan/UBSan and libFuzzer, now with
+`llvm-symbolizer-18` available, executed 2,504,364 inputs in 901 seconds. The
+campaign ended at `cov: 15698`, `ft: 43613`, an 831-unit 1,090 KiB effective
+corpus, 2,779 executions/second, and 482 MiB peak RSS. It produced no crash
+artifact, timeout, or sanitizer finding.
+
+The full 618,358-byte log and 840-file retained corpus remain on the private
+server. Their identities and the exact source archive, binary, container, seed,
+and limit records are retained in
+[`fuzz-campaigns/2026-09-14-linux-amd64-ed594d2.json`](fuzz-campaigns/2026-09-14-linux-amd64-ed594d2.json).
+This is still `PASS_DEVELOPMENT_NOT_FROZEN`: it proves the versioned campaign
+runner and strengthens current parser evidence, but cannot satisfy the exact
+frozen-candidate gate.

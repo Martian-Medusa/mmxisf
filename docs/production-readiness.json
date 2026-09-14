@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json",
-      "note": "Exact development commit 436a9b443bab67a043842dcbda9168e502cf3c56 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 13/13, shared 14/14, installed consumers 1/1 each, dependency floors, documentation, and binary SBOM checks. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-90771c2.json",
+      "note": "Exact development commit 90771c20ee81909701fdc7a24bf08ce79663e8a0 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 13/13, shared 14/14, installed and embedded consumers 1/1 each for both linkage forms, all nine public headers compiled independently in each consumer mode, dependency floors, documentation, and binary SBOM checks. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -43,7 +43,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "Historical macOS and exact-development-commit Linux amd64 long campaigns passed. The Linux campaign is retained in docs/fuzz-campaigns/2026-09-14-linux-amd64-50fc120.json, but the frozen candidate campaign remains pending."
+      "note": "Historical macOS and two exact-development-commit Linux amd64 long campaigns passed. The newest matching-toolchain campaign used the versioned runner, an available LLVM symbolizer, and a deterministic archive for ed594d2583ff15df0cd4d2bc34bf2d2e36569cdf; it is retained in docs/fuzz-campaigns/2026-09-14-linux-amd64-ed594d2.json. The frozen candidate campaign remains pending."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json",
-      "note": "Exact development commit 436a9b443bab67a043842dcbda9168e502cf3c56 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 13/13 and shared 14/14 suites, installed consumers 1/1 each, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-90771c2.json",
+      "note": "Exact development commit 90771c20ee81909701fdc7a24bf08ce79663e8a0 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 13/13 and shared 14/14 suites, installed and embedded consumers 1/1 each, independent compilation of all nine public headers in both linkage forms, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",

@@ -78,6 +78,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- Exact development commit
+  `90771c20ee81909701fdc7a24bf08ce79663e8a0` produced a deterministic
+  312,291-byte source archive with SHA-256
+  `bbf66d474614ada352a999534ac4cb4cad0732b0f17d8e1b5a6d6eea22081d57`.
+  Its extracted-source Linux amd64 production-dependency gate passed static
+  13/13 and shared 14/14, installed and embedded consumers 1/1 for both
+  linkage forms, and independent compilation of all nine public headers in
+  each consumer mode. Documentation, dependency floors, SBOMs, and the exact
+  39-of-39 shared-export surface also passed. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-90771c2.json`; the viewer was not
+  built and contributes nothing to this result.
+
 - PFI commit `013c482725d9c243878972e97c55fa8da9889ee1` routes current
   Batch backend construction through a fail-closed product seam. The host
   remains the zero-configuration default; mmxisf requires a present provider,
@@ -219,6 +231,16 @@ open; it does not turn historical evidence into exact-candidate evidence.
   symbolizer was absent, so a hypothetical failure would have required offline
   stack symbolization. This is `PASS_DEVELOPMENT_NOT_FROZEN`; the dependency
   graph is below the production floor and the exact-candidate gate remains open.
+- The versioned long-campaign runner subsequently passed from a deterministic
+  source archive for exact commit
+  `ed594d2583ff15df0cd4d2bc34bf2d2e36569cdf` on the pinned Ubuntu 24.04 amd64
+  Docker environment. Matching Clang 18 ASan/UBSan/libFuzzer with an available
+  LLVM 18 symbolizer executed 2,504,364 inputs in 901 seconds, ending at
+  `cov: 15698`, `ft: 43613`, 831 effective corpus units/1,090 KiB, and 482 MiB
+  peak RSS without a crash, timeout, or sanitizer finding. Exact archive,
+  binary, log, corpus, container, and limit evidence is retained in
+  `docs/fuzz-campaigns/2026-09-14-linux-amd64-ed594d2.json`. This remains
+  `PASS_DEVELOPMENT_NOT_FROZEN`; it does not satisfy the frozen-candidate gate.
 - The maintained `tools/run_local_quality_gates.sh` completed on exact commit
   `33da19ec13a2e045944012088a76e6f2ca789d5b`: warning-as-error static and
   shared suites 8/8 each, installed-package consumers 1/1 each, ASan/UBSan

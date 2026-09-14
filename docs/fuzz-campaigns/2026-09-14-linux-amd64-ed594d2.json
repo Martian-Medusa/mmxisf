@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "mmxisf.fuzz-campaign-evidence/1.0.0",
+  "status": "PASS_DEVELOPMENT_NOT_FROZEN",
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "commit": "ed594d2583ff15df0cd4d2bc34bf2d2e36569cdf",
+    "compiledInputsDifferFromCommit": false,
+    "archive": {
+      "name": "mmxisf-0.1.0-source-ed594d2583ff.tar.gz",
+      "sizeBytes": 310210,
+      "sha256": "3f09d5120cfbfdb0d76276b991c1f381fb37018b3f768bbaace8828d341c9c99",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES"
+    }
+  },
+  "host": {
+    "name": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1"
+  },
+  "container": {
+    "base": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "imageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "imageSizeBytes": 967837114,
+    "architecture": "amd64"
+  },
+  "toolchain": {
+    "compiler": "Clang 18.1.3",
+    "sanitizers": ["AddressSanitizer", "UndefinedBehaviorSanitizer"],
+    "fuzzerRuntime": "matching Clang 18 libFuzzer runtime",
+    "externalSymbolizer": "/usr/bin/llvm-symbolizer-18 (AVAILABLE)"
+  },
+  "binary": {
+    "name": "mmxisf_fuzz_header",
+    "sizeBytes": 12911912,
+    "sha256": "366ae01187cec4f13333855f9cbbc69ce91eb30cc5303b99ef8e1b039e2332b0"
+  },
+  "campaign": {
+    "requestedDurationSeconds": 900,
+    "reportedDurationSeconds": 901,
+    "maximumInputBytes": 1048576,
+    "perInputTimeoutSeconds": 10,
+    "rssLimitMiB": 4096,
+    "initialSeedFileCount": 20,
+    "initialSeedLogicalBytes": 126374,
+    "executedUnits": 2504364,
+    "averageExecutionsPerSecond": 2779,
+    "newUnitsAdded": 4321,
+    "coveredEdges": 15698,
+    "features": 43613,
+    "effectiveCorpusUnits": 831,
+    "effectiveCorpusBytesDisplay": "1090Kb",
+    "peakRssMiB": 482,
+    "slowestUnitTimeSeconds": 0,
+    "crashArtifactCount": 0,
+    "sanitizerFindingCount": 0
+  },
+  "retainedServerEvidence": {
+    "campaignLogSizeBytes": 618358,
+    "campaignLogSha256": "4f09098331f6291e7415a753bf8d89ed3318cd10c6cb1c4d93fb959f4633347c",
+    "corpusFileCount": 840,
+    "corpusLogicalBytes": 1136205,
+    "sortedEntryManifestSha256": "7d7e5d8772d980cab3a72d7a136f8d2137f95a41d72e9cdf7df2802e4b866014",
+    "manifestRecord": "sha256 logical-size basename, sorted by path",
+    "serverPath": "/home/matt/mmxisf-gates/ed594d2583ff/mmxisf-0.1.0/build-linux-long-fuzz-ed594d2",
+    "committed": false
+  },
+  "limitations": [
+    "This is exact-development-commit Linux amd64 hardening evidence, not a frozen release-candidate campaign.",
+    "The campaign intentionally tests the parser and bundled system dependency graph rather than the separately pinned production vcpkg graph.",
+    "The evolved corpus and full log remain on the private server and are identified here by bounded inventory and hashes; they are not committed or published.",
+    "This result does not satisfy security.exact-candidate-long-fuzz."
+  ]
+}
