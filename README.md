@@ -145,11 +145,13 @@ tools/run_local_quality_gates.sh
 
 It performs warning-as-error static and shared builds, both installed-package
 consumer tests, the ASan/UBSan suite and deterministic 20,000-case mutation
-smoke, generated API documentation, and—on macOS—the bundled viewer build and
-strict code-signature verification. Outputs stay under the ignored
+smoke, the ThreadSanitizer suite including concurrent same-reader and
+same-destination-writer contracts, generated API documentation, and—on
+macOS—the bundled viewer build and strict code-signature verification. Outputs stay under the ignored
 `build-local-gates` directory. `MMXISF_LOCAL_GATE_ROOT`, `MMXISF_LOCAL_JOBS`,
-and `MMXISF_LOCAL_CXX_FLAGS` can override its output location, parallelism, and
-warning flags. The command records only evidence for the host where it runs;
+`MMXISF_LOCAL_CXX_FLAGS`, and `MMXISF_LOCAL_TSAN=OFF` can override its output
+location, parallelism, warning flags, or explicitly skip TSan on an unsupported
+local compiler. The command records only evidence for the host where it runs;
 it does not replace the manually dispatched Linux/macOS/Windows matrix.
 
 The pre-release `Writer::write_file` API emits one or more attached little-

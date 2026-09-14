@@ -212,6 +212,23 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug
       - name: Build
         run: cmake --build build-fuzz --parallel
+      - name: Configure ThreadSanitizer suite
+        env:
+          CC: clang
+          CXX: clang++
+        run: >-
+          cmake -S . -B build-tsan
+          -DMMXISF_BUILD_TESTS=ON
+          -DMMXISF_BUILD_TOOLS=OFF
+          -DMMXISF_BUILD_VIEWER=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -Wall -Wextra -Wpedantic -Werror"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+          -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread"
+      - name: Build and run ThreadSanitizer suite
+        run: |
+          cmake --build build-tsan --parallel
+          ctest --test-dir build-tsan --output-on-failure
       - name: Run 20k sanitizer mutations
         run: build-fuzz/mmxisf_fuzz_smoke
       - name: Prepare coverage-guided seed corpus

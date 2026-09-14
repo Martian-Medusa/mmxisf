@@ -45,7 +45,7 @@ be bounded, structured, and safe for unattended PFI batch processing.
 | Non-finite or invalid numeric metadata | Grammar-aware parsing and explicit invalid state; no default substitution | value corpus |
 | Diagnostic memory/data disclosure | Bounded messages; offsets and identifiers only; no large payload echo | diagnostic tests |
 | Codec/parser supply-chain compromise | Pin releases/hashes, SBOM, license audit, update policy, CI scanners | release gate |
-| Data race/global state | Immutable document model and per-operation state | thread sanitizer and concurrency tests |
+| Data race/global state | Immutable document model, per-operation state, serialized built-in file-source access, and no shared writer transaction state | ThreadSanitizer suite, concurrent same-reader owning/row reads, and concurrent same-destination writers |
 
 ## Security-sensitive invariants
 

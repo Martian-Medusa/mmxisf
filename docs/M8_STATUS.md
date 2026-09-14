@@ -43,6 +43,12 @@
   retains the HTML output as a short-lived, non-published artifact.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
+- A ThreadSanitizer suite is wired into the existing manual Linux fuzz job and
+  the local quality gate. It exercises concurrent owning/row reads through one
+  built-in file-backed Reader plus the existing concurrent same-destination
+  writer contract. The local AppleClang feasibility run passed 8/8 before this
+  gate was committed; exact-commit local and Linux candidate evidence remains
+  to be recorded.
 - A separate manual candidate workflow runs a 15-minute ASan/UBSan libFuzzer
   campaign with explicit input/time/RSS bounds, retains its evolved corpus, and
   preserves crash inputs longer for minimization and regression promotion.

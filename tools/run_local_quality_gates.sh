@@ -7,6 +7,7 @@ repository_root=$(CDPATH= cd -- "$script_directory/.." && pwd)
 gate_root=${MMXISF_LOCAL_GATE_ROOT:-"$repository_root/build-local-gates"}
 parallel_jobs=${MMXISF_LOCAL_JOBS:-2}
 warning_flags=${MMXISF_LOCAL_CXX_FLAGS:-"-Wall -Wextra -Wpedantic -Werror"}
+thread_sanitizer_enabled=${MMXISF_LOCAL_TSAN:-ON}
 
 case $(uname -s) in
   Darwin)
@@ -68,6 +69,19 @@ cmake -S "$repository_root" -B "$gate_root/sanitizers" \
 cmake --build "$gate_root/sanitizers" --parallel "$parallel_jobs"
 ctest --test-dir "$gate_root/sanitizers" --output-on-failure
 "$gate_root/sanitizers/mmxisf_fuzz_smoke"
+
+if [ "$thread_sanitizer_enabled" = ON ]; then
+  cmake -S "$repository_root" -B "$gate_root/thread-sanitizer" \
+    -DMMXISF_BUILD_TESTS=ON \
+    -DMMXISF_BUILD_TOOLS=OFF \
+    -DMMXISF_BUILD_VIEWER=OFF \
+    -DCMAKE_BUILD_TYPE=Debug \
+    "-DCMAKE_CXX_FLAGS=$warning_flags -fsanitize=thread -fno-omit-frame-pointer" \
+    "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=thread" \
+    "-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=thread"
+  cmake --build "$gate_root/thread-sanitizer" --parallel "$parallel_jobs"
+  ctest --test-dir "$gate_root/thread-sanitizer" --output-on-failure
+fi
 
 cmake -S "$repository_root" -B "$gate_root/docs" \
   -DMMXISF_BUILD_DOCS=ON \

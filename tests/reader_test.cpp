@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
@@ -15,6 +16,7 @@
 #include <span>
 #include <stop_token>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -294,6 +296,39 @@ int main() {
                    std::vector<std::byte>{std::byte{0x03}, std::byte{0x00},
                                           std::byte{0x04}, std::byte{0x00}},
            "uncompressed image rows remain exact and bounded");
+
+    constexpr std::size_t worker_count = 8;
+    constexpr std::size_t reads_per_worker = 32;
+    std::atomic<std::size_t> concurrent_failures{0};
+    std::vector<std::thread> workers;
+    workers.reserve(worker_count);
+    for (std::size_t worker = 0; worker < worker_count; ++worker) {
+      workers.emplace_back([&reader, &pixels, &concurrent_failures] {
+        for (std::size_t iteration = 0; iteration < reads_per_worker;
+             ++iteration) {
+          const auto image = reader.read_image(0);
+          if (!image || image.value().pixels != pixels ||
+              image.value().width != 2 || image.value().height != 2) {
+            ++concurrent_failures;
+          }
+
+          CollectingRowSink sink;
+          const auto summary = reader.read_image_rows(0, sink);
+          if (!summary || summary.value().rows_delivered != 2 ||
+              summary.value().bytes_delivered != pixels.size() ||
+              sink.rows.size() != 2 ||
+              sink.rows[0].bytes.size() + sink.rows[1].bytes.size() !=
+                  pixels.size()) {
+            ++concurrent_failures;
+          }
+        }
+      });
+    }
+    for (auto &worker : workers) {
+      worker.join();
+    }
+    expect(concurrent_failures.load() == 0,
+           "concurrent owning and row reads remain byte-exact");
 
     CollectingRowSink failing_row_sink(1);
     auto failed_rows = reader.read_image_rows(0, failing_row_sink);

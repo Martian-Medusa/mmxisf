@@ -138,7 +138,10 @@ Parsed documents are immutable. Read operations use per-call state and may run
 concurrently when the supplied `ByteSource` supports concurrent calls. The
 built-in file source serializes access to its stable file handle. Concurrent
 writes to the same destination are intentionally rejected by the no-overwrite
-contract.
+contract. The maintained ThreadSanitizer gate exercises concurrent owning and
+row reads through one built-in file-backed `Reader` plus concurrent writers to
+one destination. A caller-supplied `ByteSource`, `ByteSink`, or `ImageRowSink`
+retains responsibility for its own concurrent-call contract.
 
 ## Further contracts
 
