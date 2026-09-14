@@ -82,10 +82,10 @@
     },
     {
       "id": "pfi.product-input-wiring",
-      "status": "NOT_TESTED",
+      "status": "LIMITED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "The optional adapter is not wired into the PFI product input path."
+      "note": "PFI commit 013c482725d9c243878972e97c55fa8da9889ee1 routes Batch construction through a tested fail-closed seam, but no native provider, PCL bridge, UI preference, granted qualification, or operational decoder is implemented."
     },
     {
       "id": "pfi.detection-fitting-scientific-parity",

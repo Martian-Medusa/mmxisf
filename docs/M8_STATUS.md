@@ -3,6 +3,7 @@
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
+  PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
@@ -74,6 +75,15 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- PFI commit `013c482725d9c243878972e97c55fa8da9889ee1` routes current
+  Batch backend construction through a fail-closed product seam. The host
+  remains the zero-configuration default; mmxisf requires a present provider,
+  qualification, and explicit authorization; rejected or incomplete providers
+  cannot trigger an automatic host fallback; and explicit rollback has distinct
+  provenance. The focused PFI source/build suite passed 21/21 and its matching
+  native C++ policy passed 5/5 locally. This is `LIMITED`: no native provider,
+  PCL bridge, UI preference, granted qualification, or scientific/operator
+  acceptance exists.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
