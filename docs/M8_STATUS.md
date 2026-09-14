@@ -84,6 +84,19 @@ open; it does not turn historical evidence into exact-candidate evidence.
   native C++ policy passed 5/5 locally. This is `LIMITED`: no native provider,
   PCL bridge, UI preference, granted qualification, or scientific/operator
   acceptance exists.
+- PFI then advanced the limited seam through commit
+  `7793cd19ced437b2f045453338bca875bfaa6169`. The source-built PJSR provider
+  validates the create-only Float32 Gray/RGB transport and populates a temporary
+  `ImageWindow`; the macOS-arm64 packaging target copies five non-system dylibs,
+  rewrites them to bundle-relative `@rpath`, verifies arm64 identity, and
+  ad-hoc signs each copied Mach-O object. A fresh warnings-as-errors build
+  against the archive-rehearsed `mmxisf` package passed 8/8 CTest entries. The
+  exact 447,776-byte provider has SHA-256
+  `1c81854a2f977cd8c375bff02f829bb683e321fc5442bfad5cd8f1fec54861c1`.
+  A source-bound manual PixInsight gate has also been generated locally; its
+  builder/tamper contracts pass, but the PJSR lifecycle itself remains
+  **NOT_TESTED**. The bundle is local, ad-hoc signed, unpublished, unconfigured,
+  and unqualified, so `pfi.product-input-wiring` remains `LIMITED`.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The

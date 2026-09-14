@@ -8,6 +8,14 @@ to open pixels. The C++ audit already requires image loaders to remain outside
 the pure scientific core. `mmxisf` fits that boundary as an infrastructure
 dependency, not a replacement for PFI's measurement model.
 
+The current PFI foundation now includes a fail-closed host-default router, a
+source-built external Float32 Gray/RGB provider, and a self-contained local
+macOS-arm64 provider bundle. A generated manual PJSR gate is bound to the exact
+provider/source hashes. None of this grants qualification or changes the
+default product route: provider execution in PixInsight, corrected RGB host
+parity, detector/fitter parity, UI configuration, rollback exercise, and
+operator acceptance remain open.
+
 ## Adapter contract
 
 PFI should own a small adapter that maps library output into its canonical input

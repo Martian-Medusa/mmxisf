@@ -85,7 +85,7 @@
       "status": "LIMITED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "PFI commit 013c482725d9c243878972e97c55fa8da9889ee1 routes Batch construction through a tested fail-closed seam, but no native provider, PCL bridge, UI preference, granted qualification, or operational decoder is implemented."
+      "note": "PFI commit 7793cd19ced437b2f045453338bca875bfaa6169 retains fail-closed Batch routing, a source-built Float32 Gray/RGB provider, a self-contained local macOS-arm64 bundle, and a source-bound manual native gate. The provider remains unconfigured and NOT_TESTED in PJSR; no UI preference, granted qualification, scientific parity, or operator acceptance exists."
     },
     {
       "id": "pfi.detection-fitting-scientific-parity",
@@ -176,7 +176,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The product-wired rollback switch has not been exercised because product wiring is not implemented."
+      "note": "The fail-closed host rollback decision is implemented in source, but no configured and qualified provider workflow has been exercised natively by an operator."
     }
   ]
 }
