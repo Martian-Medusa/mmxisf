@@ -19,6 +19,9 @@ int main() {
   mmxisf::ExtensionElement extension;
   mmxisf::RawImage image;
   mmxisf::RawPropertyBlock property;
+  mmxisf::IccProfileInfo icc_profile;
+  mmxisf::IccProfileBinding icc_binding;
+  mmxisf::RawIccProfile raw_icc_profile;
   mmxisf::ImageWriteView write_image;
   mmxisf::MetadataWriteEntry write_metadata;
   mmxisf::WriterOptions writer_options;
@@ -34,6 +37,10 @@ int main() {
                  options.max_ancillary_attributes > 0 &&
                  options.max_ancillary_bindings > 0 &&
                  options.max_ancillary_bytes > 0 &&
+                 options.max_icc_profiles > 0 &&
+                 options.max_icc_profile_bindings > 0 &&
+                 options.max_serialized_icc_profile_bytes > 0 &&
+                 options.max_decoded_icc_profile_bytes > 0 &&
                  binding.scope == mmxisf::MetadataBinding::Scope::xisf_unit &&
                  !binding.by_reference &&
                  extension_attribute.namespace_uri.empty() &&
@@ -41,8 +48,12 @@ int main() {
                  document.extension_elements().empty() &&
                  document.ancillary_objects().empty() &&
                  document.ancillary_bindings().empty() &&
+                 document.icc_profiles().empty() &&
+                 document.icc_profile_bindings().empty() &&
                  ancillary.kind == mmxisf::AncillaryKind::rgb_working_space &&
                  ancillary_binding.object_index == 0 &&
+                 icc_profile.block.kind == mmxisf::BlockKind::unknown &&
+                 icc_binding.profile_index == 0 &&
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&
@@ -54,6 +65,8 @@ int main() {
                  image.checksum_verification ==
                      mmxisf::ChecksumVerification::not_declared &&
                  property.checksum_verification ==
+                     mmxisf::ChecksumVerification::not_declared &&
+                 raw_icc_profile.checksum_verification ==
                      mmxisf::ChecksumVerification::not_declared &&
                  write_image.pixel_storage == mmxisf::PixelStorage::planar &&
                  write_image.compression == mmxisf::CompressionCodec::none &&

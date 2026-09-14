@@ -635,8 +635,9 @@ int main() {
         for (std::size_t offset = 0; offset < expected.size();
              offset += test.endian_component_size) {
           std::reverse(expected.begin() + static_cast<std::ptrdiff_t>(offset),
-                       expected.begin() + static_cast<std::ptrdiff_t>(
-                            offset + test.endian_component_size));
+                       expected.begin() +
+                           static_cast<std::ptrdiff_t>(
+                               offset + test.endian_component_size));
         }
       }
       expect(image && image.value().pixels == expected, test.name);
@@ -1087,8 +1088,7 @@ int main() {
 
     mmxisf::ImageReadOptions options;
     options.byte_order = mmxisf::ByteOrderOutput::native;
-    auto native_image =
-        complex32_shuffled_zlib.value().read_image(0, options);
+    auto native_image = complex32_shuffled_zlib.value().read_image(0, options);
     auto expected = source_order;
     if constexpr (std::endian::native == std::endian::little) {
       for (std::size_t offset = 0; offset < expected.size(); offset += 4) {
@@ -2567,6 +2567,198 @@ int main() {
       mmxisf::Reader::open_file(forward_reference_path, no_ancillary_bindings);
   expect(metadata_reference_with_no_ancillary_budget.has_value(),
          "ordinary metadata references do not consume ancillary bindings");
+
+  std::vector<std::byte> icc_profile_bytes(128, std::byte{0});
+  icc_profile_bytes[3] = std::byte{0x80};
+  icc_profile_bytes[36] = std::byte{'a'};
+  icc_profile_bytes[37] = std::byte{'c'};
+  icc_profile_bytes[38] = std::byte{'s'};
+  icc_profile_bytes[39] = std::byte{'p'};
+  icc_profile_bytes[47] = std::byte{0x01};
+  const auto icc_profile_path = write_fixture(
+      "mmxisf-icc-profiles.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<ICCProfile uid=\"SharedProfile\" "
+          "location=\"attachment:4096:128\"/>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<Reference ref=\"SharedProfile\"/></Image>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">00</Data>"
+          "<ICCProfile compression=\"zlib:128\" "
+          "checksum=\"sha-256:"
+          "39d2c4f4bbfaf8b4056eef57421e986a21d0b4df931195f35348e8bb068aa661\" "
+          "location=\"inline:base64\">"
+          "eJxjYGBoYCAAEpOLC6BMRkJqSQUA1LwCKQ=="
+          "</ICCProfile></Image>") +
+          valid_metadata() + "</xisf>",
+      icc_profile_bytes, 4096);
+  auto icc_profiles = mmxisf::Reader::open_file(icc_profile_path);
+  expect(icc_profiles.has_value(),
+         "attached and compressed inline ICC profiles open");
+  if (icc_profiles) {
+    const auto &document = icc_profiles.value().document();
+    expect(document.icc_profiles().size() == 2,
+           "ICC profiles retain document order");
+    expect(document.icc_profile_bindings().size() == 2,
+           "direct and referenced ICC associations are retained");
+    if (document.icc_profiles().size() == 2) {
+      expect(document.icc_profiles()[0].uid == "SharedProfile" &&
+                 !document.icc_profiles()[0].image_index &&
+                 document.icc_profiles()[0].block.kind ==
+                     mmxisf::BlockKind::attachment,
+             "standalone attached ICC profile provenance is explicit");
+      expect(document.icc_profiles()[1].image_index == 1 &&
+                 document.icc_profiles()[1].block.kind ==
+                     mmxisf::BlockKind::inline_data &&
+                 document.icc_profiles()[1].compression == "zlib:128",
+             "direct inline ICC profile descriptor is retained");
+    }
+    if (document.icc_profile_bindings().size() == 2) {
+      expect(document.icc_profile_bindings()[0].profile_index == 1 &&
+                 document.icc_profile_bindings()[0].image_index == 1 &&
+                 !document.icc_profile_bindings()[0].by_reference,
+             "direct ICC binding retains profile and image indices");
+      expect(document.icc_profile_bindings()[1].profile_index == 0 &&
+                 document.icc_profile_bindings()[1].image_index == 0 &&
+                 document.icc_profile_bindings()[1].by_reference,
+             "referenced ICC binding resolves to its image");
+    }
+    auto attached_profile = icc_profiles.value().read_icc_profile(0);
+    expect(attached_profile &&
+               attached_profile.value().bytes == icc_profile_bytes,
+           "attached ICC profile bytes remain exact");
+    auto inline_profile = icc_profiles.value().read_icc_profile(1);
+    expect(inline_profile &&
+               inline_profile.value().bytes == icc_profile_bytes &&
+               inline_profile.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified,
+           "compressed inline ICC profile is verified and decoded exactly");
+    auto outside_profile = icc_profiles.value().read_icc_profile(2);
+    expect(!outside_profile && outside_profile.error().code ==
+                                   mmxisf::ErrorCode::invalid_argument,
+           "out-of-range ICC profile read is rejected");
+    std::stop_source icc_stop_source;
+    icc_stop_source.request_stop();
+    auto cancelled_profile =
+        icc_profiles.value().read_icc_profile(0, icc_stop_source.get_token());
+    expect(!cancelled_profile &&
+               cancelled_profile.error().code == mmxisf::ErrorCode::cancelled,
+           "pre-cancelled ICC profile read is rejected at a safe boundary");
+  }
+
+  mmxisf::ReaderOptions one_icc_profile;
+  one_icc_profile.max_icc_profiles = 1;
+  auto icc_profile_count_limit =
+      mmxisf::Reader::open_file(icc_profile_path, one_icc_profile);
+  expect(!icc_profile_count_limit && icc_profile_count_limit.error().code ==
+                                         mmxisf::ErrorCode::resource_limit,
+         "ICC profile count limit is enforced");
+
+  mmxisf::ReaderOptions one_icc_binding;
+  one_icc_binding.max_icc_profile_bindings = 1;
+  auto icc_binding_limit =
+      mmxisf::Reader::open_file(icc_profile_path, one_icc_binding);
+  expect(!icc_binding_limit && icc_binding_limit.error().code ==
+                                   mmxisf::ErrorCode::resource_limit,
+         "ICC profile binding limit is enforced");
+
+  mmxisf::ReaderOptions short_icc_serialized_limit;
+  short_icc_serialized_limit.max_serialized_icc_profile_bytes = 24;
+  auto icc_serialized_limit =
+      mmxisf::Reader::open_file(icc_profile_path, short_icc_serialized_limit);
+  expect(!icc_serialized_limit && icc_serialized_limit.error().code ==
+                                      mmxisf::ErrorCode::resource_limit,
+         "inline ICC serialized byte limit is enforced while opening");
+
+  mmxisf::ReaderOptions short_icc_decoded_limit;
+  short_icc_decoded_limit.max_decoded_icc_profile_bytes = 127;
+  auto icc_decoded_limit =
+      mmxisf::Reader::open_file(icc_profile_path, short_icc_decoded_limit);
+  expect(icc_decoded_limit.has_value(),
+         "ICC decoded byte limit is deferred until profile read");
+  if (icc_decoded_limit) {
+    auto profile = icc_decoded_limit.value().read_icc_profile(1);
+    expect(!profile &&
+               profile.error().code == mmxisf::ErrorCode::resource_limit,
+           "ICC decoded byte limit is enforced before decompression");
+  }
+
+  const auto invalid_icc_xml = [&](std::string_view element) {
+    return std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                       "version=\"1.0\">") +
+           std::string(element) + valid_metadata() + "</xisf>";
+  };
+  auto icc_byte_order = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-byte-order.xisf",
+      invalid_icc_xml(
+          "<ICCProfile location=\"inline:hex\" byteOrder=\"big\"/>")));
+  expect(!icc_byte_order &&
+             icc_byte_order.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "ICC profile byteOrder is forbidden");
+  auto icc_missing_location = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-missing-location.xisf", invalid_icc_xml("<ICCProfile/>")));
+  expect(!icc_missing_location && icc_missing_location.error().code ==
+                                      mmxisf::ErrorCode::invalid_xisf,
+         "ICC profile location is mandatory");
+  auto icc_nested_child = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-nested-child.xisf",
+      invalid_icc_xml(
+          "<ICCProfile location=\"inline:hex\"><Property/></ICCProfile>")));
+  expect(!icc_nested_child &&
+             icc_nested_child.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "inline ICC profile cannot contain child elements");
+  auto icc_attachment_text = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-attachment-text.xisf",
+      invalid_icc_xml("<ICCProfile location=\"attachment:4096:128\">unexpected"
+                      "</ICCProfile>"),
+      icc_profile_bytes, 4096));
+  expect(!icc_attachment_text && icc_attachment_text.error().code ==
+                                     mmxisf::ErrorCode::invalid_xisf,
+         "non-inline ICC profile rejects character data");
+  auto icc_external = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-external.xisf",
+      invalid_icc_xml("<ICCProfile location=\"path(/profile.icc)\"/>")));
+  expect(icc_external.has_value(), "external ICC profile remains inspectable");
+  if (icc_external) {
+    auto profile = icc_external.value().read_icc_profile(0);
+    expect(!profile &&
+               profile.error().code == mmxisf::ErrorCode::unsupported_feature,
+           "external ICC profile read fails explicitly");
+  }
+  auto icc_bad_checksum = mmxisf::Reader::open_file(write_fixture(
+      "mmxisf-icc-bad-checksum.xisf",
+      invalid_icc_xml(
+          "<ICCProfile compression=\"zlib:128\" "
+          "checksum=\"sha-256:"
+          "09d2c4f4bbfaf8b4056eef57421e986a21d0b4df931195f35348e8bb068aa661\" "
+          "location=\"inline:base64\">"
+          "eJxjYGBoYCAAEpOLC6BMRkJqSQUA1LwCKQ==</ICCProfile>")));
+  expect(icc_bad_checksum.has_value(),
+         "ICC checksum verification is deferred until profile read");
+  if (icc_bad_checksum) {
+    auto profile = icc_bad_checksum.value().read_icc_profile(0);
+    expect(!profile &&
+               profile.error().code == mmxisf::ErrorCode::checksum_mismatch,
+           "ICC checksum mismatch stops before decompression");
+  }
+
+  auto invalid_icc_signature_bytes = icc_profile_bytes;
+  invalid_icc_signature_bytes[36] = std::byte{'x'};
+  const auto invalid_icc_signature_path = write_fixture(
+      "mmxisf-icc-invalid-signature.xisf",
+      invalid_icc_xml("<ICCProfile location=\"attachment:4096:128\"/>"),
+      invalid_icc_signature_bytes, 4096);
+  auto invalid_icc_signature =
+      mmxisf::Reader::open_file(invalid_icc_signature_path);
+  expect(invalid_icc_signature.has_value(),
+         "ICC structure validation is deferred until profile read");
+  if (invalid_icc_signature) {
+    auto profile = invalid_icc_signature.value().read_icc_profile(0);
+    expect(!profile && profile.error().code == mmxisf::ErrorCode::invalid_block,
+           "invalid ICC signature fails closed at profile read");
+  }
 
   const auto nonzero_trailing_path = write_fixture(
       "mmxisf-nonzero-trailing-space.xisf",

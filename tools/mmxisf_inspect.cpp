@@ -34,14 +34,17 @@ std::string sha256(std::span<const std::byte> bytes) {
 int main(int argc, char **argv) {
   const bool decode_properties =
       argc == 3 && std::string(argv[1]) == "--decode-properties-sha256";
+  const bool decode_icc =
+      argc == 3 && std::string(argv[1]) == "--decode-icc-sha256";
   const bool decode = argc == 3 && (std::string(argv[1]) == "--decode" ||
                                     std::string(argv[1]) == "--decode-sha256");
   const bool decode_sha256 =
       decode && std::string(argv[1]) == "--decode-sha256";
-  const bool has_option = decode || decode_properties;
+  const bool has_option = decode || decode_properties || decode_icc;
   if ((!has_option && argc != 2) || (argc == 3 && !has_option)) {
     std::cerr << "Usage: mmxisf-inspect "
-                 "[--decode|--decode-sha256|--decode-properties-sha256] "
+                 "[--decode|--decode-sha256|--decode-properties-sha256|"
+                 "--decode-icc-sha256] "
                  "<file.xisf>\n";
     return EXIT_FAILURE;
   }
@@ -63,6 +66,9 @@ int main(int argc, char **argv) {
             << "\n"
             << "ancillary-bindings: " << document.ancillary_bindings().size()
             << "\n"
+            << "icc-profiles: " << document.icc_profiles().size() << "\n"
+            << "icc-profile-bindings: "
+            << document.icc_profile_bindings().size() << "\n"
             << "extensions: " << document.extension_elements().size() << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
@@ -203,6 +209,51 @@ int main(int argc, char **argv) {
   }
   for (const auto &binding : document.ancillary_bindings()) {
     std::cout << "ancillary-binding\tobject[" << binding.object_index
+              << "]\timage[" << binding.image_index << "]\t"
+              << (binding.by_reference ? "Reference" : "Direct") << '\n';
+  }
+  for (std::size_t index = 0; index < document.icc_profiles().size(); ++index) {
+    const auto &profile = document.icc_profiles()[index];
+    std::cout << "icc-profile[" << index << "]\tlocation=" << profile.block.raw;
+    if (!profile.uid.empty()) {
+      std::cout << "\tuid=" << profile.uid;
+    }
+    if (profile.image_index) {
+      std::cout << "\tdirect-image[" << *profile.image_index << ']';
+    }
+    if (!profile.compression.empty()) {
+      std::cout << "\tcompression=" << profile.compression;
+    }
+    if (!profile.subblocks.empty()) {
+      std::cout << "\tsubblocks=" << profile.subblocks;
+    }
+    if (!profile.checksum.empty()) {
+      std::cout << "\tchecksum=" << profile.checksum;
+    }
+    std::cout << '\n';
+    if (decode_icc) {
+      auto decoded = result.value().read_icc_profile(index);
+      if (!decoded) {
+        std::cerr << "icc-profile[" << index
+                  << "] decode: " << mmxisf::to_string(decoded.error().code)
+                  << ": " << decoded.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      const auto digest = sha256(decoded.value().bytes);
+      if (digest.empty()) {
+        std::cerr << "icc-profile[" << index
+                  << "] decode: unable to compute profile SHA-256\n";
+        return EXIT_FAILURE;
+      }
+      std::cout << "icc-profile[" << index
+                << "] decoded-bytes: " << decoded.value().bytes.size()
+                << " checksum: "
+                << mmxisf::to_string(decoded.value().checksum_verification)
+                << " profile-sha256: " << digest << '\n';
+    }
+  }
+  for (const auto &binding : document.icc_profile_bindings()) {
+    std::cout << "icc-profile-binding\tprofile[" << binding.profile_index
               << "]\timage[" << binding.image_index << "]\t"
               << (binding.by_reference ? "Reference" : "Direct") << '\n';
   }

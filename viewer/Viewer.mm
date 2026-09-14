@@ -475,6 +475,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   add(@"Document", @"Summary", @"Ancillary objects", @"Count",
       [NSString stringWithFormat:@"%lu", document.ancillary_objects().size()],
       @"");
+  add(@"Document", @"Summary", @"ICC profiles", @"Count",
+      [NSString stringWithFormat:@"%lu", document.icc_profiles().size()], @"");
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     NSString *scope = [NSString stringWithFormat:@"Image %lu", index];
@@ -607,6 +609,44 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     if (!bound_ancillary[index]) {
       add_ancillary(document.ancillary_objects()[index], index, @"Standalone",
                     false);
+    }
+  }
+  const auto add_icc_profile = [&](const mmxisf::IccProfileInfo &profile,
+                                   std::size_t index, NSString *scope,
+                                   bool by_reference) {
+    NSString *kind = by_reference ? @"ICC profile · Reference" : @"ICC profile";
+    NSString *descriptor = ns_string(profile.block.raw);
+    if (!profile.compression.empty()) {
+      descriptor =
+          [descriptor stringByAppendingFormat:@" · compression=%@",
+                                              ns_string(profile.compression)];
+    }
+    add(scope, kind, @"ICCProfile", @"Big-endian opaque profile bytes",
+        descriptor,
+        profile.uid.empty()
+            ? [NSString stringWithFormat:@"Inventory index %lu", index]
+            : [NSString stringWithFormat:@"uid=%@ · inventory index %lu",
+                                         ns_string(profile.uid), index]);
+    if (!profile.checksum.empty()) {
+      add(scope, @"ICC profile", @"checksum", @"Digest",
+          ns_string(profile.checksum), @"Verified when profile bytes are read");
+    }
+  };
+  std::vector<bool> bound_icc_profiles(document.icc_profiles().size(), false);
+  for (const auto &binding : document.icc_profile_bindings()) {
+    if (binding.profile_index >= document.icc_profiles().size()) {
+      continue;
+    }
+    add_icc_profile(
+        document.icc_profiles()[binding.profile_index], binding.profile_index,
+        [NSString stringWithFormat:@"Image %lu", binding.image_index],
+        binding.by_reference);
+    bound_icc_profiles[binding.profile_index] = true;
+  }
+  for (std::size_t index = 0; index < document.icc_profiles().size(); ++index) {
+    if (!bound_icc_profiles[index]) {
+      add_icc_profile(document.icc_profiles()[index], index, @"Standalone",
+                      false);
     }
   }
   for (std::size_t index = 0; index < document.extension_elements().size();

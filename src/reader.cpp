@@ -773,6 +773,11 @@ struct AncillaryBindingEvent {
   std::size_t image_index{0};
 };
 
+struct IccProfileBindingEvent {
+  std::size_t profile_index{0};
+  std::size_t image_index{0};
+};
+
 struct XmlElementName {
   std::string namespace_uri;
   std::string name;
@@ -785,6 +790,7 @@ struct XmlBuilder {
   std::vector<ImageInfo> images;
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
+  std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
   std::vector<bool> embedded_data_seen;
   std::vector<AttachedRange> attached_ranges;
   std::vector<MetadataEntry> metadata;
@@ -808,6 +814,9 @@ struct XmlBuilder {
   std::vector<AncillaryBindingEvent> ancillary_binding_events;
   std::size_t ancillary_attribute_count{0};
   std::size_t ancillary_bytes{0};
+  std::vector<IccProfileInfo> icc_profiles;
+  std::unordered_map<std::string, std::size_t> icc_profile_uids;
+  std::vector<IccProfileBindingEvent> icc_profile_binding_events;
   std::optional<std::size_t> text_metadata_index;
   std::size_t metadata_count{0};
   bool saw_creation_time{false};
@@ -818,6 +827,7 @@ struct XmlBuilder {
   std::vector<MetadataBindingEvent> metadata_binding_events;
   std::optional<std::size_t> embedded_image_index;
   std::optional<std::size_t> inline_metadata_index;
+  std::optional<std::size_t> inline_icc_profile_index;
   EmbeddedEncoding embedded_encoding{EmbeddedEncoding::none};
   std::array<unsigned char, 4> base64_quartet{};
   std::size_t base64_quartet_size{0};
@@ -929,25 +939,30 @@ std::optional<unsigned char> base64_value(char character) {
 
 bool append_inline_byte(XmlBuilder &state, unsigned char value) {
   const bool metadata_block = state.inline_metadata_index.has_value();
+  const bool icc_profile_block = state.inline_icc_profile_index.has_value();
   auto &output =
       metadata_block
           ? state.inline_metadata_blocks[*state.inline_metadata_index]
+      : icc_profile_block
+          ? state.inline_icc_profile_blocks[*state.inline_icc_profile_index]
           : state.embedded_blocks[*state.embedded_image_index];
-  const auto limit = metadata_block
-                         ? state.options.max_serialized_property_bytes
-                         : state.options.max_decoded_image_bytes;
+  const auto limit =
+      metadata_block      ? state.options.max_serialized_property_bytes
+      : icc_profile_block ? state.options.max_serialized_icc_profile_bytes
+                          : state.options.max_decoded_image_bytes;
+  const auto element = metadata_block      ? "Property"
+                       : icc_profile_block ? "ICCProfile"
+                                           : "Data";
   if (output.size() >= limit) {
     state.fail(ErrorCode::resource_limit,
-               "Encoded block exceeds its serialized byte limit",
-               metadata_block ? "Property" : "Data");
+               "Encoded block exceeds its serialized byte limit", element);
     return false;
   }
   try {
     output.push_back(static_cast<std::byte>(value));
   } catch (const std::bad_alloc &) {
     state.fail(ErrorCode::resource_limit,
-               "Memory allocation failed for encoded block",
-               metadata_block ? "Property" : "Data");
+               "Memory allocation failed for encoded block", element);
     return false;
   }
   return true;
@@ -955,8 +970,10 @@ bool append_inline_byte(XmlBuilder &state, unsigned char value) {
 
 bool decode_base64_quartet(XmlBuilder &state) {
   const auto &q = state.base64_quartet;
-  const auto element =
-      state.inline_metadata_index.has_value() ? "Property" : "Data";
+  const auto element = state.inline_metadata_index.has_value() ? "Property"
+                       : state.inline_icc_profile_index.has_value()
+                           ? "ICCProfile"
+                           : "Data";
   if (q[0] == 64 || q[1] == 64) {
     state.fail(ErrorCode::invalid_xisf, "Invalid Base64 padding", element);
     return false;
@@ -993,7 +1010,10 @@ bool decode_base64_quartet(XmlBuilder &state) {
 
 void decode_embedded_text(XmlBuilder &state, std::string_view text) {
   const bool metadata_block = state.inline_metadata_index.has_value();
-  const auto element = metadata_block ? "Property" : "Data";
+  const auto element = metadata_block ? "Property"
+                       : state.inline_icc_profile_index.has_value()
+                           ? "ICCProfile"
+                           : "Data";
   for (const char character : text) {
     if (character == ' ' || character == '\t' || character == '\r' ||
         character == '\n') {
@@ -1177,7 +1197,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
   }
 
-  if (state.embedded_image_index || state.inline_metadata_index) {
+  if (state.embedded_image_index || state.inline_metadata_index ||
+      state.inline_icc_profile_index) {
     state.fail(ErrorCode::invalid_xisf,
                "Encoded data blocks cannot contain child elements", name);
     return;
@@ -1241,6 +1262,88 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
     }
+  }
+
+  if (is_xisf_element && name == "ICCProfile") {
+    const auto image_index = state.current_image();
+    const bool root_child = state.depth == 2 && parent == "xisf";
+    const bool image_child =
+        state.depth == 3 && parent == "Image" && image_index.has_value();
+    if (!root_child && !image_child) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "ICCProfile must be a direct child of xisf or Image", name);
+      return;
+    }
+    if (state.icc_profiles.size() >= state.options.max_icc_profiles) {
+      state.fail(ErrorCode::resource_limit, "ICC profile count limit exceeded",
+                 name);
+      return;
+    }
+    const auto location = attribute(attributes, "location");
+    if (!location) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "ICCProfile requires a data block location", name, "location");
+      return;
+    }
+    if (attribute(attributes, "byteOrder")) {
+      state.fail(ErrorCode::invalid_xisf, "ICCProfile cannot declare byteOrder",
+                 name, "byteOrder");
+      return;
+    }
+    IccProfileInfo profile;
+    profile.uid = std::string(attribute(attributes, "uid").value_or(""));
+    profile.image_index = image_index;
+    profile.block = parse_location(*location);
+    if (profile.block.kind == BlockKind::unknown ||
+        profile.block.kind == BlockKind::embedded) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "ICCProfile has an invalid data block location", name,
+                 "location");
+      return;
+    }
+    if (profile.block.kind == BlockKind::inline_data &&
+        profile.block.raw != "inline:base64" &&
+        profile.block.raw != "inline:hex") {
+      state.fail(ErrorCode::unsupported_feature,
+                 "Unsupported inline ICCProfile block encoding", name,
+                 "location");
+      return;
+    }
+    profile.compression =
+        std::string(attribute(attributes, "compression").value_or(""));
+    profile.subblocks =
+        std::string(attribute(attributes, "subblocks").value_or(""));
+    profile.checksum =
+        std::string(attribute(attributes, "checksum").value_or(""));
+    const auto profile_index = state.icc_profiles.size();
+    state.icc_profiles.push_back(std::move(profile));
+    state.inline_icc_profile_blocks.emplace_back();
+    if (!state.icc_profiles.back().uid.empty()) {
+      state.icc_profile_uids.emplace(state.icc_profiles.back().uid,
+                                     profile_index);
+    }
+    if (image_index) {
+      if (state.icc_profile_binding_events.size() >=
+          state.options.max_icc_profile_bindings) {
+        state.fail(ErrorCode::resource_limit,
+                   "ICC profile binding limit exceeded", name);
+        return;
+      }
+      state.icc_profile_binding_events.push_back(
+          IccProfileBindingEvent{profile_index, *image_index});
+    }
+    if (state.icc_profiles.back().block.kind == BlockKind::inline_data) {
+      state.inline_icc_profile_index = profile_index;
+      state.embedded_encoding =
+          state.icc_profiles.back().block.raw == "inline:base64"
+              ? XmlBuilder::EmbeddedEncoding::base64
+              : XmlBuilder::EmbeddedEncoding::hex;
+      state.base64_quartet_size = 0;
+      state.base64_complete = false;
+      state.hex_high_nibble.reset();
+      state.encoded_block_bytes = 0;
+    }
+    return;
   }
 
   const auto parsed_ancillary_kind =
@@ -1941,6 +2044,21 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
     }
     state.embedded_image_index.reset();
     state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
+  } else if (is_xisf_element && name == "ICCProfile") {
+    if (state.inline_icc_profile_index) {
+      if ((state.embedded_encoding == XmlBuilder::EmbeddedEncoding::base64 &&
+           state.base64_quartet_size != 0) ||
+          (state.embedded_encoding == XmlBuilder::EmbeddedEncoding::hex &&
+           state.hex_high_nibble)) {
+        state.fail(
+            ErrorCode::invalid_xisf,
+            "Inline ICCProfile block has an incomplete encoded byte sequence",
+            name);
+        return;
+      }
+      state.inline_icc_profile_index.reset();
+      state.embedded_encoding = XmlBuilder::EmbeddedEncoding::none;
+    }
   } else if (is_xisf_element && name == "Property") {
     if (state.inline_metadata_index) {
       if ((state.embedded_encoding == XmlBuilder::EmbeddedEncoding::base64 &&
@@ -1994,7 +2112,8 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     return;
   }
   const std::string_view data(text, static_cast<std::size_t>(length));
-  if (state.embedded_image_index || state.inline_metadata_index) {
+  if (state.embedded_image_index || state.inline_metadata_index ||
+      state.inline_icc_profile_index) {
     decode_embedded_text(state, data);
     return;
   }
@@ -2016,6 +2135,15 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
     state.fail(ErrorCode::invalid_xisf,
                "Attribute-based ancillary metadata cannot contain text",
                state.qualified_element_stack.back().name);
+    return;
+  }
+  if (!state.qualified_element_stack.empty() &&
+      state.qualified_element_stack.back().namespace_uri == kXisfNamespace &&
+      state.qualified_element_stack.back().name == "ICCProfile" &&
+      contains_non_xml_whitespace(data)) {
+    state.fail(ErrorCode::invalid_xisf,
+               "Non-inline ICCProfile cannot contain character data",
+               "ICCProfile");
     return;
   }
   if (!state.text_metadata_index) {
@@ -2056,6 +2184,7 @@ struct ParsedHeader {
   Document document;
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
+  std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
   std::vector<AttachedRange> attached_ranges;
 };
 
@@ -2184,6 +2313,33 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     ancillary_bindings.push_back(
         AncillaryBinding{target->second, *event.image_index, true});
   }
+  std::vector<IccProfileBinding> icc_profile_bindings;
+  icc_profile_bindings.reserve(state.icc_profile_binding_events.size());
+  for (const auto &event : state.icc_profile_binding_events) {
+    if (event.profile_index >= state.icc_profiles.size() ||
+        event.image_index >= state.images.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "ICC profile binding is outside the document");
+    }
+    icc_profile_bindings.push_back(
+        IccProfileBinding{event.profile_index, event.image_index, false});
+  }
+  for (const auto &event : state.metadata_binding_events) {
+    if (!event.by_reference || event.scope != MetadataBinding::Scope::image ||
+        !event.image_index) {
+      continue;
+    }
+    const auto target = state.icc_profile_uids.find(event.reference);
+    if (target == state.icc_profile_uids.end()) {
+      continue;
+    }
+    if (icc_profile_bindings.size() >= options.max_icc_profile_bindings) {
+      return make_error(ErrorCode::resource_limit,
+                        "ICC profile binding limit exceeded");
+    }
+    icc_profile_bindings.push_back(
+        IccProfileBinding{target->second, *event.image_index, true});
+  }
   std::unordered_set<std::string> unit_property_ids;
   std::vector<std::unordered_set<std::string>> image_property_ids(
       state.images.size());
@@ -2227,14 +2383,15 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     }
     previous_end = range.offset + range.size;
   }
-  Document document(std::move(state.version), std::move(state.images),
-                    std::move(state.metadata), file_size, header_length,
-                    std::move(metadata_bindings),
-                    std::move(state.extension_elements),
-                    std::move(state.ancillary_objects),
-                    std::move(ancillary_bindings));
+  Document document(
+      std::move(state.version), std::move(state.images),
+      std::move(state.metadata), file_size, header_length,
+      std::move(metadata_bindings), std::move(state.extension_elements),
+      std::move(state.ancillary_objects), std::move(ancillary_bindings),
+      std::move(state.icc_profiles), std::move(icc_profile_bindings));
   return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
                       std::move(state.inline_metadata_blocks),
+                      std::move(state.inline_icc_profile_blocks),
                       std::move(state.attached_ranges)};
 }
 
@@ -2565,6 +2722,66 @@ struct PropertyReadPlan {
   ChecksumPlan checksum;
 };
 
+struct IccProfileReadPlan {
+  const IccProfileInfo *profile{nullptr};
+  const std::vector<std::byte> *inline_block{nullptr};
+  std::uint64_t expected_bytes{0};
+  std::uint64_t serialized_bytes{0};
+  CompressionPlan compression;
+  ChecksumPlan checksum;
+};
+
+Result<IccProfileReadPlan>
+plan_icc_profile_read(const Document &document, const ReaderOptions &options,
+                      const std::vector<std::vector<std::byte>> &inline_blocks,
+                      std::size_t profile_index) {
+  if (profile_index >= document.icc_profiles().size()) {
+    return make_error(ErrorCode::invalid_argument,
+                      "ICC profile index is outside the document");
+  }
+  const auto &profile = document.icc_profiles()[profile_index];
+  if (profile.block.kind != BlockKind::attachment &&
+      profile.block.kind != BlockKind::inline_data) {
+    return make_error(
+        ErrorCode::unsupported_feature,
+        "Only attachment and inline ICC profile blocks are readable");
+  }
+  const std::vector<std::byte> *inline_block = nullptr;
+  std::uint64_t serialized_bytes = profile.block.size;
+  if (profile.block.kind == BlockKind::inline_data) {
+    if (profile_index >= inline_blocks.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Inline ICC profile storage is inconsistent");
+    }
+    inline_block = &inline_blocks[profile_index];
+    serialized_bytes = static_cast<std::uint64_t>(inline_block->size());
+  } else if (profile.block.offset > document.file_size() ||
+             profile.block.size > document.file_size() - profile.block.offset) {
+    return make_error(ErrorCode::invalid_block,
+                      "ICC profile attachment range extends beyond the source");
+  }
+  auto compression = parse_compression_plan(
+      profile.compression, profile.subblocks, serialized_bytes, std::nullopt,
+      options, 1, options.max_serialized_icc_profile_bytes,
+      options.max_decoded_icc_profile_bytes);
+  if (!compression) {
+    return compression.error();
+  }
+  auto checksum = parse_checksum_plan(profile.checksum);
+  if (!checksum) {
+    return checksum.error();
+  }
+  auto compression_plan = std::move(compression).value();
+  auto checksum_plan = std::move(checksum).value();
+  const auto expected_bytes = compression_plan.uncompressed_size;
+  return IccProfileReadPlan{&profile,
+                            inline_block,
+                            expected_bytes,
+                            serialized_bytes,
+                            std::move(compression_plan),
+                            std::move(checksum_plan)};
+}
+
 Result<PropertyReadPlan>
 plan_property_read(const Document &document, const ReaderOptions &options,
                    const std::vector<std::vector<std::byte>> &inline_blocks,
@@ -2854,6 +3071,36 @@ Result<std::size_t> copy_serialized_property(const ByteSource &source,
       total += chunk;
     } else {
       auto read = source.read_at(plan.property->block.offset + total, output);
+      if (!read) {
+        return read.error();
+      }
+      if (read.value() == 0 || read.value() > output.size()) {
+        return make_error(ErrorCode::io_error,
+                          "ByteSource returned an invalid short read");
+      }
+      total += read.value();
+    }
+  }
+  return total;
+}
+
+Result<std::size_t> copy_serialized_icc_profile(
+    const ByteSource &source, const IccProfileReadPlan &plan,
+    std::span<std::byte> destination, std::stop_token stop_token) {
+  constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
+  const auto expected = static_cast<std::size_t>(plan.serialized_bytes);
+  std::size_t total = 0;
+  while (total < expected) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "ICC profile read was cancelled");
+    }
+    const auto chunk = std::min(kReadChunkBytes, expected - total);
+    auto output = destination.subspan(total, chunk);
+    if (plan.inline_block != nullptr) {
+      std::copy_n(plan.inline_block->data() + total, chunk, output.data());
+      total += chunk;
+    } else {
+      auto read = source.read_at(plan.profile->block.offset + total, output);
       if (!read) {
         return read.error();
       }
@@ -3253,6 +3500,36 @@ validate_unused_spaces(const ByteSource &source, std::uint64_t header_end,
   return true;
 }
 
+Result<bool> validate_icc_profile_bytes(std::span<const std::byte> bytes) {
+  constexpr std::size_t kIccHeaderBytes = 128;
+  if (bytes.size() < kIccHeaderBytes) {
+    return make_error(ErrorCode::invalid_block,
+                      "ICC profile is shorter than its mandatory header");
+  }
+  const auto octet = [&](std::size_t offset) {
+    return static_cast<std::uint32_t>(
+        std::to_integer<unsigned char>(bytes[offset]));
+  };
+  const auto declared_size =
+      (octet(0) << 24U) | (octet(1) << 16U) | (octet(2) << 8U) | octet(3);
+  if (declared_size != bytes.size()) {
+    return make_error(ErrorCode::invalid_block,
+                      "ICC profile size field does not match decoded bytes");
+  }
+  if (octet(36) != static_cast<unsigned char>('a') ||
+      octet(37) != static_cast<unsigned char>('c') ||
+      octet(38) != static_cast<unsigned char>('s') ||
+      octet(39) != static_cast<unsigned char>('p')) {
+    return make_error(ErrorCode::invalid_block,
+                      "ICC profile is missing the acsp signature");
+  }
+  if ((octet(47) & 0x01U) == 0) {
+    return make_error(ErrorCode::invalid_block,
+                      "ICC profile embedded-profile flag is not set");
+  }
+  return true;
+}
+
 } // namespace
 
 struct Reader::Impl {
@@ -3261,6 +3538,7 @@ struct Reader::Impl {
   Document document;
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
+  std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
 };
 
 Reader::Reader(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
@@ -3357,6 +3635,8 @@ Result<Reader> Reader::open_source(std::shared_ptr<const ByteSource> source,
     impl->embedded_blocks = std::move(parsed_header.embedded_blocks);
     impl->inline_metadata_blocks =
         std::move(parsed_header.inline_metadata_blocks);
+    impl->inline_icc_profile_blocks =
+        std::move(parsed_header.inline_icc_profile_blocks);
     return Reader(std::move(impl));
   } catch (const std::bad_alloc &) {
     return make_error(ErrorCode::resource_limit,
@@ -3617,6 +3897,70 @@ Reader::read_property_block(std::size_t metadata_index,
   } catch (const std::exception &exception) {
     return make_error(ErrorCode::internal_error,
                       std::string("Unexpected Property block read failure: ") +
+                          exception.what());
+  }
+}
+
+Result<RawIccProfile>
+Reader::read_icc_profile(std::size_t profile_index,
+                         std::stop_token stop_token) const {
+  try {
+    auto plan =
+        plan_icc_profile_read(impl_->document, impl_->options,
+                              impl_->inline_icc_profile_blocks, profile_index);
+    if (!plan) {
+      return plan.error();
+    }
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "ICC profile read was cancelled");
+    }
+    RawIccProfile result;
+    result.bytes.resize(static_cast<std::size_t>(plan.value().expected_bytes));
+    const bool needs_serialized_staging =
+        plan.value().compression.codec != CompressionCodec::none ||
+        plan.value().checksum.algorithm != ChecksumAlgorithm::none;
+    if (needs_serialized_staging) {
+      std::vector<std::byte> serialized(
+          static_cast<std::size_t>(plan.value().serialized_bytes));
+      auto copied = copy_serialized_icc_profile(*impl_->source, plan.value(),
+                                                serialized, stop_token);
+      if (!copied) {
+        return copied.error();
+      }
+      auto verified = verify_checksum(plan.value().checksum, serialized);
+      if (!verified) {
+        return verified.error();
+      }
+      if (plan.value().compression.codec != CompressionCodec::none) {
+        auto decoded = decode_compressed_block(
+            serialized, plan.value().compression, result.bytes, stop_token);
+        if (!decoded) {
+          return decoded.error();
+        }
+      } else {
+        std::copy(serialized.begin(), serialized.end(), result.bytes.begin());
+      }
+    } else {
+      auto copied = copy_serialized_icc_profile(*impl_->source, plan.value(),
+                                                result.bytes, stop_token);
+      if (!copied) {
+        return copied.error();
+      }
+    }
+    auto valid = validate_icc_profile_bytes(result.bytes);
+    if (!valid) {
+      return valid.error();
+    }
+    if (plan.value().checksum.algorithm != ChecksumAlgorithm::none) {
+      result.checksum_verification = ChecksumVerification::verified;
+    }
+    return result;
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Memory allocation failed while reading ICC profile");
+  } catch (const std::exception &exception) {
+    return make_error(ErrorCode::internal_error,
+                      std::string("Unexpected ICC profile read failure: ") +
                           exception.what());
   }
 }

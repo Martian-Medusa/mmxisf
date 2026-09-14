@@ -123,6 +123,21 @@ struct AncillaryBinding {
   bool by_reference{false};
 };
 
+struct IccProfileInfo {
+  std::string uid;
+  std::optional<std::size_t> image_index;
+  BlockLocation block;
+  std::string compression;
+  std::string subblocks;
+  std::string checksum;
+};
+
+struct IccProfileBinding {
+  std::size_t profile_index{0};
+  std::size_t image_index{0};
+  bool by_reference{false};
+};
+
 struct ImageInfo {
   std::string id;
   std::vector<std::uint64_t> geometry;
@@ -153,14 +168,18 @@ public:
            std::vector<MetadataBinding> metadata_bindings = {},
            std::vector<ExtensionElement> extension_elements = {},
            std::vector<AncillaryObject> ancillary_objects = {},
-           std::vector<AncillaryBinding> ancillary_bindings = {})
+           std::vector<AncillaryBinding> ancillary_bindings = {},
+           std::vector<IccProfileInfo> icc_profiles = {},
+           std::vector<IccProfileBinding> icc_profile_bindings = {})
       : version_(std::move(version)), images_(std::move(images)),
         metadata_(std::move(metadata)), file_size_(file_size),
         header_length_(header_length),
         metadata_bindings_(std::move(metadata_bindings)),
         extension_elements_(std::move(extension_elements)),
         ancillary_objects_(std::move(ancillary_objects)),
-        ancillary_bindings_(std::move(ancillary_bindings)) {}
+        ancillary_bindings_(std::move(ancillary_bindings)),
+        icc_profiles_(std::move(icc_profiles)),
+        icc_profile_bindings_(std::move(icc_profile_bindings)) {}
 
   [[nodiscard]] const std::string &version() const noexcept { return version_; }
   [[nodiscard]] const std::vector<ImageInfo> &images() const noexcept {
@@ -185,6 +204,14 @@ public:
   ancillary_bindings() const noexcept {
     return ancillary_bindings_;
   }
+  [[nodiscard]] const std::vector<IccProfileInfo> &
+  icc_profiles() const noexcept {
+    return icc_profiles_;
+  }
+  [[nodiscard]] const std::vector<IccProfileBinding> &
+  icc_profile_bindings() const noexcept {
+    return icc_profile_bindings_;
+  }
   [[nodiscard]] std::uint64_t file_size() const noexcept { return file_size_; }
   [[nodiscard]] std::uint32_t header_length() const noexcept {
     return header_length_;
@@ -200,6 +227,8 @@ private:
   std::vector<ExtensionElement> extension_elements_;
   std::vector<AncillaryObject> ancillary_objects_;
   std::vector<AncillaryBinding> ancillary_bindings_;
+  std::vector<IccProfileInfo> icc_profiles_;
+  std::vector<IccProfileBinding> icc_profile_bindings_;
 };
 
 [[nodiscard]] MMXISF_API const char *to_string(SampleFormat format) noexcept;

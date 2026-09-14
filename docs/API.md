@@ -14,7 +14,8 @@ first public release, while ABI stability is not promised before 1.0.
 3. Read an image into an owning `mmxisf::RawImage` or a correctly sized
    caller-owned span. Use `mmxisf::ImageReadOptions` when native byte order or a
    specific Planar/Normal layout is required.
-4. Read block-backed metadata with `mmxisf::Reader::read_property_block`.
+4. Read block-backed metadata with `mmxisf::Reader::read_property_block` and
+   ICC profile bytes with `mmxisf::Reader::read_icc_profile`.
 5. Write deterministic local monolithic files with
    `mmxisf::Writer::write_file` and explicit `mmxisf::WriterOptions` budgets.
 
@@ -28,7 +29,8 @@ and do not silently manufacture a fallback value.
 - `Reader::open_source` retains a shared pointer to the supplied
   `mmxisf::ByteSource`; the source must honor random-access read semantics for
   the reader's lifetime.
-- `mmxisf::RawImage` and `mmxisf::RawPropertyBlock` own their returned bytes.
+- `mmxisf::RawImage`, `mmxisf::RawPropertyBlock`, and
+  `mmxisf::RawIccProfile` own their returned bytes.
 - `Reader::read_image_into` writes only to the supplied span and reports the
   exact decoded byte count.
 - Writer image and Property spans are borrowed only for the duration of the
@@ -74,6 +76,14 @@ elements. Exact XML-decoded attribute strings are retained, while
 image associations. Absence remains absence: the library does not materialize
 specification defaults such as sRGB, the identity display function, or 72 dpi.
 These records are descriptive and never transform decoded scientific pixels.
+
+`Document::icc_profiles()` exposes attachment, inline, or external block
+descriptors, while `Document::icc_profile_bindings()` preserves direct and
+`Reference`-resolved image associations. `Reader::read_icc_profile()` supports
+local attachment and inline Base64/Base16 bytes, verifies declared integrity
+before decompression, and never performs an endian or color transform. It
+checks the ICC size field, `acsp` signature, and embedded-profile flag; this is
+not full ICC semantic validation or profile authentication.
 
 ## Cancellation and concurrency
 

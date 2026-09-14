@@ -61,6 +61,10 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_ancillary_attributes = 4'096;
   options.max_ancillary_bindings = 2'000;
   options.max_ancillary_bytes = 256U * 1024U;
+  options.max_icc_profiles = 512;
+  options.max_icc_profile_bindings = 2'000;
+  options.max_serialized_icc_profile_bytes = 1024U * 1024U;
+  options.max_decoded_icc_profile_bytes = 1024U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
   options.max_serialized_property_bytes = 1024U * 1024U;
   options.max_decoded_property_bytes = 1024U * 1024U;
@@ -84,6 +88,11 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
         }
       }
     }
+    const auto profiles = std::min<std::size_t>(
+        reader.value().document().icc_profiles().size(), 16);
+    for (std::size_t index = 0; index < profiles; ++index) {
+      (void)reader.value().read_icc_profile(index);
+    }
   }
   return 0;
 }
@@ -100,6 +109,10 @@ std::vector<std::uint8_t> seed_unit() {
       "xmlns:ext=\"urn:mmxisf:fuzz\" version=\"1.0\">"
       "<ext:Probe ext:mode=\"fuzz\">before<ext:Nested/>after</ext:Probe>"
       "<Resolution horizontal=\"72\" vertical=\"72\" unit=\"inch\"/>"
+      "<ICCProfile location=\"inline:base64\">"
+      "AAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYWNzcAAAAAAAAAAB"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</ICCProfile>"
       "<Property id=\"test\" type=\"String\">value</Property>"
       "<Property id=\"Test:Boolean\" type=\"Boolean\" value=\"true\"/>"
       "<Property id=\"Test:Integer\" type=\"Int32\" value=\"-42\"/>"

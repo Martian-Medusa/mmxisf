@@ -31,6 +31,11 @@
 - Ancillary inspection preserves exact XML-decoded parameter text, never
   synthesizes specification defaults, and never applies a color or display
   transform to scientific pixels.
+- Ordered ICC profile descriptors and direct/`Reference`-resolved image
+  associations, with attachment and inline Base64/Base16 reads.
+- ICC bytes share checksum-before-decompression and bounded codec paths, remain
+  big-endian and untransformed, and receive limited header/signature/embedded-
+  flag screening rather than a full color-management interpretation.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -61,12 +66,15 @@ scientific contract.
   direct image placement, shared `uid` references, malformed required/numeric/
   vector/CFA fields, and all dedicated resource limits. The existing private
   PixInsight corpus remains 9/9 metadata-open PASS after stricter validation.
+- Synthetic ICC tests cover attached and zlib-compressed inline profiles,
+  SHA-256 verification, exact decoded bytes, direct/referenced associations,
+  forbidden `byteOrder`, invalid placement/content, external read rejection,
+  header screening, and dedicated resource limits.
 
 ## Still required for M7
 
 - Obtain independently produced UInt64 and complex fixtures from another
   producer, with provenance and exact pixel hashes.
-- Add explicit data-block inspection/decode policies for `ICCProfile` and
-  `Thumbnail`; neither is claimed by the attribute-only ancillary slice.
+- Add an explicit image-like block inspection/decode policy for `Thumbnail`.
 - Decide the later `Structure`/`Table` profile and whether typed numeric
   convenience accessors are justified without weakening raw-text provenance.

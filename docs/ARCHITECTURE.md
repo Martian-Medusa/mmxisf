@@ -47,6 +47,9 @@ The M1 pre-release API now supports:
 - `Reader::read_property_block(metadata_index, options, stop_token)` for
   bounded, integrity-checked String/vector/matrix block bytes with optional
   native-endian conversion;
+- `Document::icc_profiles()` plus `Reader::read_icc_profile(index, stop_token)`
+  for bounded, byte-exact attachment/inline ICC blocks and direct/referenced
+  image associations, without color-management execution;
 - bounded chunk reads with cooperative cancellation;
 - exact UInt64 and complex image bytes, with component-wise native-endian
   conversion and no magnitude/phase interpretation;
@@ -95,6 +98,11 @@ Ancillary core objects use a separate bounded record/attribute/binding model.
 The model retains exact XML-decoded parameter strings after validation; it does
 not apply display or color-space transformations and does not expose parsed
 floating-point values as authoritative scientific measurements.
+
+ICC profile records and image bindings have independent limits. Decoding uses
+the shared integrity/compression path, preserves the big-endian byte stream,
+and performs only bounded header screening. External profile locations remain
+descriptive and cannot trigger file-system or network access.
 
 Compressed input is staged once so its checksum can be verified before any
 codec call. Unshuffled codec output is written directly to the caller's buffer.

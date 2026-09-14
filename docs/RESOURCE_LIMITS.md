@@ -18,6 +18,10 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | ancillary attributes | 65,536 cumulative | Bound attribute-object overhead across ancillary records |
 | ancillary image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
 | ancillary semantic strings | 4 MiB cumulative | Bound copied uid, namespace, name, and value bytes |
+| ICC profiles | 4,096 cumulative | Bound profile descriptors and inline-storage slots |
+| ICC image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
+| serialized bytes per ICC profile | 64 MiB | Bound attachment/inline staging before integrity and codec work |
+| decoded bytes per ICC profile | 64 MiB | Bound returned profile allocation before decompression |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects and bindings | 100,000 each | Preserve large legitimate metadata sets while bounding repeated references |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |
@@ -68,6 +72,11 @@ The ancillary semantic-string budget counts each retained `uid` plus each
 attribute namespace URI, local name, and XML-decoded value. Object, attribute,
 and binding counts remain independent limits. General header, node, depth, and
 per-element attribute limits apply first.
+
+ICC profile limits are independent from image and Property limits. Inline
+decoded bytes are charged against the serialized ICC limit while parsing;
+compressed output is checked against the decoded ICC limit before codec work.
+The general XML-header and encoded-character limits remain authoritative.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

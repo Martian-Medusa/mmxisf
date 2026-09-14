@@ -84,6 +84,7 @@ build/mmxisf-inspect path/to/image.xisf
 build/mmxisf-inspect --decode path/to/image.xisf
 build/mmxisf-inspect --decode-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-properties-sha256 path/to/image.xisf
+build/mmxisf-inspect --decode-icc-sha256 path/to/image.xisf
 ```
 
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
@@ -171,6 +172,13 @@ serialized/decoded Property byte limits. Matrix bytes retain XISF row-major
 order. The library does not reinterpret these bytes as astronomy semantics;
 that remains a consumer responsibility.
 
+`Document::icc_profiles()` and `Document::icc_profile_bindings()` expose
+ordered ICC block descriptors and direct or referenced image associations.
+`Reader::read_icc_profile(index, stop_token)` reads local attachment and inline
+profiles through the bounded integrity/decompression pipeline and returns their
+exact big-endian bytes. It performs limited ICC header screening but does not
+execute color management or claim complete ICC semantic validation.
+
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
 and either layout explicitly. UInt64, Complex32, and Complex64 use the same raw
@@ -192,6 +200,8 @@ layout, color, or sample precision.
 source-representation pixel bytes for differential producer/PFI comparisons.
 `--decode-properties-sha256` performs the corresponding bounded decode and hash
 for every block-backed Property without decoding image pixels.
+`--decode-icc-sha256` performs the bounded profile decode, structural screening,
+and hash for every locally readable ICC profile.
 The normal inspector output also lists the bounded semantic inventory of
 non-XISF XML extension elements and their namespace-aware attributes; this is
 inspection data, not a byte-identical XML round-trip representation.
@@ -235,8 +245,9 @@ current preview scope is the first supported uncompressed, zlib-, LZ4-, or
 Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
 can still open a broader set of headers and displays inventoried extension
-elements/attributes and validated ancillary core objects alongside metadata,
-while unsupported image decoding fails closed.
+elements/attributes, validated ancillary core objects, and ICC profile
+descriptors/associations alongside metadata, while unsupported image decoding
+fails closed.
 
 ## License
 

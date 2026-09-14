@@ -33,6 +33,10 @@ struct ReaderOptions {
   std::size_t max_ancillary_attributes{65'536};
   std::size_t max_ancillary_bindings{100'000};
   std::size_t max_ancillary_bytes{4U * 1024U * 1024U};
+  std::size_t max_icc_profiles{4'096};
+  std::size_t max_icc_profile_bindings{100'000};
+  std::uint64_t max_serialized_icc_profile_bytes{64ULL * 1024ULL * 1024ULL};
+  std::uint64_t max_decoded_icc_profile_bytes{64ULL * 1024ULL * 1024ULL};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};
@@ -89,6 +93,12 @@ struct PropertyReadOptions {
   ByteOrderOutput byte_order{ByteOrderOutput::source};
 };
 
+struct RawIccProfile {
+  ChecksumVerification checksum_verification{
+      ChecksumVerification::not_declared};
+  std::vector<std::byte> bytes;
+};
+
 class MMXISF_API Reader {
 public:
   Reader(Reader &&) noexcept;
@@ -125,6 +135,11 @@ public:
   read_property_block(std::size_t metadata_index,
                       PropertyReadOptions read_options = {},
                       std::stop_token stop_token = {}) const;
+  // Returns the exact decompressed ICC profile byte stream. ICC structures are
+  // always big-endian by definition; no byte-order transformation is applied.
+  [[nodiscard]] Result<RawIccProfile>
+  read_icc_profile(std::size_t profile_index,
+                   std::stop_token stop_token = {}) const;
 
 private:
   struct Impl;
