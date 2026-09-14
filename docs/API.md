@@ -147,6 +147,9 @@ retains responsibility for its own concurrent-call contract.
 
 - `docs/PUBLIC_API_AUDIT.md` records the current source/error/resource review
   and its exact-candidate recheck boundary.
+- `docs/support-profile-0.1.0.json` is the machine-checked standalone-library
+  boundary. It classifies every conformance row and explicitly excludes the
+  optional viewer and PFI adapter.
 - `docs/RESOURCE_LIMITS.md` defines the limit model.
 - `docs/THREAT_MODEL.md` defines the security boundary.
 - `docs/PFI_INTEGRATION.md` defines the narrow PFI adapter contract.

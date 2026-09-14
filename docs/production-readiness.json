@@ -14,8 +14,8 @@
       "id": "candidate.support-profile-frozen",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The exact candidate commit and final claimed conformance rows have not been frozen."
+      "evidence": "docs/support-profile-0.1.0.json",
+      "note": "The standalone reusable-C++-library profile now classifies all 74 conformance rows and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is PREPARED; the exact candidate commit and final dispositions have not been frozen."
     },
     {
       "id": "quality.local-macos-arm64",

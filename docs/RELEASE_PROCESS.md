@@ -13,9 +13,12 @@ grant publication authority or replace the checks below.
 
 ## Candidate gate
 
-1. Freeze the claimed reader/writer profile in the conformance matrix. Every
-   required row has a fixture or is explicitly marked `LIMITED`/`NOT_TESTED`;
-   synthetic and native evidence remain distinguishable.
+1. Review `docs/support-profile-0.1.0.json`, which classifies every conformance
+   row exactly once and excludes both the viewer and PFI adapter from the
+   standalone library boundary. Change its state from `PREPARED` to `FROZEN`
+   and bind the exact candidate commit only after the claimed dispositions are
+   final. Every required row has a fixture or is explicitly marked
+   `LIMITED`/`NOT_TESTED`; synthetic and native evidence remain distinguishable.
 2. Require the full Linux/macOS/Windows static and shared installed-package CI
    matrix, sanitizer tests, deterministic mutation smoke, and coverage-guided
    fuzz job on the candidate commit.

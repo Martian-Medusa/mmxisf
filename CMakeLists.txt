@@ -173,6 +173,21 @@ if(MMXISF_BUILD_TESTS)
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePlanning.cmake
   )
   add_test(
+    NAME mmxisf.support-profile
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSupportProfile.cmake
+  )
+  add_test(
+    NAME mmxisf.support-profile-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -DMMXISF_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSupportProfileTests.cmake
+  )
+  add_test(
     NAME mmxisf.readiness
     COMMAND
       ${CMAKE_COMMAND}
