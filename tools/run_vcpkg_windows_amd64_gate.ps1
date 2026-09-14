@@ -254,7 +254,17 @@ function Invoke-MmxisfVariant {
     "--config", "Release",
     "--parallel", $ParallelJobs
   )
-  Invoke-MmxisfTests $buildDirectory @($vcpkgRuntime)
+  $buildRuntime = @($vcpkgRuntime)
+  if ($Variant -eq "shared") {
+    # Tests in the build root find mmxisf.dll beside their executables, while
+    # installed examples run from examples/Release and require the DLL root on
+    # PATH. Keep this runtime path local to the shared-build test invocation.
+    $buildRuntime = @(
+      (Join-Path $buildDirectory "Release"),
+      $vcpkgRuntime
+    )
+  }
+  Invoke-MmxisfTests $buildDirectory $buildRuntime
   Invoke-MmxisfCommand "cmake.exe" @(
     "--install", $buildDirectory,
     "--config", "Release",
