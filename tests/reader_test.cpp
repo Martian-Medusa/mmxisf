@@ -505,10 +505,15 @@ int main() {
       ScalarDecodeCase{"uint8", "UInt8", "", mmxisf::SampleFormat::uint8, 1},
       ScalarDecodeCase{"uint16", "UInt16", "", mmxisf::SampleFormat::uint16, 2},
       ScalarDecodeCase{"uint32", "UInt32", "", mmxisf::SampleFormat::uint32, 4},
+      ScalarDecodeCase{"uint64", "UInt64", "", mmxisf::SampleFormat::uint64, 8},
       ScalarDecodeCase{"float32", "Float32", " bounds=\"0:1\"",
                        mmxisf::SampleFormat::float32, 4},
       ScalarDecodeCase{"float64", "Float64", " bounds=\"-1:1\"",
                        mmxisf::SampleFormat::float64, 8},
+      ScalarDecodeCase{"complex32", "Complex32", "",
+                       mmxisf::SampleFormat::complex32, 8},
+      ScalarDecodeCase{"complex64", "Complex64", "",
+                       mmxisf::SampleFormat::complex64, 16},
   };
   for (const auto &test : scalar_decode_cases) {
     std::vector<std::byte> sample_bytes(test.byte_count);
@@ -541,7 +546,7 @@ int main() {
     const char *name;
     const char *sample_format;
     const char *bounds;
-    std::size_t sample_size;
+    std::size_t endian_component_size;
     std::vector<std::byte> big_endian_bytes;
   };
   const std::array native_scalar_oracle_cases{
@@ -576,6 +581,37 @@ int main() {
            std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
            std::byte{0x3f}, std::byte{0xe0}, std::byte{0x00}, std::byte{0x00},
            std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}}},
+      NativeScalarOracleCase{
+          "uint64",
+          "UInt64",
+          "",
+          8,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
+           std::byte{0x05}, std::byte{0x06}, std::byte{0x07}, std::byte{0x08},
+           std::byte{0x11}, std::byte{0x12}, std::byte{0x13}, std::byte{0x14},
+           std::byte{0x15}, std::byte{0x16}, std::byte{0x17}, std::byte{0x18}}},
+      NativeScalarOracleCase{
+          "complex32",
+          "Complex32",
+          "",
+          4,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
+           std::byte{0x05}, std::byte{0x06}, std::byte{0x07}, std::byte{0x08},
+           std::byte{0x11}, std::byte{0x12}, std::byte{0x13}, std::byte{0x14},
+           std::byte{0x15}, std::byte{0x16}, std::byte{0x17}, std::byte{0x18}}},
+      NativeScalarOracleCase{
+          "complex64",
+          "Complex64",
+          "",
+          8,
+          {std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04},
+           std::byte{0x05}, std::byte{0x06}, std::byte{0x07}, std::byte{0x08},
+           std::byte{0x09}, std::byte{0x0a}, std::byte{0x0b}, std::byte{0x0c},
+           std::byte{0x0d}, std::byte{0x0e}, std::byte{0x0f}, std::byte{0x10},
+           std::byte{0x11}, std::byte{0x12}, std::byte{0x13}, std::byte{0x14},
+           std::byte{0x15}, std::byte{0x16}, std::byte{0x17}, std::byte{0x18},
+           std::byte{0x19}, std::byte{0x1a}, std::byte{0x1b}, std::byte{0x1c},
+           std::byte{0x1d}, std::byte{0x1e}, std::byte{0x1f}, std::byte{0x20}}},
   };
   for (const auto &test : native_scalar_oracle_cases) {
     const auto path = write_fixture(
@@ -597,48 +633,13 @@ int main() {
       auto expected = test.big_endian_bytes;
       if constexpr (std::endian::native == std::endian::little) {
         for (std::size_t offset = 0; offset < expected.size();
-             offset += test.sample_size) {
+             offset += test.endian_component_size) {
           std::reverse(expected.begin() + static_cast<std::ptrdiff_t>(offset),
                        expected.begin() + static_cast<std::ptrdiff_t>(
-                                              offset + test.sample_size));
+                            offset + test.endian_component_size));
         }
       }
       expect(image && image.value().pixels == expected, test.name);
-    }
-  }
-
-  struct InspectOnlyScalarCase {
-    const char *name;
-    const char *sample_format;
-    mmxisf::SampleFormat expected_format;
-  };
-  const std::array inspect_only_scalar_cases{
-      InspectOnlyScalarCase{"uint64", "UInt64", mmxisf::SampleFormat::uint64},
-      InspectOnlyScalarCase{"complex32", "Complex32",
-                            mmxisf::SampleFormat::complex32},
-      InspectOnlyScalarCase{"complex64", "Complex64",
-                            mmxisf::SampleFormat::complex64},
-  };
-  for (const auto &test : inspect_only_scalar_cases) {
-    const auto path = write_fixture(
-        std::string("mmxisf-m2-inspect-") + test.name + ".xisf",
-        std::string(
-            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
-            "<Image geometry=\"1:1:1\" sampleFormat=\"") +
-            test.sample_format +
-            "\" colorSpace=\"Gray\" location=\"attachment:1024:8\"/>" +
-            valid_metadata() + "</xisf>",
-        std::vector<std::byte>(8));
-    auto result = mmxisf::Reader::open_file(path);
-    expect(result.has_value(), test.name);
-    if (result) {
-      expect(result.value().document().images()[0].sample_format ==
-                 test.expected_format,
-             test.name);
-      auto image = result.value().read_image(0);
-      expect(!image &&
-                 image.error().code == mmxisf::ErrorCode::unsupported_feature,
-             test.name);
     }
   }
 
@@ -1051,6 +1052,53 @@ int main() {
     }
     expect(transformed && transformed.value().pixels == expected,
            "compressed RGB supports layout and endian output transforms");
+  }
+
+  const std::vector<std::byte> complex32_shuffled_zlib_compressed{
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0xe4},
+      std::byte{0x64}, std::byte{0xe2}, std::byte{0x62}, std::byte{0xe6},
+      std::byte{0x66}, std::byte{0xe1}, std::byte{0x61}, std::byte{0xe5},
+      std::byte{0x65}, std::byte{0xe3}, std::byte{0x63}, std::byte{0xe7},
+      std::byte{0xe7}, std::byte{0x10}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x03}, std::byte{0xcc}, std::byte{0x00}, std::byte{0x89}};
+  const auto complex32_shuffled_zlib_path = write_fixture(
+      "mmxisf-m7-complex32-zlib-shuffle.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:1\" sampleFormat=\"Complex32\" "
+          "colorSpace=\"Gray\" byteOrder=\"big\" "
+          "compression=\"zlib+sh:16:8\" "
+          "location=\"attachment:1024:24\"/>") +
+          valid_metadata() + "</xisf>",
+      complex32_shuffled_zlib_compressed);
+  auto complex32_shuffled_zlib =
+      mmxisf::Reader::open_file(complex32_shuffled_zlib_path);
+  expect(complex32_shuffled_zlib.has_value(),
+         "compressed shuffled Complex32 fixture opens");
+  if (complex32_shuffled_zlib) {
+    std::vector<std::byte> source_order;
+    source_order.reserve(16);
+    for (unsigned value = 1; value <= 16; ++value) {
+      source_order.push_back(static_cast<std::byte>(value));
+    }
+    auto source_image = complex32_shuffled_zlib.value().read_image(0);
+    expect(source_image && source_image.value().pixels == source_order,
+           "compressed shuffled Complex32 preserves source bytes");
+
+    mmxisf::ImageReadOptions options;
+    options.byte_order = mmxisf::ByteOrderOutput::native;
+    auto native_image =
+        complex32_shuffled_zlib.value().read_image(0, options);
+    auto expected = source_order;
+    if constexpr (std::endian::native == std::endian::little) {
+      for (std::size_t offset = 0; offset < expected.size(); offset += 4) {
+        std::reverse(expected.begin() + static_cast<std::ptrdiff_t>(offset),
+                     expected.begin() +
+                         static_cast<std::ptrdiff_t>(offset + 4));
+      }
+    }
+    expect(native_image && native_image.value().pixels == expected,
+           "compressed Complex32 endian conversion preserves component order");
   }
 
   const std::vector<std::byte> zlib_subblocks{

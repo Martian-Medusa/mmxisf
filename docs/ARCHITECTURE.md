@@ -48,6 +48,8 @@ The M1 pre-release API now supports:
   bounded, integrity-checked String/vector/matrix block bytes with optional
   native-endian conversion;
 - bounded chunk reads with cooperative cancellation;
+- exact UInt64 and complex image bytes, with component-wise native-endian
+  conversion and no magnitude/phase interpretation;
 
 The pre-release writer now provides:
 

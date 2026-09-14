@@ -68,6 +68,7 @@ milestone. They remain candidates for later conformance work.
 - [M3 progress](docs/M3_STATUS.md)
 - [M4 progress](docs/M4_STATUS.md)
 - [M6 writer progress](docs/M6_STATUS.md)
+- [M7 broader image coverage](docs/M7_STATUS.md)
 - [Writer API](docs/WRITER.md)
 - [Generated API reference overview](docs/API.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
@@ -165,9 +166,11 @@ that remains a consumer responsibility.
 
 By default pixel reads preserve the serialized byte order and Planar/Normal
 layout exactly. Callers can pass `ImageReadOptions` to request native byte order
-and either layout explicitly. No sample type or precision conversion is
-performed, and attachment layout conversion uses bounded scratch memory rather
-than a second full-frame buffer.
+and either layout explicitly. UInt64, Complex32, and Complex64 use the same raw
+bounded block path as the PFI scalar formats; complex endian conversion reverses
+the real and imaginary components independently. No sample type, precision, or
+complex-value conversion is performed, and attachment layout conversion uses
+bounded scratch memory rather than a second full-frame buffer.
 
 Image descriptors and owning reads explicitly report the serialized top-left,
 top-to-bottom/left-to-right coordinate convention, nominal channel order, and

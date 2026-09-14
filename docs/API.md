@@ -39,6 +39,9 @@ and do not silently manufacture a fallback value.
 The default reader path preserves serialized sample type, precision, byte
 order, channel layout, pixel traversal, and metadata text. Conversions of byte
 order and Planar/Normal storage are opt-in and never change sample precision.
+UInt64, Complex32, and Complex64 are delivered as exact raw bytes; complex
+native-endian conversion swaps the real and imaginary components independently
+without interpreting their numeric values.
 Display orientation is descriptive and is not applied to scientific pixels.
 Checksums are verified before compressed bytes are passed to a decoder.
 

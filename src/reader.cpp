@@ -1840,13 +1840,36 @@ std::optional<std::uint64_t> bytes_per_sample(SampleFormat format) {
     return 2;
   case SampleFormat::uint32:
     return 4;
+  case SampleFormat::uint64:
+    return 8;
   case SampleFormat::float32:
     return 4;
   case SampleFormat::float64:
     return 8;
-  case SampleFormat::uint64:
   case SampleFormat::complex32:
+    return 8;
   case SampleFormat::complex64:
+    return 16;
+  case SampleFormat::unsupported:
+    return std::nullopt;
+  }
+  return std::nullopt;
+}
+
+std::optional<std::uint64_t> endian_component_size(SampleFormat format) {
+  switch (format) {
+  case SampleFormat::uint8:
+    return 1;
+  case SampleFormat::uint16:
+    return 2;
+  case SampleFormat::uint32:
+  case SampleFormat::float32:
+  case SampleFormat::complex32:
+    return 4;
+  case SampleFormat::uint64:
+  case SampleFormat::float64:
+  case SampleFormat::complex64:
+    return 8;
   case SampleFormat::unsupported:
     return std::nullopt;
   }
@@ -2109,6 +2132,7 @@ struct ImageReadPlan {
   std::uint64_t channels{0};
   std::uint64_t sample_count{0};
   std::uint64_t sample_size{0};
+  std::uint64_t endian_component_size{0};
   std::uint64_t expected_bytes{0};
   std::uint64_t serialized_bytes{0};
   CompressionPlan compression;
@@ -2224,22 +2248,22 @@ plan_image_read(const Document &document, const ReaderOptions &options,
   if (image.block.kind != BlockKind::attachment &&
       image.block.kind != BlockKind::embedded) {
     return make_error(ErrorCode::unsupported_feature,
-                      "The M2 reader only reads attachment and embedded image "
+                      "The reader only reads attachment and embedded image "
                       "blocks");
   }
   if (image.geometry.size() != 3) {
     return make_error(ErrorCode::unsupported_feature,
-                      "The PFI reader profile only reads 2-D images");
+                      "The current reader profile only reads 2-D images");
   }
   if (image.color_space == "CIELab") {
     return make_error(ErrorCode::unsupported_feature,
                       "CIELab conversion is outside the M2 reader profile");
   }
   const auto sample_size = bytes_per_sample(image.sample_format);
-  if (!sample_size) {
+  const auto component_size = endian_component_size(image.sample_format);
+  if (!sample_size || !component_size) {
     return make_error(ErrorCode::unsupported_feature,
-                      "The M2 reader profile supports UInt8, UInt16, UInt32, "
-                      "Float32, and Float64 samples");
+                      "The reader does not decode this image sample format");
   }
   const std::uint64_t channels = image.geometry[2];
   if (channels > options.max_decoded_channels) {
@@ -2293,6 +2317,7 @@ plan_image_read(const Document &document, const ReaderOptions &options,
                        channels,
                        sample_count,
                        *sample_size,
+                       *component_size,
                        expected_bytes,
                        serialized_bytes,
                        std::move(compression).value(),
@@ -2639,6 +2664,8 @@ Result<std::size_t> transform_pixel_storage_from_buffer(
     std::span<std::byte> destination, PixelStorage output_storage,
     ByteOrder output_byte_order, std::stop_token stop_token) {
   const auto sample_size = static_cast<std::size_t>(plan.sample_size);
+  const auto component_size =
+      static_cast<std::size_t>(plan.endian_component_size);
   const auto pixel_count = plan.sample_count / plan.channels;
   constexpr std::uint64_t kCancellationInterval = 1U << 20U;
   for (std::uint64_t source_index = 0; source_index < plan.sample_count;
@@ -2661,9 +2688,12 @@ Result<std::size_t> transform_pixel_storage_from_buffer(
     const auto output_offset =
         static_cast<std::size_t>(output_index) * sample_size;
     for (std::size_t byte = 0; byte < sample_size; ++byte) {
-      const auto input_byte = plan.image->byte_order == output_byte_order
-                                  ? byte
-                                  : sample_size - byte - 1;
+      const auto component_offset = (byte / component_size) * component_size;
+      const auto input_byte =
+          plan.image->byte_order == output_byte_order
+              ? byte
+              : component_offset + component_size - (byte % component_size) -
+                    1;
       destination[output_offset + byte] = source[input_offset + input_byte];
     }
   }
@@ -2679,6 +2709,8 @@ Result<std::size_t> transform_pixel_storage(const ByteSource &source,
                                             std::size_t image_index) {
   constexpr std::size_t kReadChunkBytes = 8U * 1024U * 1024U;
   const auto sample_size = static_cast<std::size_t>(plan.sample_size);
+  const auto component_size =
+      static_cast<std::size_t>(plan.endian_component_size);
   const auto maximum_chunk_samples = kReadChunkBytes / sample_size;
   std::vector<std::byte> staging(
       std::min<std::size_t>(static_cast<std::size_t>(plan.expected_bytes),
@@ -2717,9 +2749,12 @@ Result<std::size_t> transform_pixel_storage(const ByteSource &source,
       const auto output_offset =
           static_cast<std::size_t>(output_index * plan.sample_size);
       for (std::size_t byte = 0; byte < sample_size; ++byte) {
-        const auto input_byte = plan.image->byte_order == output_byte_order
-                                    ? byte
-                                    : sample_size - byte - 1;
+        const auto component_offset = (byte / component_size) * component_size;
+        const auto input_byte =
+            plan.image->byte_order == output_byte_order
+                ? byte
+                : component_offset + component_size -
+                      (byte % component_size) - 1;
         destination[output_offset + byte] = staging[input_offset + input_byte];
       }
     }
@@ -2729,17 +2764,17 @@ Result<std::size_t> transform_pixel_storage(const ByteSource &source,
 }
 
 Result<std::size_t> swap_byte_order_in_place(std::span<std::byte> destination,
-                                             std::size_t sample_size,
+                                             std::size_t component_size,
                                              std::stop_token stop_token) {
   constexpr std::size_t kSamplesPerCancellationCheck = 1U << 20U;
-  const auto sample_count = destination.size() / sample_size;
-  for (std::size_t sample = 0; sample < sample_count; ++sample) {
-    if (sample % kSamplesPerCancellationCheck == 0 &&
+  const auto component_count = destination.size() / component_size;
+  for (std::size_t component = 0; component < component_count; ++component) {
+    if (component % kSamplesPerCancellationCheck == 0 &&
         stop_token.stop_requested()) {
       return make_error(ErrorCode::cancelled, "Block read was cancelled");
     }
-    const auto begin = destination.begin() + sample * sample_size;
-    std::reverse(begin, begin + sample_size);
+    const auto begin = destination.begin() + component * component_size;
+    std::reverse(begin, begin + component_size);
   }
   return destination.size();
 }
@@ -3052,7 +3087,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
       if (plan.value().sample_size > 1 &&
           output_byte_order.value() != plan.value().image->byte_order) {
         return swap_byte_order_in_place(
-            output, static_cast<std::size_t>(plan.value().sample_size),
+            output,
+            static_cast<std::size_t>(plan.value().endian_component_size),
             stop_token);
       }
       return expected;
@@ -3070,7 +3106,8 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
     if (plan.value().sample_size > 1 &&
         output_byte_order.value() != plan.value().image->byte_order) {
       return swap_byte_order_in_place(
-          output, static_cast<std::size_t>(plan.value().sample_size),
+          output,
+          static_cast<std::size_t>(plan.value().endian_component_size),
           stop_token);
     }
     return copied.value();

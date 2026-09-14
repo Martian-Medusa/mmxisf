@@ -58,6 +58,12 @@ only our generated, non-astronomy test data is retained under the repository
 license. Exact per-file provenance is recorded in
 `tests/interop/manifest.json`.
 
+The same documented writer API was probed on 2026-09-14 with NumPy `uint64`,
+`complex64`, and `complex128` arrays. Version 0.9.7 rejected all three as
+unimplemented sample formats. This negative capability result is retained only
+to explain why M7 has synthetic bitwise evidence but no fixture claim from that
+producer.
+
 ## Ecosystem reconnaissance
 
 An existing GPLv3+ C++ project already uses the `libXISF` name and is packaged

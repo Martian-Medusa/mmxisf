@@ -12,7 +12,8 @@
   collapsing valid but unsupported formats into an unknown value.
 - Exact uncompressed attachment reads cover the PFI scalar set: UInt8, UInt16,
   UInt32, Float32 and Float64.
-- UInt64 and complex formats remain inspectable but decoding fails explicitly;
+- M2's PFI profile remains scalar-focused. The later M7 standalone reader also
+  delivers exact UInt64 and complex bytes; PFI still rejects complex samples.
   CIELab remains inspectable but conversion is outside M2.
 - RGB images require at least three nominal channels. Additional alpha channels
   are preserved and ignored by the preview.

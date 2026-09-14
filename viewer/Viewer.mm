@@ -343,6 +343,14 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
                       @"CIELab metadata is available, but conversion is not."];
     return;
   }
+  if (info.sample_format == mmxisf::SampleFormat::complex32 ||
+      info.sample_format == mmxisf::SampleFormat::complex64) {
+    [self showMessage:@"Preview unavailable"
+               detail:@"Complex samples can be read without loss, but this "
+                      @"PoC does not map complex values to display intensity. "
+                      @"Metadata is available."];
+    return;
+  }
   auto image = reader_->read_image(0);
   if (!image) {
     [self showError:image.error()];
