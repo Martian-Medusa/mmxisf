@@ -673,13 +673,15 @@ void test_compression_shuffle_checksum_round_trip() {
     pixels[sample * 2 + 1] = static_cast<std::byte>(value >> 8U);
   }
   const std::array codecs{
-      mmxisf::CompressionCodec::zlib, mmxisf::CompressionCodec::lz4,
+      mmxisf::CompressionCodec::zlib,  mmxisf::CompressionCodec::lz4,
       mmxisf::CompressionCodec::lz4hc, mmxisf::CompressionCodec::zstd,
+      mmxisf::CompressionCodec::none,  mmxisf::CompressionCodec::none,
       mmxisf::CompressionCodec::none};
   const std::array checksums{
-      mmxisf::ChecksumAlgorithm::sha1, mmxisf::ChecksumAlgorithm::sha256,
-      mmxisf::ChecksumAlgorithm::sha512, mmxisf::ChecksumAlgorithm::sha256,
-      mmxisf::ChecksumAlgorithm::sha256};
+      mmxisf::ChecksumAlgorithm::sha1,    mmxisf::ChecksumAlgorithm::sha256,
+      mmxisf::ChecksumAlgorithm::sha512,  mmxisf::ChecksumAlgorithm::sha256,
+      mmxisf::ChecksumAlgorithm::sha256,  mmxisf::ChecksumAlgorithm::sha3_256,
+      mmxisf::ChecksumAlgorithm::sha3_512};
   std::vector<mmxisf::ImageWriteView> images(codecs.size());
   for (std::size_t index = 0; index < images.size(); ++index) {
     images[index] = {.id = "codec" + std::to_string(index),
@@ -704,10 +706,11 @@ void test_compression_shuffle_checksum_round_trip() {
   expect(opened.has_value() &&
              opened.value().document().images().size() == images.size(),
          "compressed writer matrix did not reopen");
-  const std::array<std::string_view, 5> compression_prefixes{
-      "zlib:512", "lz4+sh:512:2", "lz4hc:512", "zstd+sh:512:2", ""};
-  const std::array<std::string_view, 5> checksum_prefixes{
-      "sha-1:", "sha-256:", "sha-512:", "sha-256:", "sha-256:"};
+  const std::array<std::string_view, 7> compression_prefixes{
+      "zlib:512", "lz4+sh:512:2", "lz4hc:512", "zstd+sh:512:2", "", "", ""};
+  const std::array<std::string_view, 7> checksum_prefixes{
+      "sha-1:",   "sha-256:",  "sha-512:", "sha-256:",
+      "sha-256:", "sha3-256:", "sha3-512:"};
   for (std::size_t index = 0; index < images.size(); ++index) {
     const auto &descriptor = opened.value().document().images()[index];
     expect(descriptor.compression == compression_prefixes[index] &&
@@ -766,6 +769,26 @@ void test_compression_subblocks_round_trip() {
              decoded.value().pixels ==
                  std::vector<std::byte>(pixels.begin(), pixels.end()),
          "writer subblocks did not round trip exactly");
+
+  image.checksum = mmxisf::ChecksumAlgorithm::sha3_512;
+  const auto sha3_path = output_path("mmxisf-writer-subblocks-sha3.xisf");
+  auto sha3_written =
+      mmxisf::Writer::write_file(sha3_path, image, writer_options);
+  expect(sha3_written.has_value(), "SHA3 spool-backed writer failed");
+  auto sha3_opened = mmxisf::Reader::open_file(sha3_path);
+  expect(sha3_opened.has_value() &&
+             sha3_opened.value().document().images()[0].checksum.starts_with(
+                 "sha3-512:"),
+         "SHA3 spool-backed descriptor changed");
+  if (sha3_opened) {
+    auto sha3_decoded = sha3_opened.value().read_image(0);
+    expect(sha3_decoded.has_value() &&
+               sha3_decoded.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified &&
+               sha3_decoded.value().pixels ==
+                   std::vector<std::byte>(pixels.begin(), pixels.end()),
+           "SHA3 spool-backed writer did not round trip exactly");
+  }
   auto first_spool = first_path;
   first_spool += ".mmxisf-block-0-tmp";
   expect(!std::filesystem::exists(first_spool),

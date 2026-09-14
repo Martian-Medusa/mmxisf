@@ -48,7 +48,7 @@
     {"id":"checksum.sha1","section":"10.5","feature":"SHA-1 and sha1 aliases","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2","note":"Required for checksum-support claims; integrity only, not authenticity."},
     {"id":"checksum.sha256","section":"10.5","feature":"SHA-256 and sha256 aliases","pfi":"REQUIRED","baselineDecoder":"INSPECT_ONLY","target":"0.2"},
     {"id":"checksum.sha512","section":"10.5","feature":"SHA-512 and sha512 aliases","pfi":"REQUIRED","baselineDecoder":"INSPECT_ONLY","target":"0.2"},
-    {"id":"checksum.sha3","section":"10.5","feature":"SHA3-256 and SHA3-512","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3"},
+    {"id":"checksum.sha3","section":"10.5","feature":"SHA3-256 and SHA3-512","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3","note":"Reader verification and writer output implemented with OpenSSL 3; independent/native interoperability pending."},
     {"id":"checksum.before-decompression","section":"10.6.1","feature":"verify compressed bytes before decompression","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},
 
     {"id":"image.dimensions-2d","section":"8.5, 11.5","feature":"two-dimensional images","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},

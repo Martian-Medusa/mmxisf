@@ -1892,7 +1892,7 @@ struct CompressionPlan {
   std::vector<CompressionSubblock> subblocks;
 };
 
-enum class ChecksumAlgorithm { none, sha1, sha256, sha512 };
+enum class ChecksumAlgorithm { none, sha1, sha256, sha512, sha3_256, sha3_512 };
 
 struct ChecksumPlan {
   ChecksumAlgorithm algorithm{ChecksumAlgorithm::none};
@@ -1931,9 +1931,12 @@ Result<ChecksumPlan> parse_checksum_plan(std::string_view checksum) {
   } else if (algorithm == "sha-512" || algorithm == "sha512") {
     plan.algorithm = ChecksumAlgorithm::sha512;
     digest_size = 64;
-  } else if (algorithm == "sha3-256" || algorithm == "sha3-512") {
-    return make_error(ErrorCode::unsupported_feature,
-                      "SHA-3 checksums are inspect-only in this profile");
+  } else if (algorithm == "sha3-256") {
+    plan.algorithm = ChecksumAlgorithm::sha3_256;
+    digest_size = 32;
+  } else if (algorithm == "sha3-512") {
+    plan.algorithm = ChecksumAlgorithm::sha3_512;
+    digest_size = 64;
   } else {
     return make_error(ErrorCode::unsupported_feature,
                       "Unsupported block checksum algorithm");
@@ -2560,6 +2563,10 @@ const EVP_MD *checksum_digest(ChecksumAlgorithm algorithm) {
     return EVP_sha256();
   case ChecksumAlgorithm::sha512:
     return EVP_sha512();
+  case ChecksumAlgorithm::sha3_256:
+    return EVP_sha3_256();
+  case ChecksumAlgorithm::sha3_512:
+    return EVP_sha3_512();
   case ChecksumAlgorithm::none:
     return nullptr;
   }

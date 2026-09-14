@@ -16,7 +16,8 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
   byte order;
 - zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
 - bounded, sample-aligned compression subblocks for large images;
-- SHA-1, SHA-256, and SHA-512 checksums over exact serialized block bytes;
+- SHA-1, SHA-256, SHA-512, SHA3-256, and SHA3-512 checksums over exact
+  serialized block bytes;
 - fixed caller-supplied creation time and creator application.
 
 The current writer rejects big-endian image and Normal/interleaved output,

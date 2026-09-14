@@ -16,7 +16,7 @@ PFI, PixInsight, PCL, or Qt.
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
 > zlib, LZ4, LZ4HC-compatible, and current PixInsight Zstandard attachment and
 > embedded blocks, including byte shuffle, compression subblocks, and
-> SHA-1/256/512 verification. It powers
+> SHA-1/256/512 and SHA3-256/512 verification. It powers
 > Gray/RGB preview in the macOS viewer. Block-backed String, vector, and matrix
 > Properties can be read from attachment or inline blocks with the same codec,
 > integrity, resource-limit, endian, and cancellation guarantees.
@@ -139,8 +139,9 @@ and FITS keywords plus the corresponding XISF-unit Properties without accepting
 raw XML. The same ordered metadata records can attach exact typed vector and
 matrix bytes with checked extents, explicit byte order, and independent limits.
 Optional zlib, LZ4, LZ4HC, and Zstandard compression can be combined with byte
-shuffle and SHA-1/256/512 checksums. Image and Property compression share the
-same bounded pipeline. Large compressed blocks use bounded, item-aligned
+shuffle and SHA-1/256/512 plus SHA3-256/512 checksums. Image and Property
+compression share the same bounded pipeline. Large compressed blocks use
+bounded, item-aligned
 subblocks so codec/shuffle scratch does not scale to the complete block.
 References remain a later profile.
 
@@ -155,8 +156,9 @@ owning `RawImage` or written into a caller-owned span with cooperative
 `std::stop_token` cancellation. Embedded image blocks support whitespace-tolerant
 Base64 and the specification's lowercase hexadecimal encoding. The current M3
 slice supports zlib, LZ4, LZ4HC-compatible, and Zstandard blocks, their `+sh`
-variants, validated compression subblocks, and SHA-1/256/512 checksums. The
-Zstandard rows are a current PixInsight interoperability extension to the
+variants, validated compression subblocks, and SHA-1/256/512 plus
+SHA3-256/512 checksums. The Zstandard rows are a current PixInsight
+interoperability extension to the
 pinned 2017 XISF 1.0 baseline. Failed checksums stop processing before any
 compressed bytes reach a codec.
 

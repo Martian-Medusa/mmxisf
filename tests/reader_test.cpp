@@ -1363,7 +1363,16 @@ int main() {
           "sha512",
           "sha512:"
           "178d767c364244ede054ebb3cc4af0ac2b307a86fba6a32706ce4f692642674d"
-          "2ab8f51ee738ecb09bc296918aa85db48abe28fcaef7aa2da81a618cc6d891c3"}};
+          "2ab8f51ee738ecb09bc296918aa85db48abe28fcaef7aa2da81a618cc6d891c3"},
+      ChecksumCase{
+          "sha3-256",
+          "sha3-256:"
+          "af5c1f42d55c60d12918a9517fe4cba62259668577a2b7814a5cc5a38fc19ead"},
+      ChecksumCase{
+          "sha3-512",
+          "sha3-512:"
+          "95eabba207eb2c99daf8cf6e81842c5d184f0c9fad964324a5dd3ab5d8b53f2b"
+          "d6cad53333c336990b89c9304b87b1d991d4066e507b4f2a7325783b3b5c8d8d"}};
   for (const auto &test : checksum_cases) {
     const auto path = write_fixture(
         std::string("mmxisf-m3-checksum-") + test.name + ".xisf",
@@ -1422,10 +1431,12 @@ int main() {
       InvalidChecksumCase{"short", "sha256:00",
                           mmxisf::ErrorCode::invalid_block},
       InvalidChecksumCase{
-          "sha3-inspect",
+          "sha3-mismatch",
           "sha3-256:"
           "0000000000000000000000000000000000000000000000000000000000000000",
-          mmxisf::ErrorCode::unsupported_feature}};
+          mmxisf::ErrorCode::checksum_mismatch},
+      InvalidChecksumCase{"sha3-short", "sha3-512:00",
+                          mmxisf::ErrorCode::invalid_block}};
   for (const auto &test : invalid_checksum_cases) {
     const auto path = write_fixture(
         std::string("mmxisf-m3-invalid-checksum-") + test.name + ".xisf",

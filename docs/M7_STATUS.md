@@ -16,6 +16,8 @@
 - Existing Planar/Normal layout conversion without numeric reinterpretation.
 - Explicit complex-preview rejection in the macOS PoC; metadata inspection is
   retained and no misleading magnitude image is synthesized.
+- SHA3-256 and SHA3-512 block integrity verification and writer output through
+  the existing checksum-before-decompression and bounded spool paths.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI

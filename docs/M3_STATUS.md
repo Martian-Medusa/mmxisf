@@ -29,8 +29,9 @@
   closed.
 - Zstandard frames must produce the exact independently derived output size;
   codec errors, corruption, and size mismatches fail closed.
-- SHA-1 (`sha-1` and `sha1`), SHA-256 (`sha-256` and `sha256`), and SHA-512
-  (`sha-512` and `sha512`) descriptors are validated and computed with OpenSSL
+- SHA-1 (`sha-1` and `sha1`), SHA-256 (`sha-256` and `sha256`), SHA-512
+  (`sha-512` and `sha512`), SHA3-256, and SHA3-512 descriptors are validated
+  and computed with OpenSSL
   EVP. Digests must have the exact length and lowercase hexadecimal encoding.
 - Checksums cover the serialized block bytes and are verified before any codec
   call. A mismatch has its own `checksum_mismatch` error code.
@@ -52,7 +53,8 @@
   concatenated LZ4 subblocks: PASS.
 - Static Zstandard RGB and Zstandard+shuffle UInt16 vectors plus corrupt-frame
   rejection: PASS locally.
-- Static SHA-1, SHA-256, and SHA-512 vectors, including both SHA-1 aliases:
+- Static SHA-1, SHA-256, SHA-512, SHA3-256, and SHA3-512 vectors, including
+  both SHA-1 aliases:
   PASS.
 - Deliberately corrupted compressed bytes with a valid digest for the original
   block return `checksum_mismatch`, rather than a codec error: PASS for the

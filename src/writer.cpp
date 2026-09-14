@@ -628,6 +628,10 @@ const EVP_MD *checksum_digest(ChecksumAlgorithm algorithm) {
     return EVP_sha256();
   case ChecksumAlgorithm::sha512:
     return EVP_sha512();
+  case ChecksumAlgorithm::sha3_256:
+    return EVP_sha3_256();
+  case ChecksumAlgorithm::sha3_512:
+    return EVP_sha3_512();
   }
   return nullptr;
 }
@@ -642,6 +646,10 @@ std::string_view checksum_name(ChecksumAlgorithm algorithm) {
     return "sha-256";
   case ChecksumAlgorithm::sha512:
     return "sha-512";
+  case ChecksumAlgorithm::sha3_256:
+    return "sha3-256";
+  case ChecksumAlgorithm::sha3_512:
+    return "sha3-512";
   }
   return {};
 }
@@ -652,6 +660,8 @@ bool is_valid_checksum_algorithm(ChecksumAlgorithm algorithm) {
   case ChecksumAlgorithm::sha1:
   case ChecksumAlgorithm::sha256:
   case ChecksumAlgorithm::sha512:
+  case ChecksumAlgorithm::sha3_256:
+  case ChecksumAlgorithm::sha3_512:
     return true;
   }
   return false;

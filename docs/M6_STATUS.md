@@ -24,7 +24,8 @@
   compression, element shuffle, checksums, bounded subblocks/spooling, and block
   layout reporting.
 - Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
-  and SHA-1/256/512 checksums over exact serialized attachment bytes.
+  and SHA-1/256/512 plus SHA3-256/512 checksums over exact serialized
+  attachment bytes.
 - Deterministic sample-aligned compression subblocks with a 16 MiB default,
   bounded count, per-subblock shuffle scratch, and cancellation checkpoints.
 - Independent decoded and serialized per-image/cumulative byte budgets.
@@ -108,6 +109,9 @@
   metadata API but its image API decodes only the first pair and then fails its
   reshape. This is recorded as LIMITED external-consumer evidence, not a PASS;
   native PixInsight validation remains required before release.
+- A separate eight-subblock Zstandard+shuffle+SHA3-512 case exercises the
+  bounded spool-file digest path and reopens with exact bytes and explicit
+  verified-integrity state.
 - The repeatable 73,495,680-byte UInt8 RGB Zstandard+shuffle+SHA-256 benchmark
   produced identical bytes in 5/5 runs, reached 250.986 MiB/s median writer
   throughput, and used 125,009,920 bytes maximum RSS. File-backed spooling cut

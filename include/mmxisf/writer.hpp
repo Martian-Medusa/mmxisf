@@ -17,7 +17,8 @@
 namespace mmxisf {
 
 enum class CompressionCodec { none, zlib, lz4, lz4hc, zstd };
-enum class ChecksumAlgorithm { none, sha1, sha256, sha512 };
+// SHA-3 uses the canonical XISF names sha3-256 and sha3-512.
+enum class ChecksumAlgorithm { none, sha1, sha256, sha512, sha3_256, sha3_512 };
 
 struct ImageWriteView {
   std::string id;

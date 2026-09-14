@@ -183,8 +183,8 @@ types, shapes, bounds, and values. A following declarative metadata slice adds
 direct String/TimePoint Properties and FITS keywords with independent-consumer
 evidence. A third slice adds all four reader codecs, byte shuffle, and
 SHA-1/256/512 with exact self-round-trips and an independent-consumer oracle.
-Numeric/block metadata, writer performance evidence, and the sink abstraction
-remain open.
+Numeric/block metadata, writer performance evidence, and SHA3-256/512 integrity
+are implemented. The sink abstraction remains open.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
