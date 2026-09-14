@@ -35,6 +35,9 @@
   retains the HTML output as a short-lived, non-published artifact.
 - ASan/UBSan deterministic 20,000-case mutation smoke and a Linux Clang
   coverage-guided 20,000-run job are wired into CI.
+- A separate manual candidate workflow runs a 15-minute ASan/UBSan libFuzzer
+  campaign with explicit input/time/RSS bounds, retains its evolved corpus, and
+  preserves crash inputs longer for minimization and regression promotion.
 - CI keeps one active run per workflow/ref. A newer push cancels only the
   superseded run for the same branch, so the final commit receives the complete
   matrix without duplicating long Windows dependency builds.
@@ -52,7 +55,8 @@
 ## Still required for public beta
 
 - Complete and record the first static/shared cross-platform CI matrix.
-- Run longer continuous fuzz campaigns and preserve any minimized regressions.
+- Complete and record the first long candidate fuzz campaign; preserve and
+  promote any minimized regressions.
 - Enable a private vulnerability-reporting channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
   profiles; UI automation remains intentionally excluded.

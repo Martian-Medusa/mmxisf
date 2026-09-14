@@ -71,6 +71,7 @@ milestone. They remain candidates for later conformance work.
 - [M7 broader image coverage](docs/M7_STATUS.md)
 - [Writer API](docs/WRITER.md)
 - [Generated API reference overview](docs/API.md)
+- [Fuzzing policy](docs/FUZZING.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector

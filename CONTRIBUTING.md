@@ -29,6 +29,8 @@ Also test `-DBUILD_SHARED_LIBS=ON` for public API/package changes. Parser,
 codec, block, arithmetic, ownership, and cancellation changes require the
 ASan/UBSan mutation smoke described in `README.md`. CI is authoritative for the
 Linux/macOS/Windows and coverage-guided fuzz matrix.
+The candidate-campaign evidence and regression-promotion rules are in
+`docs/FUZZING.md`.
 
 ## Change requirements
 
