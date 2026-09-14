@@ -57,8 +57,10 @@ function Invoke-MmxisfTests {
   }
 }
 
-function Assert-MmxisfByteIdentity {
+function Measure-MmxisfByteIdentity {
   param(
+    [Parameter(Mandatory = $true)]
+    [string]$Label,
     [Parameter(Mandatory = $true)]
     [string]$Primary,
     [Parameter(Mandatory = $true)]
@@ -72,9 +74,24 @@ function Assert-MmxisfByteIdentity {
   $primaryHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Primary).Hash
   $reproductionHash =
     (Get-FileHash -Algorithm SHA256 -LiteralPath $Reproduction).Hash
-  if ($primaryHash -ne $reproductionHash) {
-    throw "Artifacts are not byte-identical: $Primary and $Reproduction"
+  $byteIdentical = $primaryHash -eq $reproductionHash
+  $result = [ordered]@{
+    label = $Label
+    byteIdentical = $byteIdentical
+    primaryPath = [IO.Path]::GetRelativePath($BuildRoot, $Primary)
+    reproductionPath = [IO.Path]::GetRelativePath($BuildRoot, $Reproduction)
+    primarySha256 = $primaryHash.ToLowerInvariant()
+    reproductionSha256 = $reproductionHash.ToLowerInvariant()
+    primaryBytes = (Get-Item -LiteralPath $Primary).Length
+    reproductionBytes = (Get-Item -LiteralPath $Reproduction).Length
   }
+  if ($byteIdentical) {
+    Write-Host "Reproducibility measurement ${Label}: BYTE_IDENTICAL"
+  }
+  else {
+    Write-Warning "Reproducibility measurement ${Label}: NON_IDENTICAL (primary $primaryHash, reproduction $reproductionHash)"
+  }
+  return [PSCustomObject]$result
 }
 
 if ($env:OS -ne "Windows_NT" -or
@@ -125,6 +142,7 @@ elseif (-not [IO.Path]::IsPathRooted($BuildRoot)) {
 if (Test-Path -LiteralPath $BuildRoot) {
   throw "Refusing to reuse existing gate directory: $BuildRoot"
 }
+$reproducibilityMeasurements = @()
 
 $installedDirectory = Join-Path $BuildRoot "vcpkg_installed"
 $vcpkgRuntime = Join-Path $installedDirectory "x64-windows\bin"
@@ -318,11 +336,15 @@ function Invoke-MmxisfVariant {
   $primaryLibrary = Join-Path $buildDirectory "Release\mmxisf.lib"
   $reproducedLibrary =
     Join-Path $reproductionDirectory "Release\mmxisf.lib"
-  Assert-MmxisfByteIdentity $primaryLibrary $reproducedLibrary
+  $script:reproducibilityMeasurements += Measure-MmxisfByteIdentity `
+    -Label "$Variant import-or-static library" `
+    -Primary $primaryLibrary `
+    -Reproduction $reproducedLibrary
   if ($Variant -eq "shared") {
-    Assert-MmxisfByteIdentity `
-      (Join-Path $buildDirectory "Release\mmxisf.dll") `
-      (Join-Path $reproductionDirectory "Release\mmxisf.dll")
+    $script:reproducibilityMeasurements += Measure-MmxisfByteIdentity `
+      -Label "shared runtime library" `
+      -Primary (Join-Path $buildDirectory "Release\mmxisf.dll") `
+      -Reproduction (Join-Path $reproductionDirectory "Release\mmxisf.dll")
   }
 }
 
@@ -341,4 +363,32 @@ finally {
   Pop-Location
 }
 
-Write-Host "mmxisf vcpkg native Windows amd64 MSVC gate: PASS"
+$nonIdenticalMeasurements = @(
+  $reproducibilityMeasurements | Where-Object { -not $_.byteIdentical }
+)
+$reproducibilityResult = "PASS_BYTE_IDENTICAL"
+if ($nonIdenticalMeasurements.Count -gt 0) {
+  $reproducibilityResult = "LIMITED_NON_IDENTICAL_ARTIFACTS"
+}
+$reproducibilityReport = [ordered]@{
+  schema = "mmxisf.windows-reproducibility/1.0.0"
+  recordedAtUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+  result = $reproducibilityResult
+  policy = "MEASURED_NON_BLOCKING_SOURCE_ONLY"
+  measurements = $reproducibilityMeasurements
+  rationale = @(
+    "The source-only release does not distribute these Windows binaries.",
+    "Independent MSVC builds, tests, installs, relocations, and consumers remain mandatory.",
+    "Byte identity is recorded without making a portable cross-toolchain reproducibility claim."
+  )
+}
+$reproducibilityReportPath =
+  Join-Path $BuildRoot "windows-reproducibility.json"
+$reproducibilityReport |
+  ConvertTo-Json -Depth 8 |
+  Set-Content -LiteralPath $reproducibilityReportPath -Encoding utf8
+
+if ($nonIdenticalMeasurements.Count -gt 0) {
+  Write-Warning "Windows functional qualification passed, but $($nonIdenticalMeasurements.Count) artifact(s) were not byte-identical. See $reproducibilityReportPath"
+}
+Write-Host "mmxisf vcpkg native Windows amd64 MSVC functional gate: PASS; reproducibility: $reproducibilityResult"

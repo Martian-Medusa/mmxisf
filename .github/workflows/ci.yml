@@ -208,7 +208,7 @@ jobs:
           path: .qualification-harness
           sparse-checkout: tools/run_vcpkg_windows_amd64_gate.ps1
           sparse-checkout-cone-mode: false
-      - name: Run warnings-as-errors and reproducibility gate
+      - name: Run warnings-as-errors functional gate and reproducibility measurement
         shell: pwsh
         run: |
           $gateScript = "tools/run_vcpkg_windows_amd64_gate.ps1"
@@ -238,13 +238,15 @@ jobs:
           New-Item -ItemType Directory -Path $evidenceDirectory | Out-Null
           $benchmarkFile = Join-Path $evidenceDirectory "benchmark-rgb.xisf"
           $strictBuildRoot = Join-Path $env:GITHUB_WORKSPACE "build-vcpkg-windows-amd64"
+          $reproducibilityReportPath = Join-Path $strictBuildRoot "windows-reproducibility.json"
           $writer = Join-Path $strictBuildRoot "static\Release\mmxisf-writer-benchmark.exe"
           $inspector = Join-Path $strictBuildRoot "static\Release\mmxisf-inspect.exe"
-          foreach ($requiredFile in @($writer, $inspector)) {
+          foreach ($requiredFile in @($writer, $inspector, $reproducibilityReportPath)) {
             if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
               throw "Missing Windows measurement executable: $requiredFile"
             }
           }
+          $reproducibility = Get-Content -Raw -LiteralPath $reproducibilityReportPath | ConvertFrom-Json
 
           $writerRuns = @()
           foreach ($iteration in 1..5) {
@@ -347,9 +349,11 @@ jobs:
               sharedDllSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $strictBuildRoot "shared\Release\mmxisf.dll")).Hash.ToLowerInvariant()
               benchmarkFileSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $benchmarkFile).Hash.ToLowerInvariant()
             }
+            reproducibility = $reproducibility
             limitations = @(
               "Hosted-runner measurements are a reproducible checkpoint, not a portable performance SLA.",
               "Warm-cache reader timings include process startup, parsing, checksum verification, and decoding.",
+              "Windows artifact byte identity is measured and recorded, but is not a functional gate for this source-only release.",
               "Toolchain inventory requires a separate dated advisory disposition before release promotion."
             )
           }
@@ -361,6 +365,7 @@ jobs:
           path: |
             build-vcpkg-windows-amd64/static/binary-dependencies.spdx.json
             build-vcpkg-windows-amd64/shared/binary-dependencies.spdx.json
+            build-vcpkg-windows-amd64/windows-reproducibility.json
             windows-evidence/native-windows-amd64.json
           if-no-files-found: error
           retention-days: 14
