@@ -43,6 +43,14 @@ support-profile state/ref/SHA-256 with `publicationAuthorized: false` to
 authorizes publication. The non-self-referential identity rationale is recorded
 in `docs/decisions/0020-non-self-referential-candidate-identity.md`.
 
+Every prepared package is independently checked by
+`cmake/ValidateSourceCandidate.cmake` before retention or transfer. The
+validator binds the expected commit and project version to the exact archive
+name, byte size, SHA-256, checksum-file contents, extraction prefix,
+determinism result, and current support-profile state/ref/hash. It rejects any
+manifest that claims publication authorization. Its positive and mutation
+contracts run in every test-enabled build.
+
 For a frozen candidate, create the approved annotated `vX.Y.Z-rc.N` ref once at
 the exact tested commit, never move it, and repeat source preparation with
 `MMXISF_VERIFY_CANDIDATE_REF=ON`. Verify that the ref resolves to checked-out
