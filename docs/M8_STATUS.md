@@ -60,6 +60,13 @@
 
 ## Evidence available now
 
+- Exact commit `a42f46fc6ab48d3bfc42afe84a5eb5fffd4ef7fa`, which switched
+  routine CI to manual dispatch, passed the local macOS static and shared
+  8/8 suites, both installed-package consumers (1/1 each), the ASan/UBSan
+  8/8 suite, the deterministic 20,000-case mutation smoke, and generated API
+  documentation. A remote run query after push returned no workflow for that
+  commit, confirming that the automatic runner spend stopped. Windows and
+  Linux for this exact commit remain **NOT_TESTED**.
 - Fresh macOS Release shared build with warnings-as-errors: 6/6 tests PASS.
 - Fresh shared install plus separately configured public package consumer: 1/1
   PASS.

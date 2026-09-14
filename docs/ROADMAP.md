@@ -197,7 +197,11 @@ action pins, retained binary SBOMs, and the sink API was rejected before any
 runner started by the GitHub account billing/spending limit. That external
 block pauses cross-platform evidence only; local warning-as-error,
 ASan/UBSan, installed static/shared consumers, documentation, deterministic
-fuzz smoke, and bundle-signature gates continue autonomously.
+fuzz smoke, and bundle-signature gates continue autonomously. From commit
+`a42f46f`, routine pushes and pull requests no longer start the costly full
+matrix automatically; it remains manually dispatchable for selected candidate
+checkpoints. Local macOS evidence is retained separately and does not stand in
+for exact-head Windows or Linux results.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external
