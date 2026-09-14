@@ -6,6 +6,7 @@
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
+  PIXINSIGHT_WRITER_PROPERTIES_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
@@ -417,8 +418,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
   compiled bytes validate as a 2x2 UInt16 Gray image with a compressed,
   shuffled, SHA-256-protected F64 matrix property, a UI16 vector property, and
   a string property. The source-bound PixInsight validation script and fixture
-  are prepared, but native PixInsight execution remains **NOT_TESTED** and is
-  not implied by this local gate.
+  were prepared but remained **NOT_TESTED** at this checkpoint; the later
+  disposable native run below supersedes that state.
+
+- A later source-bound automation run used the same 12,292-byte fixture
+  (SHA-256
+  `b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6`)
+  in a disposable PixInsight 1.9.4 arm64 process with no Computer Use. Native
+  reading recovered the exact F64 matrix `[[1,2],[3,4]]`, UI16 vector
+  `[513,1027]`, String Property, 2x2 UInt16 Gray representation, and expected
+  working-sample pixel hash. The source was rehashed after access and remained
+  identical. This promotes `interop.pixinsight-writer-properties` to `PASS` for
+  the exact fixture and observed host, not for every Property/sample/codec or
+  XISF consumer. Evidence is retained in
+  `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
 - Exact commit `88f12a7611c4897e82238b734648b32306d2b74d` passed the complete
   maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
   installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
@@ -668,8 +681,9 @@ open; it does not turn historical evidence into exact-candidate evidence.
 - Repeat the long campaign on the exact release candidate and preserve/promote
   any minimized regressions; the first retained campaign is complete.
 - Enable a private vulnerability-reporting channel before publication.
-- Resolve native PixInsight interoperability gates for all claimed PFI writer
-  profiles; UI automation remains intentionally excluded.
+- Extend native PixInsight writer interoperability only when additional writer
+  profiles are claimed; the current declared matrix/vector/string fixture gate
+  passes, while broad Property/sample/codec coverage remains non-generalized.
 - Rebuild all five dependencies in a controlled supported environment at or
   above the dated production floors, enable the fail-closed baseline option,
   and perform a fresh exact-version audit before any public tag.

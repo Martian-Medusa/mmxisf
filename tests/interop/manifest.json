@@ -167,7 +167,7 @@
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.baseline-monolithic", "writer.block-properties", "writer.deterministic", "image.uint16", "image.gray", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "Source-bound manual PixInsight gate requires exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb; native result pending."
+      "expectedArtifact": "Source-bound PixInsight 1.9.4 arm64 PASS: exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb."
     },
     {
       "id": "mmxisf-writer-sha3-rgb",

@@ -1,6 +1,8 @@
 #engine v8
 
 // Manual native evidence tool. It does not change PixInsight or PFI settings.
+const MMXISF_WRITER_NATIVE_VALIDATION_AUTOMATION = null;
+
 (function ()
 {
    "use strict";
@@ -155,21 +157,37 @@
    }
 
    console.show();
-   let input = new OpenFileDialog;
-   input.caption = "mmxisf writer native validation - select fixture";
-   input.filters = [ [ "XISF files", ".xisf" ] ];
-   if ( !input.execute() ) return;
-   let output = new GetDirectoryDialog;
-   output.caption = "mmxisf writer native validation - evidence directory";
-   if ( !output.execute() ) return;
+   let fixturePath = null;
+   let outputPath = null;
+   if ( MMXISF_WRITER_NATIVE_VALIDATION_AUTOMATION !== null )
+   {
+      fixturePath = MMXISF_WRITER_NATIVE_VALIDATION_AUTOMATION.fixturePath;
+      outputPath = MMXISF_WRITER_NATIVE_VALIDATION_AUTOMATION.evidenceOutput;
+   }
+   else
+   {
+      let input = new OpenFileDialog;
+      input.caption = "mmxisf writer native validation - select fixture";
+      input.filters = [ [ "XISF files", ".xisf" ] ];
+      if ( !input.execute() ) return;
+      fixturePath = input.fileName;
+      let output = new GetDirectoryDialog;
+      output.caption = "mmxisf writer native validation - evidence directory";
+      if ( !output.execute() ) return;
+      let stamp = (new Date).toISOString().replace( /[-:]/g, "" )
+         .replace( /\.\d+Z$/, "Z" );
+      let separator = output.directoryPath.endsWith( "/" ) ? "" : "/";
+      outputPath = output.directoryPath + separator +
+         "mmxisf-writer-native-validation-" + stamp + ".json";
+   }
 
    let evidence = { schemaVersion: "mmxisf.writer-native-validation/1.0.0",
-      runtime: runtimeIdentity(), fixturePath: input.fileName,
+      runtime: runtimeIdentity(), fixturePath: fixturePath,
       result: null, authority: { writerInterop: "OBSERVED_NATIVE_HOST",
          pfiScientificParity: "NOT_ASSESSED", productEnablement: "NOT_AUTHORIZED" } };
    try
    {
-      evidence.result = capture( input.fileName );
+      evidence.result = capture( fixturePath );
       console.writeln( "mmxisf writer native validation: PASS" );
    }
    catch ( error )
@@ -178,11 +196,6 @@
       console.criticalln( "mmxisf writer native validation: FAIL: " + error );
    }
 
-   let stamp = (new Date).toISOString().replace( /[-:]/g, "" )
-      .replace( /\.\d+Z$/, "Z" );
-   let separator = output.directoryPath.endsWith( "/" ) ? "" : "/";
-   let outputPath = output.directoryPath + separator +
-      "mmxisf-writer-native-validation-" + stamp + ".json";
    if ( File.exists( outputPath ) )
       throw new Error( "Refusing to overwrite existing evidence." );
    File.writeTextFile( outputPath, JSON.stringify( evidence, null, 2 ) + "\n" );

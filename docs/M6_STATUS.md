@@ -1,6 +1,7 @@
 # M6 progress: deterministic monolithic writer
 
 - Status: BYTE_SINK_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
+  NATIVE_PIXINSIGHT_PROPERTIES_PASS;
   CI_REVALIDATION_BLOCKED_ACCOUNT_BILLING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
@@ -142,9 +143,15 @@
   `UI16Vector`, and String Properties. The compiled interoperability test
   verifies its exact matrix/vector source bytes, checksum state, metadata
   bindings, and pixel hash in Release, ASan/UBSan, and ThreadSanitizer builds.
-  A source-hashed PJSR script is prepared under `tests/pixinsight` to require
-  exact native values and working-sample pixels. PixInsight execution remains
-  manual and **NOT_TESTED**; preparing the gate is not native evidence.
+  A source-hashed PJSR script under `tests/pixinsight` requires exact native
+  values and working-sample pixels. Its absolute-path automation variant ran in
+  a disposable PixInsight 1.9.4 arm64 process without Computer Use. PixInsight
+  recovered the exact 2x2 matrix, vector `[513,1027]`, String value, UInt16 Gray
+  representation, and working-sample pixel SHA-256. The source identity was
+  stable before and after access. Sanitized evidence is retained in
+  `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
+  This is native interoperability for the exact fixture, not generalized
+  Property coverage or product/scientific authority.
 
 ## Still required for M6
 
@@ -152,7 +159,5 @@
   exact-head Linux/macOS/Windows, fuzz, and installed-package matrix. The
   immediately preceding static/shared platform matrix passed; the latest
   attempted pushed head created no runner because of the account-level block.
-- Run the prepared source-bound PJSR gate and validate writer-produced
-  vector/matrix Properties natively in PixInsight.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.

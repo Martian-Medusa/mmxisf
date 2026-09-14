@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "mmxisf-pixinsight-writer-properties/1.0.0",
+  "status": "PASS_WITH_LIMITATIONS",
+  "observedAt": "2026-09-14T20:59:00+02:00",
+  "platform": {
+    "program": "PixInsight Core 1.9.4 (arm64)",
+    "version": "1.9.4.0",
+    "os": "macOS",
+    "engine": "PJSR V8",
+    "execution": "DISPOSABLE_CLI_AUTOMATION_NO_STARTUP_SCRIPTS_FORCE_EXIT",
+    "computerUse": "DISABLED"
+  },
+  "libraryIdentity": {
+    "fixtureIntroductionCommit": "d5a81ed566d02b1222e9e2baf51ecf2faffbef24",
+    "currentCommitAtAudit": "5547b1850eeef8d19da0f47a9a0538da3c224143",
+    "version": "0.1.0"
+  },
+  "fixture": {
+    "profile": "SYNTHETIC_WRITER_NATIVE_PROPERTIES",
+    "storage": "GIT_TEXT_BASE64",
+    "encodedPath": "tests/interop/mmxisf-writer-native-properties.xisf.b64",
+    "decodedSizeBytes": 12292,
+    "decodedSha256": "b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6",
+    "origin": "MARTIAN_MEDUSA_SYNTHETIC_REDISTRIBUTABLE"
+  },
+  "validation": {
+    "sourcePath": "tests/pixinsight/MMXISFWriterNativeValidation.js",
+    "sourceSha256": "56509a88344b44bfaf1ad396eee2f77eac48dc4a7d069ff2c1b1f64cc2e4a2fe",
+    "automationBuilderPath": "tools/build_pixinsight_writer_validation.mjs",
+    "automationScriptSizeBytes": 8135,
+    "automationScriptSha256": "9d9b5c919c7ee177a36d8ea3c909f5febea0e151a350703220e91df693eaf419",
+    "rawEvidenceSizeBytes": 1152,
+    "rawEvidenceSha256": "c707577f7a90933de4957da0a9fb9cb22d061702e564ee582fc77d6dba5149fc",
+    "rawEvidenceRetention": "LOCAL_EXTERNAL_HANDOFF_WITH_PRIVATE_PATH_NOT_TRACKED"
+  },
+  "result": {
+    "status": "PASS",
+    "image": {
+      "width": 2,
+      "height": 2,
+      "channels": 1,
+      "sampleFormat": "UInt16",
+      "colorSpace": "Gray",
+      "workingSamplePixelSha256": "ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb"
+    },
+    "properties": {
+      "Test:Matrix": [
+        [1, 2],
+        [3, 4]
+      ],
+      "Test:Vector": [513, 1027],
+      "Test:Label": "mmxisf native writer validation"
+    },
+    "sourceIdentityStableDuringCapture": true
+  },
+  "authority": {
+    "writerPropertyInteroperability": "PASS_FOR_EXACT_SYNTHETIC_FIXTURE",
+    "nativePixelRepresentation": "PASS_FOR_EXACT_SYNTHETIC_FIXTURE",
+    "broaderWriterProfiles": "NOT_GENERALIZED",
+    "pfiScientificParity": "NOT_ASSESSED_HERE",
+    "productEnablement": "NOT_AUTHORIZED",
+    "publication": "NOT_AUTHORIZED"
+  },
+  "limitations": [
+    "This native observation covers one 2x2 UInt16 Gray fixture with one F64Matrix, one UI16Vector, and one String Property in PixInsight 1.9.4 arm64 on macOS.",
+    "Independent and self-reader fixtures provide broader writer coverage, but this native result is not generalized to every Property type, sample format, codec, operating system, or XISF consumer.",
+    "The result does not freeze a release candidate, establish physical/scientific accuracy, or authorize product enablement or publication."
+  ]
+}

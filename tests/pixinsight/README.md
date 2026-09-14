@@ -1,8 +1,9 @@
-# Manual PixInsight validation
+# PixInsight native validation
 
-Computer Use is intentionally excluded. These scripts are run manually by an
-operator in PixInsight and create source-bound JSON evidence without changing
-PFI or PixInsight settings.
+Computer Use is intentionally excluded. The scripts can use a manual chooser or
+an absolute-path-bound automation variant in a disposable PixInsight instance.
+They create source-bound JSON evidence without changing PFI or PixInsight
+settings.
 
 ## Writer block-Property fixture
 
@@ -30,3 +31,23 @@ geometry, and working-sample pixel SHA-256. It rehashes the source after pixel
 access, closes every opened image window, and records explicit authority limits.
 A PASS is writer/property interoperability evidence only; it does not establish
 PFI scientific parity or authorize product enablement.
+
+For a noninteractive local run, generate an external script with absolute paths
+and launch a new disposable PixInsight instance:
+
+```sh
+node tools/build_pixinsight_writer_validation.mjs \
+  --output /absolute/path/to/run/MMXISFWriterNativeValidationAutomated.js \
+  --fixture /absolute/path/to/mmxisf-writer-native-properties.xisf \
+  --evidence-output /absolute/path/to/run/writer-native.json
+/Applications/PixInsight/PixInsight.app/Contents/MacOS/PixInsight \
+  --new --automation-mode --no-startup-scripts \
+  --run=/absolute/path/to/run/MMXISFWriterNativeValidationAutomated.js \
+  --force-exit
+```
+
+The builder rejects relative fixture/evidence paths and preserves the manual
+script as the source of truth. The evidence path is create-only. On 2026-09-14,
+this automation passed the exact committed fixture in PixInsight 1.9.4 arm64;
+the sanitized result is retained in
+`docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.

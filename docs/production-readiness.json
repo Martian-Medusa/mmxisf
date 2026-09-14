@@ -75,10 +75,10 @@
     },
     {
       "id": "interop.pixinsight-writer-properties",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/M6_STATUS.md",
-      "note": "The matrix, vector, string, and pixel fixture gate is prepared but has not been executed natively."
+      "evidence": "docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json",
+      "note": "A source-bound synthetic 2x2 UInt16 Gray file written by mmxisf passed native PixInsight 1.9.4 arm64 recovery of its F64 matrix, UI16 vector, String Property, representation, and exact working-sample pixel hash. The source remained byte-identical during capture; this is exact-fixture interoperability rather than universal writer or Property coverage."
     },
     {
       "id": "pfi.backend-selection-policy",
