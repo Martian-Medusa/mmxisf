@@ -51,7 +51,10 @@ tools/run_linux_docker_gate.sh
 The container mounts only the current checkout at `/work`, writes its build
 tree to `build-linux-docker-gates/`, and does not require or modify any running
 application service. The image digest and package installation recipe are
-versioned under `containers/`.
+versioned under `containers/`. Release/package builds use GCC, while sanitizer
+and fuzz targets use Clang. Both compilers retain warnings as errors; the Linux
+gate disables only `-Wmissing-field-initializers` because the public test
+records intentionally exercise C++20 aggregate defaults.
 
 Do not treat an incremental successful compile alone as equivalent to this
 static/shared/install/sanitizer/documentation/viewer gate.

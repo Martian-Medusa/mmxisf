@@ -8,6 +8,8 @@ gate_root=${MMXISF_LOCAL_GATE_ROOT:-"$repository_root/build-local-gates"}
 parallel_jobs=${MMXISF_LOCAL_JOBS:-2}
 warning_flags=${MMXISF_LOCAL_CXX_FLAGS:-"-Wall -Wextra -Wpedantic -Werror"}
 thread_sanitizer_enabled=${MMXISF_LOCAL_TSAN:-ON}
+sanitizer_cc=${MMXISF_LOCAL_SANITIZER_CC:-${CC:-cc}}
+sanitizer_cxx=${MMXISF_LOCAL_SANITIZER_CXX:-${CXX:-c++}}
 
 case $(uname -s) in
   Darwin)
@@ -60,7 +62,8 @@ configure_build_test "$gate_root/shared" ON OFF
 verify_installed_package "$gate_root/shared" "$gate_root/install-shared" \
   "$gate_root/consumer-shared"
 
-cmake -S "$repository_root" -B "$gate_root/sanitizers" \
+env CC="$sanitizer_cc" CXX="$sanitizer_cxx" \
+  cmake -S "$repository_root" -B "$gate_root/sanitizers" \
   -DMMXISF_BUILD_TESTS=ON \
   -DMMXISF_BUILD_TOOLS=OFF \
   -DMMXISF_BUILD_FUZZ_SMOKE=ON \
@@ -71,7 +74,8 @@ ctest --test-dir "$gate_root/sanitizers" --output-on-failure
 "$gate_root/sanitizers/mmxisf_fuzz_smoke"
 
 if [ "$thread_sanitizer_enabled" = ON ]; then
-  cmake -S "$repository_root" -B "$gate_root/thread-sanitizer" \
+  env CC="$sanitizer_cc" CXX="$sanitizer_cxx" \
+    cmake -S "$repository_root" -B "$gate_root/thread-sanitizer" \
     -DMMXISF_BUILD_TESTS=ON \
     -DMMXISF_BUILD_TOOLS=OFF \
     -DMMXISF_BUILD_VIEWER=OFF \

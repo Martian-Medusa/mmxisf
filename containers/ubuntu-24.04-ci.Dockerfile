@@ -10,6 +10,7 @@ RUN apt-get update \
        cmake \
        doxygen \
        git \
+       libclang-rt-18-dev \
        libexpat1-dev \
        liblz4-dev \
        libssl-dev \
@@ -19,4 +20,3 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
-
