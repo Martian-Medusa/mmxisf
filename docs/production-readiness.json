@@ -22,7 +22,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "Exact commit 3724fc02e772a90260c98f942c1e99c138754575 passed the maintained local static, shared, sanitizer, package, documentation, viewer, and readiness-contract gate."
+      "note": "Exact commit 405aba83ba5292dd3ff0e8bf46728c4edf317c1a passed the maintained local static, shared, ASan/UBSan, ThreadSanitizer, package-consumer, documentation, viewer-signature, and readiness-contract gate with 12/12 tests in each library configuration and 20,000 sanitizer mutations."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -85,7 +85,7 @@
       "status": "LIMITED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "PFI commit dd0e88b18faaf96ef8161a476b8251ea1c85cec5 retains fail-closed Batch routing, standalone metadata-only preflight, a source-built Float32 Gray/RGB provider, a self-contained local macOS-arm64 bundle, and a source-bound manual native gate. The provider remains unconfigured and NOT_TESTED in PJSR; no UI preference, granted qualification, scientific parity, or operator acceptance exists."
+      "note": "PFI commit 1452d1d5b0b11d6f985c0a1fa75fc63b73e2f7cc passed a clean-source, pinned-static macOS-arm64 provider gate against mmxisf 405aba83ba5292dd3ff0e8bf46728c4edf317c1a. Its manifest binds both commits, the exact dependency SBOM, provider and dylib identities; 12/12 mmxisf and 8/8 PFI tests passed and a representative metadata/full-pixel transport completed. The provider remains unconfigured and NOT_TESTED in PJSR; no UI preference, granted qualification, scientific parity, or operator acceptance exists."
     },
     {
       "id": "pfi.detection-fitting-scientific-parity",

@@ -4,6 +4,7 @@
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
+  PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
@@ -118,6 +119,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `6cf567db81344aa22827dfd6987ba1e692864abceec40e1e5a572e66236ef9a3`.
   Generation and tamper contracts pass, but native execution is pending;
   `pfi.detection-fitting-scientific-parity` therefore remains `NOT_TESTED`.
+- PFI commit `1452d1d5b0b11d6f985c0a1fa75fc63b73e2f7cc` adds the
+  create-only production-baseline provider gate. Against clean `mmxisf` commit
+  `405aba83ba5292dd3ff0e8bf46728c4edf317c1a` and pinned vcpkg registry commit
+  `a1cae005c39be7b18ba319fced856b68d7276271`, the static build passed `mmxisf`
+  12/12 and PFI native 8/8 CTest entries with warnings-as-errors. The
+  5,705,392-byte provider has SHA-256
+  `90e5a167c0de68c4c8fa7289a77bda463f54ce3734bdf1c39b5e159d9cac6aba`,
+  links only macOS system runtimes, and bundles no non-system dylibs. Its
+  manifest binds both clean source commits and the exact SPDX 2.3 binary SBOM,
+  and the PFI generator independently rehashes all runtime inputs before a
+  native candidate can be produced. A representative private Float32 Gray file
+  completed both metadata-only and full-pixel transports. The generated
+  PixInsight candidate remains **NOT_TESTED**, so product wiring stays
+  `LIMITED` and qualification remains ungranted.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
@@ -212,11 +227,12 @@ open; it does not turn historical evidence into exact-candidate evidence.
   committed later and therefore remain pending their own exact-head run.
 - The source/license/supply-chain review is recorded in
   `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. The dated
-  current macOS arm64 binary review is retained in
-  `docs/security-audits/2026-09-14-macos-arm64.md` and is **BLOCKED / UPGRADE
-  REQUIRED**: Expat 2.5.0 predates security fixes, OpenSSL 3.2.0 is end-of-life,
-  and zlib, LZ4, and Zstandard are below the conservative production floors.
-  An opt-in configure gate now rejects those versions for candidate builds;
+  legacy-host macOS arm64 binary review is retained in
+  `docs/security-audits/2026-09-14-macos-arm64.md` and remains **BLOCKED /
+  UPGRADE REQUIRED** for that old graph: Expat 2.5.0 predates security fixes,
+  OpenSSL 3.2.0 is end-of-life, and zlib, LZ4, and Zstandard are below the
+  conservative production floors. An opt-in configure gate rejects those
+  versions for candidate builds;
   a checked vcpkg manifest pins official registry commit
   `a1cae005c39be7b18ba319fced856b68d7276271` with all five ports at or above
   the corrected Expat 2.8.4 floor. Exact commit
@@ -225,6 +241,14 @@ open; it does not turn historical evidence into exact-candidate evidence.
   1/1, exact binary SBOM, system-only viewer linkage, and strict ad-hoc bundle
   signature verification. The public security intake, Linux/Windows pinned-
   graph builds, notarization, and a fresh frozen-candidate review remain open.
+- Exact commit `405aba83ba5292dd3ff0e8bf46728c4edf317c1a` then passed the
+  complete maintained local macOS gate after exporting the installed binary
+  SBOM as part of the CMake package contract: static/shared 12/12 each,
+  installed consumers 1/1 each, ASan/UBSan 12/12 plus 20,000 mutations,
+  ThreadSanitizer 12/12, generated API docs, and strict deep viewer signature.
+  The separate pinned-static vcpkg build also passed 12/12 plus install and its
+  installed consumer 1/1. This is current local evidence, not frozen-candidate
+  Linux/Windows evidence.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit
