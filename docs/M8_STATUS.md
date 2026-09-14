@@ -355,6 +355,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   signed, unnotarized, unlaunched in this gate, unpublished, and not a frozen
   candidate. The viewer is an optional add-on; its signing or notarization does
   not block the standalone C++ library's production-readiness claim.
+- Exact development commit `aac94f80ac54c198ad3918840bf3a41186d3957f`
+  separated all viewer source and preview targets from the default library
+  build, installed the machine-bound standalone support profile with the CMake
+  package, and passed the complete local macOS arm64 quality gate. The explicit
+  viewer configuration passed 15/15, while viewer-free shared, ASan/UBSan, and
+  ThreadSanitizer configurations each passed 13/13; installed static/shared
+  consumers passed 1/1, the mutation smoke completed 20,000 cases, and API
+  documentation generation passed. Exact host, toolchain, resolved development
+  dependencies, library/SBOM/profile hashes, and limitations are retained in
+  `docs/quality-runs/2026-09-14-macos-arm64-aac94f8.json`. The system dependency
+  graph is not promoted to production-baseline evidence, and the ancillary
+  viewer result does not contribute to the library claim.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

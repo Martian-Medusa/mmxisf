@@ -21,8 +21,8 @@
       "id": "quality.local-macos-arm64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "Exact commit 405aba83ba5292dd3ff0e8bf46728c4edf317c1a passed the maintained local static, shared, ASan/UBSan, ThreadSanitizer, package-consumer, documentation, viewer-signature, and readiness-contract gate with 12/12 tests in each library configuration and 20,000 sanitizer mutations."
+      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-aac94f8.json",
+      "note": "Exact development commit aac94f80ac54c198ad3918840bf3a41186d3957f passed the maintained local warnings-as-errors static library suite 15/15, viewer-free shared library suite 13/13, installed static/shared consumers 1/1, ASan/UBSan 13/13 plus 20,000 deterministic mutations, ThreadSanitizer 13/13, generated documentation, and package-contract checks. The viewer bundle result is recorded as ancillary and does not contribute to library readiness."
     },
     {
       "id": "quality.local-linux-amd64",

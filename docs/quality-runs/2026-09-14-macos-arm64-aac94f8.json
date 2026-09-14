@@ -1,0 +1,81 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T14:14:10Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "aac94f80ac54c198ad3918840bf3a41186d3957f",
+  "sourceState": "CLEAN",
+  "publicationAuthorized": false,
+  "host": {
+    "operatingSystem": "macOS 26.6.2 (25G83)",
+    "architecture": "arm64",
+    "model": "MacBook Pro Mac14,7",
+    "processor": "Apple M2, 8 cores",
+    "memoryBytes": 17179869184
+  },
+  "toolchain": {
+    "cmake": "3.24.4",
+    "compiler": "AppleClang 21.0.0 (clang-2100.1.1.101)",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror"
+  },
+  "dependencies": {
+    "kind": "SYSTEM_DEVELOPMENT_GRAPH",
+    "productionBaselineClaimed": false,
+    "resolved": {
+      "Expat": "2.5.0",
+      "zlib": "1.3",
+      "LZ4": "1.9.4",
+      "Zstandard": "1.5.5",
+      "OpenSSL": "3.2.0"
+    },
+    "note": "The separately retained pinned-vcpkg gates provide production-dependency evidence; this run validates exact-head source behavior and contracts."
+  },
+  "results": {
+    "staticWarningsAsErrors": "PASS_15_OF_15",
+    "sharedWarningsAsErrors": "PASS_13_OF_13",
+    "installedStaticConsumer": "PASS_1_OF_1",
+    "installedSharedConsumer": "PASS_1_OF_1",
+    "asanUbsan": "PASS_13_OF_13",
+    "deterministicSanitizerMutations": 20000,
+    "threadSanitizer": "PASS_13_OF_13",
+    "generatedApiDocumentation": "PASS",
+    "optionalViewerBundleSignature": "PASS_ANCILLARY"
+  },
+  "artifacts": [
+    {
+      "path": "build-local-gates/static/libmmxisf.a",
+      "sizeBytes": 624096,
+      "sha256": "4fa2f537713d169c0cb220457ba31e22a92b335dd429015cc9d4759e504635b2"
+    },
+    {
+      "path": "build-local-gates/shared/libmmxisf.0.1.0.dylib",
+      "sizeBytes": 457488,
+      "sha256": "8e902529161b7124d7f7db05ab5ca84a257a0c6961c510e528b6ce6f6080c5a4"
+    },
+    {
+      "path": "build-local-gates/static/binary-dependencies.spdx.json",
+      "sizeBytes": 3056,
+      "sha256": "330280d3b199cf5a2d4a2b1840827dac9d8ec7e24a0c89ea9d00523265c1aa8a"
+    },
+    {
+      "path": "build-local-gates/shared/binary-dependencies.spdx.json",
+      "sizeBytes": 3056,
+      "sha256": "054f509b986605ab4da882dd0215d9e0ff76336449f6acf27a5cb4f11e27147b"
+    },
+    {
+      "path": "docs/support-profile-0.1.0.json",
+      "sizeBytes": 3717,
+      "sha256": "836ecd07ea6ecf7ad759247bd82d19cf341eafbe64eb93b558e2e6b6410b9b1a"
+    },
+    {
+      "path": "docs/conformance/xisf-1.0-matrix.json",
+      "sizeBytes": 15452,
+      "sha256": "cfd74ea0a2d314f00e1a572442559426f2707957a0c5e417abbb5ba06c978ca9"
+    }
+  ],
+  "limitations": [
+    "This is a local exact-development-commit run, not a frozen candidate or cross-platform result.",
+    "Windows and exact-candidate Linux/macOS validation remain separate gates.",
+    "The optional viewer result does not contribute to standalone library readiness."
+  ]
+}
