@@ -1,0 +1,122 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T19:10:01Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "feedc2c98fbf1d547a213f991d39c69f1fa9876f",
+  "sourceState": "DETERMINISTIC_EXTRACTED_ARCHIVE",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "archive": "mmxisf-0.1.0-source-feedc2c98fbf.tar.gz",
+    "archiveSizeBytes": 351810,
+    "archiveSha256": "f533ba0c2b1eb2876fe49350313e23fde47e7c023f44ed3c8e4bbfcde57ca31b",
+    "checksumFileSizeBytes": 106,
+    "checksumFileSha256": "fcbeba0a276a164665138e270e9f29b4c49c76c70a66bdcdeaa239ddf98bef83",
+    "candidateManifestSchema": "mmxisf.source-candidate/1.1.0",
+    "candidateManifestSizeBytes": 632,
+    "candidateManifestSha256": "c1d160c7d433df1ad55e639d6324afe519b4ccb3b172bd09c66d9b47d66dab85",
+    "supportProfileState": "PREPARED",
+    "supportProfileCandidateRef": "",
+    "supportProfileSha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "candidateVerification": "PASS_LOCAL_AND_LINUX_CONTAINER",
+    "status": "PREPARED_NOT_PUBLISHED"
+  },
+  "host": {
+    "name": "mllse",
+    "operatingSystem": "Ubuntu Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "processor": "AMD Ryzen 5 5500U with Radeon Graphics",
+    "logicalCpuCount": 12
+  },
+  "buildEnvironment": {
+    "containerBaseImage": "ubuntu:24.04",
+    "containerBaseImageDigest": "sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "containerBaseImageId": "sha256:b2b7ea366714195a1e1c5b2b578ece85c0b3920381a8654d038d9684f009613c",
+    "compiler": "GCC 13.3.0",
+    "cmake": "3.28.3",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror"
+  },
+  "dependencies": {
+    "kind": "UBUNTU_SYSTEM_COMPATIBILITY_GRAPH",
+    "productionBaselineClaimed": false,
+    "resolved": {
+      "Expat": "2.6.1",
+      "zlib": "1.3",
+      "LZ4": "1.9.4",
+      "Zstandard": "1.5.5",
+      "OpenSSL": "3.0.13"
+    },
+    "note": "Pinned-vcpkg runs retained separately provide production-dependency evidence. This run validates exact extracted-source compatibility, packaging boundaries, sanitizers, concurrency, documentation, and reproducibility on an independent host."
+  },
+  "results": {
+    "viewerFreeStaticWarningsAsErrors": "PASS_19_OF_19",
+    "viewerFreeSharedWarningsAsErrors": "PASS_20_OF_20",
+    "installedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "relocatedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "installedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "relocatedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "embeddedStaticConsumer": "PASS_1_OF_1",
+    "embeddedSharedConsumer": "PASS_1_OF_1",
+    "publicApiBaseline": "PASS_9_HEADERS_AND_4_MUTATIONS_STATIC_SHARED",
+    "sharedExportSurface": "PASS_39_OF_39",
+    "asanUbsanViewerFree": "PASS_19_OF_19",
+    "deterministicSanitizerMutations": 20000,
+    "threadSanitizerViewerFree": "PASS_19_OF_19",
+    "binaryReproducibility": "PASS_BYTE_IDENTICAL_STATIC_AND_SHARED_DISTINCT_BUILD_DIRECTORIES",
+    "generatedApiDocumentation": "PASS",
+    "viewerBuilt": false
+  },
+  "binaryReproducibility": {
+    "scope": "SAME_EXTRACTED_SOURCE_HOST_TOOLCHAIN_FLAGS_AND_SYSTEM_DEPENDENCY_GRAPH",
+    "crossToolchainIdentityClaimed": false,
+    "static": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "fc2b78f138a6d3833796cdef598c6ce0534d55287873fca7750662ed7944bb78",
+      "reproductionSha256": "fc2b78f138a6d3833796cdef598c6ce0534d55287873fca7750662ed7944bb78"
+    },
+    "shared": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "573abbec6bbb5eb3533c3c4864cce4b32cf0914d81767bfaf631651e7a69ca7c",
+      "reproductionSha256": "573abbec6bbb5eb3533c3c4864cce4b32cf0914d81767bfaf631651e7a69ca7c"
+    }
+  },
+  "productBoundary": {
+    "primaryProduct": "REUSABLE_CPP_LIBRARY",
+    "defaultLocalGateBuildsViewer": false,
+    "viewerContributesToLibraryReadiness": false
+  },
+  "artifacts": [
+    {
+      "path": "build-linux-feedc2c/static/libmmxisf.a",
+      "sizeBytes": 807198,
+      "sha256": "fc2b78f138a6d3833796cdef598c6ce0534d55287873fca7750662ed7944bb78"
+    },
+    {
+      "path": "build-linux-feedc2c/shared/libmmxisf.so.0.1.0",
+      "sizeBytes": 520760,
+      "sha256": "573abbec6bbb5eb3533c3c4864cce4b32cf0914d81767bfaf631651e7a69ca7c"
+    },
+    {
+      "path": "build-linux-feedc2c/static/binary-dependencies.spdx.json",
+      "sizeBytes": 3041,
+      "sha256": "5a572a63a1d85779ae4b167a5a33f6d51610622b67646ff9a016de1a024047fa"
+    },
+    {
+      "path": "build-linux-feedc2c/shared/binary-dependencies.spdx.json",
+      "sizeBytes": 3041,
+      "sha256": "b83271675781b8da5a6ae50ae7dd2d13e833139e976b2098dac5a72ac955403d"
+    }
+  ],
+  "limitations": [
+    "This is exact-development-commit Linux amd64 evidence, not a frozen release-candidate result.",
+    "The Ubuntu system dependency graph does not satisfy the separately enforced production floors and is compatibility evidence only.",
+    "Binary byte identity is established only within the recorded host, toolchain, flags, and dependency graph.",
+    "Native MSVC Windows and frozen-candidate cross-platform validation remain separate gates.",
+    "The optional viewer was excluded and contributes nothing to library readiness."
+  ],
+  "retainedEvidence": {
+    "remoteRoot": "/home/matt/mmxisf-gates/feedc2c98fbf"
+  }
+}

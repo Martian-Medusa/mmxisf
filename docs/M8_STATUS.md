@@ -432,6 +432,25 @@ open; it does not turn historical evidence into exact-candidate evidence.
   the exact fixture and observed host, not for every Property/sample/codec or
   XISF consumer. Evidence is retained in
   `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
+- Exact clean development commit
+  `feedc2c98fbf1d547a213f991d39c69f1fa9876f` then produced a deterministic,
+  unpublished 351,810-byte source archive with SHA-256
+  `f533ba0c2b1eb2876fe49350313e23fde47e7c023f44ed3c8e4bbfcde57ca31b`.
+  Its viewer-free macOS arm64 quality gate passed static 19/19, shared 20/20,
+  direct and relocated installed consumers 2/2 each, embedded consumers 1/1
+  each, ASan/UBSan 19/19 plus 20,000 deterministic mutations, ThreadSanitizer
+  19/19, API documentation, the 39-of-39 export surface, and byte-identical
+  repeated static/shared libraries. The exact archive and manifest were then
+  hash-verified on the independent `mllse` Linux amd64 host; the extracted
+  source passed the same static, shared, consumer, sanitizer, fuzz-smoke,
+  concurrency, documentation, export, and reproducibility gates. Evidence is
+  retained in
+  `docs/quality-runs/2026-09-14-macos-arm64-feedc2c.json` and
+  `docs/quality-runs/2026-09-14-linux-amd64-feedc2c.json`. Both runs use their
+  recorded system dependency graphs, so the older pinned-vcpkg production-
+  dependency evidence remains authoritative for dependency floors. This is
+  exact two-host development evidence, not frozen-candidate or native-MSVC
+  evidence; no readiness status is promoted.
 - Exact commit `88f12a7611c4897e82238b734648b32306d2b74d` passed the complete
   maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
   installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
