@@ -70,6 +70,16 @@ jobs:
         run: cmake --build build-consumer --config Release
       - name: Test installed-package consumer
         run: ctest --test-dir build-consumer -C Release --output-on-failure
+      - name: Configure source-subdirectory consumer (Unix)
+        run: >-
+          cmake -S tests/subdirectory_consumer -B build-subdirectory-consumer
+          -DMMXISF_SOURCE_DIR=${{ github.workspace }}
+          -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+          -DCMAKE_BUILD_TYPE=Release
+      - name: Build and test source-subdirectory consumer
+        run: |
+          cmake --build build-subdirectory-consumer --config Release
+          ctest --test-dir build-subdirectory-consumer -C Release --output-on-failure
       - name: Retain resolved binary SBOM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -132,6 +142,14 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           cmake --build consumer-static --config Release
           ctest --test-dir consumer-static -C Release --output-on-failure
+      - name: Test static source-subdirectory consumption
+        run: |
+          cmake -S tests/subdirectory_consumer -B subdirectory-consumer-static -A x64 `
+            -DMMXISF_SOURCE_DIR="${{ github.workspace }}" `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build subdirectory-consumer-static --config Release
+          ctest --test-dir subdirectory-consumer-static -C Release --output-on-failure
       - name: Configure shared library
         run: >-
           cmake -S . -B build-shared -A x64
@@ -159,6 +177,16 @@ jobs:
           $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\install-shared\bin;$vcpkgRuntime;$env:PATH"
           ctest --test-dir consumer-shared -C Release --output-on-failure --timeout 30
+      - name: Test shared source-subdirectory consumption
+        run: |
+          cmake -S tests/subdirectory_consumer -B subdirectory-consumer-shared -A x64 `
+            -DMMXISF_SOURCE_DIR="${{ github.workspace }}" `
+            -DBUILD_SHARED_LIBS=ON `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build subdirectory-consumer-shared --config Release
+          $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
+          $env:PATH = "${{ github.workspace }}\subdirectory-consumer-shared\mmxisf-source\Release;$vcpkgRuntime;$env:PATH"
+          ctest --test-dir subdirectory-consumer-shared -C Release --output-on-failure --timeout 30
       - name: Retain resolved static and shared binary SBOMs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

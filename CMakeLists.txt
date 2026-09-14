@@ -11,6 +11,13 @@ include(CTest)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set(MMXISF_DEFAULT_BUILD_TESTS OFF)
+set(MMXISF_DEFAULT_BUILD_TOOLS OFF)
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  set(MMXISF_DEFAULT_BUILD_TESTS ${BUILD_TESTING})
+  set(MMXISF_DEFAULT_BUILD_TOOLS ON)
+endif()
+
 set(MMXISF_INSTALL_SBOM_DIR "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom")
 set(
   MMXISF_INSTALL_CONFORMANCE_DIR
@@ -19,8 +26,9 @@ set(
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-option(MMXISF_BUILD_TESTS "Build mmxisf tests" ${BUILD_TESTING})
-option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools" ON)
+option(MMXISF_BUILD_TESTS "Build mmxisf tests" ${MMXISF_DEFAULT_BUILD_TESTS})
+option(MMXISF_BUILD_TOOLS "Build mmxisf command-line tools"
+  ${MMXISF_DEFAULT_BUILD_TOOLS})
 option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
 option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
 option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)

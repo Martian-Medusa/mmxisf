@@ -160,6 +160,14 @@ headers, the target platform, compiler, build configuration, and static/shared
 linkage. Missing or malformed version macros fail configuration rather than
 producing guessed package data.
 
+Consumers may also embed the source tree with CMake `add_subdirectory` or
+`FetchContent` and link the same `mmxisf::mmxisf` target. Embedded builds create
+only the library by default; developer tests, tools, fuzzers, documentation,
+and the optional viewer remain off unless the consumer explicitly enables
+their `MMXISF_BUILD_*` options. Maintained external-consumer gates compile and
+run both static and shared source-subdirectory variants independently from the
+installed-package tests and reject accidental developer targets.
+
 Each manually dispatched full CI revision uses
 `cmake/PrepareSourceCandidate.cmake` to create the source archive twice, require
 byte identity, and retain one archive, its SHA-256, and a machine-readable

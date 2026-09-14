@@ -52,13 +52,22 @@ env CC="$fuzz_cc" CXX="$fuzz_cxx" \
   -DCMAKE_BUILD_TYPE=Debug
 cmake --build "$campaign_root" --parallel "$parallel_jobs"
 
+if printf '%s\n' Zg== | base64 --decode >/dev/null 2>&1; then
+  base64_decode_flag=--decode
+elif printf '%s\n' Zg== | base64 -D >/dev/null 2>&1; then
+  base64_decode_flag=-D
+else
+  printf '%s\n' "No supported base64 decoder was found" >&2
+  exit 2
+fi
+
 mkdir -p "$campaign_root/corpus" "$campaign_root/artifacts"
 for seed in "$repository_root"/tests/fuzz_seed*.xisf.b64; do
-  base64 --decode "$seed" > \
+  base64 "$base64_decode_flag" <"$seed" > \
     "$campaign_root/corpus/$(basename "$seed" .b64)"
 done
 for seed in "$repository_root"/tests/interop/*.xisf.b64; do
-  base64 --decode "$seed" > \
+  base64 "$base64_decode_flag" <"$seed" > \
     "$campaign_root/corpus/interop-$(basename "$seed" .b64)"
 done
 

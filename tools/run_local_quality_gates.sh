@@ -57,6 +57,20 @@ verify_installed_package()
   ctest --test-dir "$consumer_directory" -C Release --output-on-failure
 }
 
+verify_subdirectory_consumer()
+{
+  consumer_directory=$1
+  linkage=$2
+  cmake -S "$repository_root/tests/subdirectory_consumer" \
+    -B "$consumer_directory" \
+    "-DMMXISF_SOURCE_DIR=$repository_root" \
+    "-DBUILD_SHARED_LIBS=$linkage" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$consumer_directory" --parallel "$parallel_jobs"
+  ctest --test-dir "$consumer_directory" -C Release --output-on-failure
+}
+
 mkdir -p "$gate_root"
 
 configure_build_test "$gate_root/static" OFF OFF
@@ -66,6 +80,9 @@ verify_installed_package "$gate_root/static" "$gate_root/install-static" \
 configure_build_test "$gate_root/shared" ON OFF
 verify_installed_package "$gate_root/shared" "$gate_root/install-shared" \
   "$gate_root/consumer-shared"
+
+verify_subdirectory_consumer "$gate_root/subdirectory-consumer-static" OFF
+verify_subdirectory_consumer "$gate_root/subdirectory-consumer-shared" ON
 
 env CC="$sanitizer_cc" CXX="$sanitizer_cxx" \
   cmake -S "$repository_root" -B "$gate_root/sanitizers" \
