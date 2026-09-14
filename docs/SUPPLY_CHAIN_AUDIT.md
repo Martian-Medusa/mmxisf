@@ -2,9 +2,10 @@
 
 - Audit date: 2026-09-14
 - Scope: source-only public-beta candidate preparation
-- Result: source/license review **CONDITIONAL PASS**; current local macOS
-  development binaries **BLOCKED / UPGRADE REQUIRED**; public security intake
-  remains gated
+- Result: source/license review **CONDITIONAL PASS**; legacy local macOS
+  development binaries **BLOCKED / UPGRADE REQUIRED**; isolated pinned macOS
+  arm64 dependency graph **PASS**; public security intake and exact frozen-
+  candidate audit remain gated
 
 ## Reviewed controls
 
@@ -50,7 +51,10 @@ has an opt-in fail-closed dependency-baseline check; beta and production builds
 must enable it. A checked vcpkg manifest pins an immutable official registry
 commit whose five selected ports meet the dated floor without modifying the
 host package installation; Dependabot monitors that baseline independently
-from the GitHub Actions pins.
+from the GitHub Actions pins. The fresh exact-commit local result is retained in
+[`security-audits/2026-09-14-vcpkg-macos-arm64.json`](security-audits/2026-09-14-vcpkg-macos-arm64.json):
+12/12 tests, install, installed consumer 1/1, binary SBOM, system-only viewer
+linkage, and strict deep ad-hoc signature verification passed.
 
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain

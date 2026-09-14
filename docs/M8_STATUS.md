@@ -4,7 +4,7 @@
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
-  CURRENT_MACOS_DEPENDENCY_BASELINE_BLOCKED;
+  ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
@@ -219,8 +219,12 @@ open; it does not turn historical evidence into exact-candidate evidence.
   An opt-in configure gate now rejects those versions for candidate builds;
   a checked vcpkg manifest pins official registry commit
   `a1cae005c39be7b18ba319fced856b68d7276271` with all five ports at or above
-  the corrected Expat 2.8.4 floor. An actual isolated build, the public security
-  intake, and a fresh frozen-candidate review remain open.
+  the corrected Expat 2.8.4 floor. Exact commit
+  `269d676aecb459b6d3a09284de7c44e38e0c18b2` then passed a fresh isolated
+  macOS arm64 warnings-as-errors build, 12/12 tests, install, installed consumer
+  1/1, exact binary SBOM, system-only viewer linkage, and strict ad-hoc bundle
+  signature verification. The public security intake, Linux/Windows pinned-
+  graph builds, notarization, and a fresh frozen-candidate review remain open.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

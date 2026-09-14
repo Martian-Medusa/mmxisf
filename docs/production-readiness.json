@@ -116,11 +116,18 @@
       "note": "The source dependency, license, notice, action-pin, and SBOM review is complete within its documented source-only scope."
     },
     {
-      "id": "security.exact-binary-vulnerability-audit",
-      "status": "BLOCKED",
+      "id": "security.production-dependency-baseline-control",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-macos-arm64.md",
-      "note": "The current macOS development bundle fails the dated production floor on Expat 2.5.0 and end-of-life OpenSSL 3.2.0, and the remaining libraries require refresh. A controlled rebuild and fresh exact frozen-candidate audit are required."
+      "evidence": "docs/security-audits/2026-09-14-vcpkg-macos-arm64.json",
+      "note": "Exact commit 269d676aecb459b6d3a09284de7c44e38e0c18b2 passed a fresh isolated macOS arm64 build with the pinned vcpkg graph, fail-closed dated floors, 12/12 tests, install, installed consumer 1/1, system-only viewer linkage, and strict ad-hoc signature verification. Cross-platform and frozen-candidate audits remain separate gates."
+    },
+    {
+      "id": "security.exact-binary-vulnerability-audit",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/security-audits/2026-09-14-vcpkg-macos-arm64.json",
+      "note": "The known development-host dependency block has an isolated passing replacement graph, but no frozen candidate exists and therefore its exact binaries and toolchain have not received the final time-sensitive vulnerability review."
     },
     {
       "id": "security.private-reporting-channel",

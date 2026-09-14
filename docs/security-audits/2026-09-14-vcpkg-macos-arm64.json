@@ -1,0 +1,52 @@
+{
+  "schema": "mmxisf.production-dependency-gate/1.0.0",
+  "date": "2026-09-14",
+  "result": "PASS_LOCAL_MACOS_ARM64",
+  "publicationAuthorized": false,
+  "sourceCommit": "269d676aecb459b6d3a09284de7c44e38e0c18b2",
+  "platform": {
+    "os": "macOS 26.5.2 (25F84)",
+    "architecture": "arm64",
+    "compiler": "Apple Clang 21.0.0",
+    "cmake": "3.24.4"
+  },
+  "registry": {
+    "name": "Microsoft vcpkg builtin registry",
+    "commit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d"
+  },
+  "dependencies": [
+    {"name": "Expat", "version": "2.8.4"},
+    {"name": "zlib", "version": "1.3.2", "portVersion": 2},
+    {"name": "LZ4", "version": "1.10.0"},
+    {"name": "Zstandard", "version": "1.5.7"},
+    {"name": "OpenSSL", "version": "3.6.4"}
+  ],
+  "binarySbom": {
+    "sizeBytes": 3059,
+    "sha256": "7be29a660a6864c96ac149ef96d861a115a5248edeccb24114f8192fd4b60c62"
+  },
+  "gates": {
+    "freshConfigureAndBuildWarningsAsErrors": "PASS",
+    "ctest": {"result": "PASS", "passed": 12, "total": 12},
+    "install": "PASS",
+    "installedPackageConsumer": {"result": "PASS", "passed": 1, "total": 1},
+    "productionDependencyFloor": "PASS",
+    "viewerArchitecture": "PASS_ARM64",
+    "viewerRuntimeLinkage": "PASS_SYSTEM_ONLY",
+    "viewerAdhocDeepSignature": "PASS"
+  },
+  "viewer": {
+    "executableSizeBytes": 5698032,
+    "executableSha256": "90561aa0c1b44e2f642a1c068dc3c4ae0ea8dc99e5abaa3f3ed713619da27663",
+    "codeDirectoryHash": "3752215c51deae177e0eb87c5debc5476dc799e3",
+    "signature": "adhoc",
+    "nonSystemRuntimeDependencies": []
+  },
+  "limitations": [
+    "This is a local macOS arm64 dependency-baseline gate, not a frozen release-candidate audit.",
+    "The viewer is ad-hoc signed and not notarized.",
+    "Linux and Windows builds using the pinned graph remain NOT_TESTED.",
+    "A fresh official-advisory review is still required immediately before publication."
+  ]
+}
