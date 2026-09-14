@@ -115,8 +115,9 @@ jobs:
       - name: Test installed shared package consumer
         timeout-minutes: 5
         run: |
-          $env:PATH = "${{ github.workspace }}\install-shared\bin;$env:PATH"
-          ctest --test-dir consumer-shared -C Release --output-on-failure
+          $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
+          $env:PATH = "${{ github.workspace }}\install-shared\bin;$vcpkgRuntime;$env:PATH"
+          ctest --test-dir consumer-shared -C Release --output-on-failure --timeout 30
 
   source-package:
     runs-on: ubuntu-latest
