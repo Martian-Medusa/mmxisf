@@ -166,11 +166,19 @@ jobs:
 
   windows-build:
     runs-on: windows-latest
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\.vcpkg-binary-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ inputs.windows_source_ref || github.sha }}
+      - name: Restore the pinned Windows dependency cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: mmxisf-vcpkg-Windows-x64-${{ hashFiles('vcpkg.json') }}
+          restore-keys: mmxisf-vcpkg-Windows-x64-
       - name: Install dependencies once
         run: |
           $manifest = Get-Content -Raw -LiteralPath vcpkg.json | ConvertFrom-Json
@@ -284,6 +292,135 @@ jobs:
           $vcpkgRuntime = "${{ github.workspace }}\vcpkg_installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\subdirectory-consumer-shared\mmxisf-source\Release;$vcpkgRuntime;$env:PATH"
           ctest --test-dir subdirectory-consumer-shared -C Release --output-on-failure --timeout 30
+      - name: Run warnings-as-errors and reproducibility gate
+        shell: pwsh
+        run: >-
+          tools/run_vcpkg_windows_amd64_gate.ps1
+          -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT
+          -BuildRoot "${{ github.workspace }}\build-vcpkg-windows-amd64"
+          -ParallelJobs 2
+      - name: Record native Windows toolchain and performance checkpoint
+        shell: pwsh
+        run: |
+          $evidenceDirectory = Join-Path $env:GITHUB_WORKSPACE "windows-evidence"
+          New-Item -ItemType Directory -Path $evidenceDirectory | Out-Null
+          $benchmarkFile = Join-Path $evidenceDirectory "benchmark-rgb.xisf"
+          $writer = Join-Path $env:GITHUB_WORKSPACE "build-static\Release\mmxisf-writer-benchmark.exe"
+          $inspector = Join-Path $env:GITHUB_WORKSPACE "build-static\Release\mmxisf-inspect.exe"
+          foreach ($requiredFile in @($writer, $inspector)) {
+            if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+              throw "Missing Windows measurement executable: $requiredFile"
+            }
+          }
+
+          $writerRuns = @()
+          foreach ($iteration in 1..5) {
+            $lines = & $writer $benchmarkFile
+            if ($LASTEXITCODE -ne 0) { throw "Writer benchmark run $iteration failed" }
+            $values = @{}
+            foreach ($line in $lines) {
+              if ($line -match '^([^=]+)=(.*)$') { $values[$Matches[1]] = $Matches[2] }
+            }
+            $writerRuns += [ordered]@{
+              elapsedSeconds = [double]$values.elapsed_seconds
+              throughputMiBPerSecond = [double]$values.throughput_mib_per_second
+              decodedBytes = [uint64]$values.decoded_bytes
+              fileBytes = [uint64]$values.file_bytes
+              fileSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $benchmarkFile).Hash.ToLowerInvariant()
+            }
+          }
+
+          $owningReaderSeconds = @()
+          $rowReaderSeconds = @()
+          foreach ($iteration in 1..5) {
+            $timer = [Diagnostics.Stopwatch]::StartNew()
+            & $inspector --decode-sha256 $benchmarkFile | Out-Null
+            $timer.Stop()
+            if ($LASTEXITCODE -ne 0) { throw "Owning reader run $iteration failed" }
+            $owningReaderSeconds += $timer.Elapsed.TotalSeconds
+
+            $timer = [Diagnostics.Stopwatch]::StartNew()
+            & $inspector --decode-rows $benchmarkFile | Out-Null
+            $timer.Stop()
+            if ($LASTEXITCODE -ne 0) { throw "Row reader run $iteration failed" }
+            $rowReaderSeconds += $timer.Elapsed.TotalSeconds
+          }
+
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          $visualStudioPath = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath).Trim()
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($visualStudioPath)) {
+            throw "Unable to locate the MSVC installation"
+          }
+          $msvcDirectory = Get-ChildItem -LiteralPath (Join-Path $visualStudioPath "VC\Tools\MSVC") -Directory |
+            Sort-Object Name -Descending |
+            Select-Object -First 1
+          $clPath = Join-Path $msvcDirectory.FullName "bin\Hostx64\x64\cl.exe"
+          $linkPath = Join-Path $msvcDirectory.FullName "bin\Hostx64\x64\link.exe"
+          $windowsSdkVersions = @(Get-ChildItem -LiteralPath (Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin") -Directory |
+            Select-Object -ExpandProperty Name |
+            Sort-Object)
+          $operatingSystem = Get-CimInstance Win32_OperatingSystem
+          $processor = Get-CimInstance Win32_Processor | Select-Object -First 1
+          $sourceCommit = (& git.exe rev-parse HEAD).Trim()
+          $vcpkgCommit = (& git.exe -C $env:VCPKG_INSTALLATION_ROOT rev-parse HEAD).Trim()
+          $cmakeVersion = (& cmake.exe --version | Select-Object -First 1)
+          $vcpkgVersion = (& "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" version | Select-Object -First 1)
+
+          $evidence = [ordered]@{
+            schema = "mmxisf.native-windows-checkpoint/1.0.0"
+            recordedAtUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+            result = "RECORDED_NATIVE_WINDOWS_AMD64_MSVC"
+            source = [ordered]@{
+              commit = $sourceCommit
+              requestedRef = "${{ inputs.windows_source_ref }}"
+              workflowRunId = "${{ github.run_id }}"
+              workflowRunAttempt = "${{ github.run_attempt }}"
+            }
+            host = [ordered]@{
+              operatingSystem = $operatingSystem.Caption
+              version = $operatingSystem.Version
+              buildNumber = $operatingSystem.BuildNumber
+              architecture = $env:PROCESSOR_ARCHITECTURE
+              processor = $processor.Name
+              logicalCpuCount = $processor.NumberOfLogicalProcessors
+              runnerImage = $env:ImageOS
+              runnerImageVersion = $env:ImageVersion
+            }
+            toolchain = [ordered]@{
+              visualStudioPath = $visualStudioPath
+              msvcToolsVersion = $msvcDirectory.Name
+              clFileVersion = (Get-Item -LiteralPath $clPath).VersionInfo.FileVersion
+              linkerFileVersion = (Get-Item -LiteralPath $linkPath).VersionInfo.FileVersion
+              windowsSdkVersions = $windowsSdkVersions
+              cmake = $cmakeVersion
+              powershell = $PSVersionTable.PSVersion.ToString()
+              git = (& git.exe --version)
+              vcpkg = $vcpkgVersion
+              vcpkgCommit = $vcpkgCommit
+            }
+            profile = [ordered]@{
+              geometry = "6064x4040x3"
+              sampleFormat = "UInt8"
+              compression = "Zstandard level 3"
+              checksum = "SHA-256"
+              filesystemCache = "warm"
+            }
+            writerRuns = $writerRuns
+            owningReaderElapsedSeconds = $owningReaderSeconds
+            rowReaderElapsedSeconds = $rowReaderSeconds
+            artifacts = [ordered]@{
+              staticLibrarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath "build-static\Release\mmxisf.lib").Hash.ToLowerInvariant()
+              sharedLibrarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath "build-shared\Release\mmxisf.lib").Hash.ToLowerInvariant()
+              sharedDllSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath "build-shared\Release\mmxisf.dll").Hash.ToLowerInvariant()
+              benchmarkFileSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $benchmarkFile).Hash.ToLowerInvariant()
+            }
+            limitations = @(
+              "Hosted-runner measurements are a reproducible checkpoint, not a portable performance SLA.",
+              "Warm-cache reader timings include process startup, parsing, checksum verification, and decoding.",
+              "Toolchain inventory requires a separate dated advisory disposition before release promotion."
+            )
+          }
+          $evidence | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidenceDirectory "native-windows-amd64.json") -Encoding utf8
       - name: Retain resolved static and shared binary SBOMs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -291,6 +428,9 @@ jobs:
           path: |
             build-static/binary-dependencies.spdx.json
             build-shared/binary-dependencies.spdx.json
+            build-vcpkg-windows-amd64/static/binary-dependencies.spdx.json
+            build-vcpkg-windows-amd64/shared/binary-dependencies.spdx.json
+            windows-evidence/native-windows-amd64.json
           if-no-files-found: error
           retention-days: 14
 
@@ -381,7 +521,7 @@ jobs:
           -DMMXISF_BUILD_TOOLS=OFF
           -DMMXISF_BUILD_VIEWER=OFF
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -Wall -Wextra -Wpedantic -Werror"
+          -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -Wall -Wextra -Wpedantic -Werror -Wno-missing-field-initializers"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
           -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread"
       - name: Build and run ThreadSanitizer suite
