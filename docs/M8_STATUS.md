@@ -42,6 +42,12 @@ open; it does not turn historical evidence into exact-candidate evidence.
 - CI covers static and shared installs on Linux, macOS, and Windows. Windows
   shared-library tests add only the installed DLL directory to the test process
   path.
+- A supplemental Linux amd64 Docker gate cross-compiles static and shared
+  Windows amd64 artifacts with the pinned vcpkg graph, runs the executable
+  suites and direct/relocated/embedded consumers under 64-bit Wine, checks the
+  named PE export surface, and requires byte-identical repeated libraries. It
+  is an inexpensive compatibility signal, not a substitute for native MSVC on
+  a supported Windows host.
 - Installed packages include Apache-2.0 `LICENSE`, `NOTICE`, `SECURITY.md`, and
   `THIRD_PARTY_NOTICES.md`.
 - A checked SPDX 2.3 source-dependency SBOM names all five direct libraries,
@@ -86,8 +92,9 @@ open; it does not turn historical evidence into exact-candidate evidence.
 - Routine push and pull-request triggers are temporarily disabled to conserve
   hosted-runner minutes. The complete workflow remains available through
   manual dispatch for selected cross-platform checkpoints. Current development
-  uses local static/shared, sanitizer, package-consumer, fuzz-smoke, and macOS
-  viewer gates; local evidence does not substitute for Windows or Linux.
+  uses local macOS and Linux static/shared, sanitizer, package-consumer,
+  fuzz-smoke gates, the supplemental MinGW/Wine cross-gate, and the separate
+  macOS viewer gate. None substitutes for the frozen-candidate platform matrix.
 
 ## Evidence available now
 

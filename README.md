@@ -271,6 +271,18 @@ dispatched Linux/macOS/Windows matrix. The manual CI workflow follows the same
 boundary: its library matrix is always viewer-free, while the viewer job runs
 only when the `include_viewer` input is selected.
 
+On a Linux amd64 Docker host, a supplemental Windows compatibility gate is
+available with a dedicated official vcpkg checkout at the manifest baseline:
+
+```sh
+MMXISF_VCPKG_ROOT=/path/to/vcpkg tools/run_mingw_docker_gate.sh
+```
+
+It builds Windows amd64 static and shared libraries, runs tests and package
+consumers under 64-bit Wine, validates DLL exports and SBOMs, and compares
+independent rebuilds byte-for-byte. This gate does not replace the native MSVC
+candidate run required for a Windows support claim.
+
 The pre-release `Writer::write_file` API emits one or more attached little-
 endian Planar Gray or RGB images using UInt8, UInt16, UInt32, Float32, or
 Float64 samples. Floating-point images require explicit finite bounds; all

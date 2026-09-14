@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -eu
+
+script_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repository_root=$(CDPATH= cd -- "$script_directory/.." && pwd)
+vcpkg_root=${MMXISF_VCPKG_ROOT:-}
+image=${MMXISF_MINGW_DOCKER_IMAGE:-mmxisf-ci:ubuntu-24.04-mingw-wine}
+gate_directory_name=${MMXISF_MINGW_GATE_DIRECTORY:-build-vcpkg-mingw-amd64}
+parallel_jobs=${MMXISF_MINGW_JOBS:-2}
+
+if [ -z "$vcpkg_root" ] || [ ! -d "$vcpkg_root/.git" ]; then
+  printf '%s\n' \
+    "Set MMXISF_VCPKG_ROOT to a dedicated official vcpkg checkout" >&2
+  exit 2
+fi
+case "$gate_directory_name" in
+  ""|/*|*..*)
+    printf '%s\n' \
+      "MMXISF_MINGW_GATE_DIRECTORY must be a safe relative directory name" >&2
+    exit 2
+    ;;
+esac
+
+binary_cache=${MMXISF_MINGW_BINARY_CACHE:-"$vcpkg_root/.mmxisf-mingw-binary-cache"}
+mkdir -p "$binary_cache"
+
+docker build \
+  --file "$repository_root/containers/ubuntu-24.04-mingw-wine-ci.Dockerfile" \
+  --tag "$image" \
+  "$repository_root"
+
+docker run --rm --init --platform linux/amd64 \
+  --security-opt seccomp=unconfined \
+  --volume "$repository_root:/work" \
+  --volume "$vcpkg_root:/vcpkg" \
+  --volume "$binary_cache:/vcpkg-binary-cache" \
+  --workdir /work \
+  --env HOME=/tmp/mmxisf-home \
+  --env MMXISF_VCPKG_ROOT=/vcpkg \
+  --env "MMXISF_VCPKG_BUILD_ROOT=/work/$gate_directory_name" \
+  --env "MMXISF_VCPKG_JOBS=$parallel_jobs" \
+  --env VCPKG_DISABLE_METRICS=1 \
+  --env 'VCPKG_BINARY_SOURCES=clear;files,/vcpkg-binary-cache,readwrite' \
+  "$image" \
+  tools/run_vcpkg_mingw_amd64_gate.sh

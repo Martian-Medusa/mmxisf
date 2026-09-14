@@ -299,13 +299,14 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_PACKAGE_VERSION_FILE=${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePackageVersion.cmake
   )
-  if(BUILD_SHARED_LIBS AND UNIX)
+  if(BUILD_SHARED_LIBS AND (UNIX OR MINGW))
     add_test(
       NAME mmxisf.shared-export-surface
       COMMAND
         ${CMAKE_COMMAND}
         -DMMXISF_SHARED_LIBRARY=$<TARGET_FILE:mmxisf>
         -DMMXISF_NM=${CMAKE_NM}
+        -DMMXISF_OBJDUMP=${CMAKE_OBJDUMP}
         -DMMXISF_PLATFORM=${CMAKE_SYSTEM_NAME}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSharedExports.cmake
     )
@@ -339,6 +340,7 @@ if(MMXISF_BUILD_EXAMPLES)
         -DMMXISF_READ_EXAMPLE=$<TARGET_FILE:mmxisf_example_read>
         -DMMXISF_WRITE_EXAMPLE=$<TARGET_FILE:mmxisf_example_write>
         -DMMXISF_EXAMPLE_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/mmxisf-example.xisf
+        "-DMMXISF_TEST_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RunExamples.cmake
     )
   endif()

@@ -150,5 +150,6 @@ add_test(
     -DMMXISF_READ_EXAMPLE=$<TARGET_FILE:mmxisf_package_example_read>
     -DMMXISF_WRITE_EXAMPLE=$<TARGET_FILE:mmxisf_package_example_write>
     -DMMXISF_EXAMPLE_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/mmxisf-package-example.xisf
+    "-DMMXISF_TEST_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
     -P ${CMAKE_CURRENT_LIST_DIR}/../cmake/RunExamples.cmake
 )

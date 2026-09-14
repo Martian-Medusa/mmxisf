@@ -10,8 +10,14 @@ foreach(_required IN ITEMS
 endforeach()
 
 file(REMOVE "${MMXISF_EXAMPLE_OUTPUT}")
+set(_emulator)
+if(DEFINED MMXISF_TEST_EMULATOR AND
+   NOT "${MMXISF_TEST_EMULATOR}" STREQUAL "")
+  set(_emulator ${MMXISF_TEST_EMULATOR})
+endif()
 execute_process(
-  COMMAND "${MMXISF_WRITE_EXAMPLE}" "${MMXISF_EXAMPLE_OUTPUT}"
+  COMMAND ${_emulator} "${MMXISF_WRITE_EXAMPLE}"
+    "${MMXISF_EXAMPLE_OUTPUT}"
   RESULT_VARIABLE _write_result
   OUTPUT_VARIABLE _write_output
   ERROR_VARIABLE _write_error
@@ -25,7 +31,8 @@ if(NOT _write_result EQUAL 0 OR
 endif()
 
 execute_process(
-  COMMAND "${MMXISF_READ_EXAMPLE}" "${MMXISF_EXAMPLE_OUTPUT}"
+  COMMAND ${_emulator} "${MMXISF_READ_EXAMPLE}"
+    "${MMXISF_EXAMPLE_OUTPUT}"
   RESULT_VARIABLE _read_result
   OUTPUT_VARIABLE _read_output
   ERROR_VARIABLE _read_error
