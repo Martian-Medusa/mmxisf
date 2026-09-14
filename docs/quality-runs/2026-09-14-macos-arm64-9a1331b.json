@@ -1,0 +1,140 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T16:45:17Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "9a1331baa3ff76108fe64f8296f8b3c80fde55b8",
+  "sourceState": "DETERMINISTIC_EXTRACTED_ARCHIVE",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "archive": "mmxisf-0.1.0-source-9a1331baa3ff.tar.gz",
+    "archiveSizeBytes": 332493,
+    "archiveSha256": "d6610086403f52a746bf5839a367983b448af576bdd2f2edcadb2f6ee8a92822",
+    "candidateManifestSchema": "mmxisf.source-candidate/1.1.0",
+    "candidateManifestSizeBytes": 632,
+    "candidateManifestSha256": "655c2fe992bae620d9408c41922ad3e6a296267ca224c3fcb650bb0332ab3ef1",
+    "supportProfileState": "PREPARED",
+    "supportProfileCandidateRef": "",
+    "supportProfileSha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "status": "PREPARED_NOT_PUBLISHED",
+    "gitArchiveByteIdentity": "PASS_LOCAL"
+  },
+  "host": {
+    "operatingSystem": "macOS 26.6.2 (25G83)",
+    "architecture": "arm64",
+    "model": "MacBook Pro Mac14,7",
+    "processor": "Apple M2, 8 cores",
+    "memoryBytes": 17179869184
+  },
+  "toolchain": {
+    "cmake": "3.24.4",
+    "compiler": "AppleClang 21.0.0 (clang-2100.1.1.101)",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror",
+    "staticArchiveMode": "ZERO_AR_DATE=1"
+  },
+  "dependencies": {
+    "kind": "SYSTEM_DEVELOPMENT_GRAPH",
+    "productionBaselineClaimed": false,
+    "resolved": {
+      "Expat": "2.5.0",
+      "zlib": "1.3",
+      "LZ4": "1.9.4",
+      "Zstandard": "1.5.5",
+      "OpenSSL": "3.2.0"
+    },
+    "note": "The separately retained pinned-vcpkg gates provide production-dependency evidence; this run validates exact-source behavior, package boundaries, sanitizers, and reproducibility."
+  },
+  "results": {
+    "viewerFreeStaticWarningsAsErrors": "PASS_18_OF_18",
+    "viewerFreeSharedWarningsAsErrors": "PASS_19_OF_19",
+    "installedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "relocatedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "installedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "relocatedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "embeddedStaticConsumer": "PASS_1_OF_1",
+    "embeddedSharedConsumer": "PASS_1_OF_1",
+    "publicApiBaseline": "PASS_9_HEADERS_AND_4_MUTATIONS_STATIC_SHARED",
+    "sharedExportSurface": "PASS_39_OF_39",
+    "asanUbsanViewerFree": "PASS_18_OF_18",
+    "deterministicSanitizerMutations": 20000,
+    "threadSanitizerViewerFree": "PASS_18_OF_18",
+    "binaryReproducibility": "PASS_BYTE_IDENTICAL_STATIC_AND_SHARED_DISTINCT_BUILD_DIRECTORIES",
+    "generatedApiDocumentation": "PASS",
+    "viewerBuilt": false
+  },
+  "binaryReproducibility": {
+    "scope": "SAME_EXTRACTED_SOURCE_HOST_TOOLCHAIN_FLAGS_SYSTEM_DEPENDENCY_GRAPH_AND_ZERO_AR_DATE_MODE",
+    "crossToolchainIdentityClaimed": false,
+    "initialDiagnostic": "Apple static archives differed only in member timestamps before the platform-supported reproducible archive mode was enabled.",
+    "static": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "4501ff45f434207871af2c2e4c48ebc8b38eede9a71d1444aa1bc28558c088f3",
+      "reproductionSha256": "4501ff45f434207871af2c2e4c48ebc8b38eede9a71d1444aa1bc28558c088f3",
+      "archiveMemberMetadata": "ZERO_MTIME_UID_GID"
+    },
+    "shared": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "8e902529161b7124d7f7db05ab5ca84a257a0c6961c510e528b6ce6f6080c5a4",
+      "reproductionSha256": "8e902529161b7124d7f7db05ab5ca84a257a0c6961c510e528b6ce6f6080c5a4"
+    }
+  },
+  "productBoundary": {
+    "primaryProduct": "REUSABLE_CPP_LIBRARY",
+    "defaultLocalGateBuildsViewer": false,
+    "viewerContributesToLibraryReadiness": false
+  },
+  "artifacts": [
+    {
+      "path": "build-local-gates/static/libmmxisf.a",
+      "sizeBytes": 624096,
+      "sha256": "4501ff45f434207871af2c2e4c48ebc8b38eede9a71d1444aa1bc28558c088f3"
+    },
+    {
+      "path": "build-local-gates/reproduction-static/libmmxisf.a",
+      "sizeBytes": 624096,
+      "sha256": "4501ff45f434207871af2c2e4c48ebc8b38eede9a71d1444aa1bc28558c088f3"
+    },
+    {
+      "path": "build-local-gates/shared/libmmxisf.0.1.0.dylib",
+      "sizeBytes": 457488,
+      "sha256": "8e902529161b7124d7f7db05ab5ca84a257a0c6961c510e528b6ce6f6080c5a4"
+    },
+    {
+      "path": "build-local-gates/reproduction-shared/libmmxisf.0.1.0.dylib",
+      "sizeBytes": 457488,
+      "sha256": "8e902529161b7124d7f7db05ab5ca84a257a0c6961c510e528b6ce6f6080c5a4"
+    },
+    {
+      "path": "build-local-gates/static/binary-dependencies.spdx.json",
+      "sizeBytes": 3056,
+      "sha256": "d52708f7abb6bcd7898a0abcc9f273b6fa693aebf327e51d3e4b364baa073cf0"
+    },
+    {
+      "path": "build-local-gates/shared/binary-dependencies.spdx.json",
+      "sizeBytes": 3056,
+      "sha256": "4c8816cb9be05a10fd9b70661bbeb07abdcc3529bd688d503d5557098093e7f1"
+    },
+    {
+      "path": "docs/public-api-baseline-0.1.0.json",
+      "sha256": "b1af58f9c4053c55f0fb3cb68af00f0628abe73cdea12056019ba04bd38a2199"
+    },
+    {
+      "path": "docs/conformance/xisf-1.0-matrix.json",
+      "sha256": "cfd74ea0a2d314f00e1a572442559426f2707957a0c5e417abbb5ba06c978ca9"
+    }
+  ],
+  "limitations": [
+    "This is exact-development-commit macOS arm64 evidence, not a frozen release-candidate result.",
+    "The system dependency graph is below the dated production floors and is not production-baseline evidence.",
+    "Binary byte identity is established only within the recorded host, toolchain, flags, dependency graph, and archive mode.",
+    "Windows and exact-candidate cross-platform validation remain separate gates.",
+    "The optional viewer was excluded and does not contribute to standalone library readiness."
+  ],
+  "retainedEvidence": {
+    "candidateDirectory": "/private/tmp/mmxisf-candidate-9a1331b",
+    "extractedSourceDirectory": "/private/tmp/mmxisf-extracted-9a1331b/mmxisf-0.1.0",
+    "gateDirectory": "/private/tmp/mmxisf-gate-exact-9a1331b"
+  }
+}

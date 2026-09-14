@@ -85,6 +85,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `9a1331baa3ff76108fe64f8296f8b3c80fde55b8` produced a deterministic
+  332,493-byte source archive with SHA-256
+  `d6610086403f52a746bf5839a367983b448af576bdd2f2edcadb2f6ee8a92822`.
+  Its extracted source passed the viewer-free macOS arm64 gate: static 18/18,
+  shared 19/19, direct and relocated package consumers 2/2, embedded consumers
+  1/1, ASan/UBSan 18/18 plus 20,000 mutations, ThreadSanitizer 18/18, API
+  documentation, and the 39-of-39 export check. Apple's reproducible archive
+  mode produced byte-identical static libraries, and the two shared-library
+  builds were also byte-identical. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-macos-arm64-9a1331b.json`. The system dependency
+  graph is not production-baseline evidence; this remains an unpublished,
+  unfrozen, library-only result.
+
+- Exact development commit
   `28aef678ebc104aa924f38d929bdbe15edb6db03` produced a deterministic
   330,833-byte source archive with SHA-256
   `b11b601471da2834f00947c70ffcc466bccd2929c0ae447df3674e566cc5b2ae`.
