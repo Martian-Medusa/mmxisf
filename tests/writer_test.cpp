@@ -28,10 +28,23 @@ namespace {
 
 std::vector<std::filesystem::path> cleanup_paths;
 
+bool keep_test_outputs() {
+#if defined(_MSC_VER)
+  char *value = nullptr;
+  std::size_t length = 0;
+  const auto result = _dupenv_s(&value, &length, "MMXISF_KEEP_TEST_OUTPUTS");
+  const auto present = result == 0 && value != nullptr;
+  std::free(value);
+  return present;
+#else
+  return std::getenv("MMXISF_KEEP_TEST_OUTPUTS") != nullptr;
+#endif
+}
+
 class Cleanup {
 public:
   ~Cleanup() {
-    if (std::getenv("MMXISF_KEEP_TEST_OUTPUTS") != nullptr) {
+    if (keep_test_outputs()) {
       return;
     }
     for (const auto &path : cleanup_paths) {

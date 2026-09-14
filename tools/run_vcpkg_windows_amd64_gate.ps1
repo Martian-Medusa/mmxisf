@@ -6,6 +6,7 @@ param(
   [string]$BuildRoot = "",
   [string]$SourceRoot = "",
   [string]$Generator = "",
+  [string]$AdditionalCxxFlags = "",
   [ValidateRange(1, 64)]
   [int]$ParallelJobs = 2
 )
@@ -123,6 +124,9 @@ if (Test-Path -LiteralPath $BuildRoot) {
 $installedDirectory = Join-Path $BuildRoot "vcpkg_installed"
 $vcpkgRuntime = Join-Path $installedDirectory "x64-windows\bin"
 $warningFlags = "/EHsc /W4 /WX /permissive- /Zc:__cplusplus"
+if (-not [string]::IsNullOrWhiteSpace($AdditionalCxxFlags)) {
+  $warningFlags = "$warningFlags $AdditionalCxxFlags"
+}
 $env:VCPKG_DISABLE_METRICS = "1"
 $env:VCPKG_ROOT = $VcpkgRoot
 
