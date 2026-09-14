@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-docker-ubuntu-24.04-amd64.json",
-      "note": "Exact commit 50fc120391e7f156c069bfdd13e41e4942be2ccf passed an extracted-source Ubuntu 24.04 amd64 gate: GCC static/shared 12/12 each, installed consumers 1/1 each, Clang ASan/UBSan 12/12 plus 20,000 mutations, ThreadSanitizer 12/12, generated documentation, and retained static/shared binary SBOM identities. The system dependency versions do not satisfy the separate production floor."
+      "evidence": "docs/security-audits/2026-09-14-linux-amd64-392ebd3.json",
+      "note": "Exact development commit 392ebd328858696b86c3e02a4e7cb9b57f956297 passed the versioned extracted-source Ubuntu 24.04 amd64 gate: GCC static/shared 12/12 each, installed consumers 1/1 each, Clang ASan/UBSan 12/12 plus 20,000 mutations, ThreadSanitizer 12/12, generated documentation, and binary SBOM checks. The system dependency versions are compatibility evidence only."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -126,8 +126,8 @@
       "id": "security.production-dependency-baseline-control",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-vcpkg-linux-amd64.json",
-      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact commit 50fc120391e7f156c069bfdd13e41e4942be2ccf passed static/shared 12/12, installed consumers 1/1, documentation, binary SBOM, and standard-runtime-only dynamic-linkage checks. Windows, frozen-candidate, and final advisory audits remain separate gates."
+      "evidence": "docs/security-audits/2026-09-14-linux-amd64-392ebd3.json",
+      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact development commit 392ebd328858696b86c3e02a4e7cb9b57f956297 passed static/shared 12/12, installed consumers 1/1, documentation, binary SBOM, and standard-runtime-only dynamic-linkage checks. Windows, frozen-candidate, and final advisory audits remain separate gates."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",

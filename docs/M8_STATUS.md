@@ -295,6 +295,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/security-audits/2026-09-14-vcpkg-linux-amd64.json`. This remains local
   development evidence; Windows, a frozen candidate, and the final advisory
   review are still open.
+- The versioned Docker and vcpkg wrappers were then replayed from the
+  deterministic extracted archive for exact current development commit
+  `392ebd328858696b86c3e02a4e7cb9b57f956297`. The complete system-dependency
+  quality gate again passed static/shared 12/12, consumers 1/1, ASan/UBSan plus
+  20,000 mutations, TSan 12/12, and documentation. The production vcpkg gate
+  again passed static/shared 12/12, consumers 1/1, dependency floors, SBOM, and
+  documentation checks. The rebuilt image now includes an explicit matching
+  LLVM symbolizer. Source archive, image, library, and SBOM identities are
+  retained in `docs/security-audits/2026-09-14-linux-amd64-392ebd3.json`.
+  This supersedes the local Linux development checkpoint, but does not claim a
+  frozen candidate or Windows result.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

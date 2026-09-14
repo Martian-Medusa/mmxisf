@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "mmxisf.exact-development-linux-gates/1.0.0",
+  "auditedAt": "2026-09-14",
+  "status": "PASS_EXACT_DEVELOPMENT_HEAD_NOT_FROZEN",
+  "publicationAuthorized": false,
+  "source": {
+    "version": "0.1.0",
+    "commit": "392ebd328858696b86c3e02a4e7cb9b57f956297",
+    "archive": {
+      "name": "mmxisf-0.1.0-source-392ebd328858.tar.gz",
+      "sizeBytes": 288979,
+      "sha256": "f7b9e4e7da5095f095e0796759786a3ede05c0e022047abe2cae798d981e8fae",
+      "manifestSizeBytes": 475,
+      "manifestSha256": "66daedac39b6f9da6968e6055baed1f8d0f328331ef774fba6d00fa8f3de2e86",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+      "buildInput": "EXTRACTED_ARCHIVE_ONLY"
+    }
+  },
+  "host": {
+    "name": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1"
+  },
+  "container": {
+    "base": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "imageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "sizeBytes": 967837114,
+    "architecture": "amd64",
+    "gcc": "13.3.0",
+    "clang": "18.1.3",
+    "cmake": "3.28.3",
+    "doxygen": "1.9.8",
+    "asanSymbolizer": "/usr/bin/llvm-symbolizer-18",
+    "seccomp": "UNCONFINED_ONLY_FOR_LLVM_TSAN_PERSONALITY_SYSCALL",
+    "privileged": false
+  },
+  "systemDependencyGate": {
+    "classification": "COMPATIBILITY_ONLY_BELOW_PRODUCTION_FLOOR",
+    "dependencies": [
+      {"name": "Expat", "version": "2.6.1-2ubuntu0.4"},
+      {"name": "LZ4", "version": "1.9.4-1build1.1"},
+      {"name": "OpenSSL", "version": "3.0.13-0ubuntu3.15"},
+      {"name": "Zstandard", "version": "1.5.5+dfsg2-2build1.1"},
+      {"name": "zlib", "version": "1:1.3.dfsg-3.1ubuntu2.2"}
+    ],
+    "gccWarningsAsErrors": {
+      "acceptedException": "-Wno-missing-field-initializers for intentional C++20 aggregate defaults",
+      "staticCTest": {"passed": 12, "failed": 0},
+      "staticInstalledConsumerCTest": {"passed": 1, "failed": 0},
+      "sharedCTest": {"passed": 12, "failed": 0},
+      "sharedInstalledConsumerCTest": {"passed": 1, "failed": 0}
+    },
+    "clangSanitizers": {
+      "asanUbsanCTest": {"passed": 12, "failed": 0},
+      "deterministicMutationSmokeCases": 20000,
+      "threadSanitizerCTest": {"passed": 12, "failed": 0}
+    },
+    "documentation": "PASS",
+    "binarySboms": {
+      "static": {"sizeBytes": 3041, "sha256": "5bc954eb23c625dda0fe4873d855360ca0bcab76d591f0db89b3374443ff9b60"},
+      "shared": {"sizeBytes": 3041, "sha256": "83ae28cac392e20232ae73ae532fd78e3b56b1bac0ca1c52c0e0e83808e5e8e7"}
+    }
+  },
+  "productionDependencyGate": {
+    "registryCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "vcpkgVersion": "2026-07-27-98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d",
+    "dependencies": [
+      {"name": "Expat", "version": "2.8.4"},
+      {"name": "zlib", "version": "1.3.2", "portVersion": 2},
+      {"name": "LZ4", "version": "1.10.0"},
+      {"name": "Zstandard", "version": "1.5.7"},
+      {"name": "OpenSSL", "version": "3.6.4"}
+    ],
+    "static": {
+      "ctest": {"passed": 12, "failed": 0},
+      "installedConsumerCTest": {"passed": 1, "failed": 0},
+      "librarySizeBytes": 807198,
+      "librarySha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c",
+      "binarySbomSizeBytes": 3043,
+      "binarySbomSha256": "7a1199796be820dfd497ff17950fc92f15426e1d92f8a6390f9e77c468b159b1"
+    },
+    "shared": {
+      "ctest": {"passed": 12, "failed": 0},
+      "installedConsumerCTest": {"passed": 1, "failed": 0},
+      "librarySizeBytes": 9346216,
+      "librarySha256": "4c0a7ad960e3508b938901d86a2afadd10490b452d8ebf508bb9892b29dfa07f",
+      "binarySbomSizeBytes": 3043,
+      "binarySbomSha256": "1d04a9384e699f02a48ec5a74d9c8e18c66e81884996616494774ea8fce4c499",
+      "nonSystemRuntimeDependencies": []
+    },
+    "productionDependencyFloor": "PASS",
+    "generatedApiDocumentation": "PASS"
+  },
+  "retainedServerEvidence": {
+    "root": "/home/matt/mmxisf-gates/392ebd328858/source",
+    "systemGateBuildTreeSizeDisplay": "195M",
+    "productionDependencyBuildTreeSizeDisplay": "164M",
+    "committed": false,
+    "published": false
+  },
+  "limitations": [
+    "This is exact-development-head Linux amd64 evidence, not a frozen release-candidate audit.",
+    "The system dependency gate is compatibility evidence only; only the separate vcpkg graph satisfies the conservative production floor.",
+    "Windows and a frozen-candidate matrix remain NOT_TESTED.",
+    "A fresh official-advisory review is still required immediately before publication."
+  ]
+}
