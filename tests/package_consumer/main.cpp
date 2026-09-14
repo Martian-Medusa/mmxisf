@@ -13,7 +13,9 @@ int main() {
   mmxisf::PropertyReadOptions property_read_options;
   mmxisf::Document document;
   mmxisf::MetadataBinding binding;
-  mmxisf::ExtensionAttribute extension_attribute;
+  mmxisf::XmlAttribute extension_attribute;
+  mmxisf::AncillaryObject ancillary;
+  mmxisf::AncillaryBinding ancillary_binding;
   mmxisf::ExtensionElement extension;
   mmxisf::RawImage image;
   mmxisf::RawPropertyBlock property;
@@ -28,11 +30,19 @@ int main() {
                  options.max_extension_elements > 0 &&
                  options.max_extension_attributes > 0 &&
                  options.max_extension_bytes > 0 &&
+                 options.max_ancillary_objects > 0 &&
+                 options.max_ancillary_attributes > 0 &&
+                 options.max_ancillary_bindings > 0 &&
+                 options.max_ancillary_bytes > 0 &&
                  binding.scope == mmxisf::MetadataBinding::Scope::xisf_unit &&
                  !binding.by_reference &&
                  extension_attribute.namespace_uri.empty() &&
                  !extension.parent_extension_index && !extension.image_index &&
                  document.extension_elements().empty() &&
+                 document.ancillary_objects().empty() &&
+                 document.ancillary_bindings().empty() &&
+                 ancillary.kind == mmxisf::AncillaryKind::rgb_working_space &&
+                 ancillary_binding.object_index == 0 &&
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&

@@ -34,6 +34,7 @@ be bounded, structured, and safe for unattended PFI batch processing.
 | DTD/entity expansion or XXE | Reject DOCTYPE; no external entity resolver; no network-capable XML callbacks | hostile XML corpus |
 | Invalid UTF-8 or permissive XML edge cases | Strict well-formedness and UTF-8 validation; reject duplicate attributes/multiple roots | differential XML tests |
 | Extension-driven memory growth or hidden behavior | Semantic-only immutable inventory with independent element/attribute/byte limits; no extension execution or resolution | nested extension and zero/tiny-limit tests |
+| Ancillary-object ambiguity or resource amplification | Required syntax/placement validation, document-local reference resolution, independent object/attribute/binding/byte limits, and no synthesized defaults or pixel transforms | positive, malformed, reference, and tiny-limit tests |
 | Path traversal, symlink escape or SSRF | External path/URL locations rejected in the initial profile; future resolver is explicit opt-in | API and negative tests |
 | File changed during parsing | Stable handle, initial identity/size snapshot, optional final identity check | mutation test |
 | Non-finite or invalid numeric metadata | Grammar-aware parsing and explicit invalid state; no default substitution | value corpus |

@@ -67,6 +67,14 @@ They intentionally do not preserve XML prefixes, CDATA boundaries, comments,
 processing instructions, attribute syntax, or byte-identical source text. The
 inventory is inspection data, not a writer round-trip representation.
 
+`Document::ancillary_objects()` separately exposes validated
+`RGBWorkingSpace`, `DisplayFunction`, `ColorFilterArray`, and `Resolution`
+elements. Exact XML-decoded attribute strings are retained, while
+`Document::ancillary_bindings()` distinguishes direct and `Reference`-resolved
+image associations. Absence remains absence: the library does not materialize
+specification defaults such as sRGB, the identity display function, or 72 dpi.
+These records are descriptive and never transform decoded scientific pixels.
+
 ## Cancellation and concurrency
 
 Decode and write calls accept `std::stop_token` and check it at bounded work

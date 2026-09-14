@@ -53,6 +53,9 @@ The M1 pre-release API now supports:
 - a bounded, namespace-aware semantic inventory for non-XISF XML extension
   elements, including parent/image links, attributes, and direct text without
   a raw-XML round-trip claim;
+- validated attribute-preserving inspection of RGB working spaces, display
+  functions, color-filter arrays, and resolution objects, with direct and
+  `Reference`-resolved image bindings and no synthesized defaults;
 
 The pre-release writer now provides:
 
@@ -87,6 +90,11 @@ Extension-domain construction has independent cumulative limits for element
 records, attribute records, and copied namespace/name/value/text bytes. The
 header, XML node, depth, and per-element attribute limits still apply, so the
 extension inventory cannot bypass the general parser budget.
+
+Ancillary core objects use a separate bounded record/attribute/binding model.
+The model retains exact XML-decoded parameter strings after validation; it does
+not apply display or color-space transformations and does not expose parsed
+floating-point values as authoritative scientific measurements.
 
 Compressed input is staged once so its checksum can be verified before any
 codec call. Unshuffled codec output is written directly to the caller's buffer.

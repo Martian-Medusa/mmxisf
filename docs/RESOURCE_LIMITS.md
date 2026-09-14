@@ -14,6 +14,10 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | extension elements | 4,096 cumulative | Bound semantic records for non-XISF namespaces |
 | extension attributes | 65,536 cumulative | Bound attribute-object overhead across extension records |
 | extension semantic strings | 4 MiB cumulative | Bound copied namespace, name, value, and direct-text bytes |
+| ancillary core objects | 4,096 cumulative | Bound RGB working-space, display-function, CFA, and resolution records |
+| ancillary attributes | 65,536 cumulative | Bound attribute-object overhead across ancillary records |
+| ancillary image bindings | 100,000 cumulative | Bound direct and `Reference`-resolved associations |
+| ancillary semantic strings | 4 MiB cumulative | Bound copied uid, namespace, name, and value bytes |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects and bindings | 100,000 each | Preserve large legitimate metadata sets while bounding repeated references |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |
@@ -59,6 +63,11 @@ name, parent name/namespace, attribute value, and direct text byte. It does not
 replace the element or attribute record-count limits. Prefixes, comments,
 processing instructions, CDATA boundaries, and raw source spelling are not
 copied into the document model.
+
+The ancillary semantic-string budget counts each retained `uid` plus each
+attribute namespace URI, local name, and XML-decoded value. Object, attribute,
+and binding counts remain independent limits. General header, node, depth, and
+per-element attribute limits apply first.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

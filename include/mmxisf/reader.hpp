@@ -29,6 +29,10 @@ struct ReaderOptions {
   std::size_t max_extension_elements{4'096};
   std::size_t max_extension_attributes{65'536};
   std::size_t max_extension_bytes{4U * 1024U * 1024U};
+  std::size_t max_ancillary_objects{4'096};
+  std::size_t max_ancillary_attributes{65'536};
+  std::size_t max_ancillary_bindings{100'000};
+  std::size_t max_ancillary_bytes{4U * 1024U * 1024U};
   std::size_t max_encoded_block_bytes{256U * 1024U * 1024U};
   std::uint64_t max_serialized_image_bytes{2ULL * 1024ULL * 1024ULL * 1024ULL};
   std::uint64_t max_serialized_property_bytes{256ULL * 1024ULL * 1024ULL};

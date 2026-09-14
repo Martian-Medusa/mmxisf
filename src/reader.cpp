@@ -80,6 +80,22 @@ bool is_core_element(std::string_view name) {
          kCoreElements.end();
 }
 
+std::optional<AncillaryKind> ancillary_kind(std::string_view name) {
+  if (name == "RGBWorkingSpace") {
+    return AncillaryKind::rgb_working_space;
+  }
+  if (name == "DisplayFunction") {
+    return AncillaryKind::display_function;
+  }
+  if (name == "ColorFilterArray") {
+    return AncillaryKind::color_filter_array;
+  }
+  if (name == "Resolution") {
+    return AncillaryKind::resolution;
+  }
+  return std::nullopt;
+}
+
 bool is_valid_unique_id(std::string_view value) {
   const auto is_ascii_letter = [](char character) {
     return (character >= 'A' && character <= 'Z') ||
@@ -524,6 +540,42 @@ template <typename T> bool parse_unsigned(std::string_view text, T &result) {
   return true;
 }
 
+bool parse_finite_double(std::string_view text, double &value) {
+  text = trim_xml_whitespace(text);
+  if (text.starts_with('+')) {
+    text.remove_prefix(1);
+  }
+  if (text.empty()) {
+    return false;
+  }
+  std::istringstream input{std::string(text)};
+  input.imbue(std::locale::classic());
+  input >> std::noskipws >> value;
+  return !input.fail() && input.peek() == std::char_traits<char>::eof() &&
+         std::isfinite(value);
+}
+
+template <std::size_t Count>
+bool parse_finite_tuple(std::string_view text,
+                        std::array<double, Count> &values) {
+  std::size_t offset = 0;
+  for (std::size_t index = 0; index < Count; ++index) {
+    const auto separator = text.find(':', offset);
+    const bool last = index + 1 == Count;
+    if ((last && separator != std::string_view::npos) ||
+        (!last && separator == std::string_view::npos)) {
+      return false;
+    }
+    const auto end = last ? text.size() : separator;
+    if (!parse_finite_double(text.substr(offset, end - offset),
+                             values[index])) {
+      return false;
+    }
+    offset = end + 1;
+  }
+  return true;
+}
+
 Result<std::pair<double, double>> parse_bounds(std::string_view text) {
   const auto separator = text.find(':');
   if (separator == std::string_view::npos ||
@@ -531,34 +583,11 @@ Result<std::pair<double, double>> parse_bounds(std::string_view text) {
     return make_error(ErrorCode::invalid_xisf,
                       "Image bounds must contain two values");
   }
-  const auto parse_value = [](std::string_view token, double &value) -> bool {
-    constexpr std::string_view whitespace = " \t\r\n";
-    const auto first = token.find_first_not_of(whitespace);
-    if (first == std::string_view::npos) {
-      return false;
-    }
-    token.remove_prefix(first);
-    const auto last = token.find_last_not_of(whitespace);
-    token = token.substr(0, last + 1);
-    if (token.starts_with('+')) {
-      token.remove_prefix(1);
-    }
-    if (token.empty()) {
-      return false;
-    }
-    std::istringstream input{std::string(token)};
-    input.imbue(std::locale::classic());
-    input >> std::noskipws >> value;
-    if (input.fail()) {
-      return false;
-    }
-    return input.peek() == std::char_traits<char>::eof() &&
-           std::isfinite(value);
-  };
   double lower = 0;
   double upper = 0;
-  if (!parse_value(text.substr(0, separator), lower) ||
-      !parse_value(text.substr(separator + 1), upper) || !(lower < upper)) {
+  if (!parse_finite_double(text.substr(0, separator), lower) ||
+      !parse_finite_double(text.substr(separator + 1), upper) ||
+      !(lower < upper)) {
     return make_error(ErrorCode::invalid_xisf,
                       "Image bounds are not a finite increasing range");
   }
@@ -739,6 +768,11 @@ struct MetadataBindingEvent {
   bool by_reference{false};
 };
 
+struct AncillaryBindingEvent {
+  std::size_t object_index{0};
+  std::size_t image_index{0};
+};
+
 struct XmlElementName {
   std::string namespace_uri;
   std::string name;
@@ -769,6 +803,11 @@ struct XmlBuilder {
   std::vector<ExtensionElement> extension_elements;
   std::size_t extension_attribute_count{0};
   std::size_t extension_bytes{0};
+  std::vector<AncillaryObject> ancillary_objects;
+  std::unordered_map<std::string, std::size_t> ancillary_uids;
+  std::vector<AncillaryBindingEvent> ancillary_binding_events;
+  std::size_t ancillary_attribute_count{0};
+  std::size_t ancillary_bytes{0};
   std::optional<std::size_t> text_metadata_index;
   std::size_t metadata_count{0};
   bool saw_creation_time{false};
@@ -816,6 +855,19 @@ bool consume_extension_bytes(XmlBuilder &state, std::size_t count,
     return false;
   }
   state.extension_bytes += count;
+  return true;
+}
+
+bool consume_ancillary_bytes(XmlBuilder &state, std::size_t count,
+                             std::string_view element) {
+  const auto limit = state.options.max_ancillary_bytes;
+  const auto available = limit - std::min(state.ancillary_bytes, limit);
+  if (count > available) {
+    state.fail(ErrorCode::resource_limit,
+               "Ancillary metadata byte limit exceeded", std::string(element));
+    return false;
+  }
+  state.ancillary_bytes += count;
   return true;
 }
 
@@ -1098,7 +1150,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     extension.image_index = state.current_image();
     extension.attributes.reserve(attribute_count);
     for (std::size_t index = 0; index < attribute_count; ++index) {
-      ExtensionAttribute entry;
+      XmlAttribute entry;
       entry.namespace_uri = std::string(namespace_name(attributes[index * 2]));
       entry.name = std::string(local_name(attributes[index * 2]));
       entry.value = std::string(attributes[index * 2 + 1]);
@@ -1189,6 +1241,206 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         return;
       }
     }
+  }
+
+  const auto parsed_ancillary_kind =
+      is_xisf_element ? ancillary_kind(name) : std::nullopt;
+  if (parsed_ancillary_kind) {
+    const auto image_index = state.current_image();
+    const bool root_child = state.depth == 2 && parent == "xisf";
+    const bool image_child =
+        state.depth == 3 && parent == "Image" && image_index.has_value();
+    if (!root_child && !image_child) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Ancillary metadata must be a direct child of xisf or Image",
+                 name);
+      return;
+    }
+    if (state.ancillary_objects.size() >= state.options.max_ancillary_objects) {
+      state.fail(ErrorCode::resource_limit,
+                 "Ancillary metadata object limit exceeded", name);
+      return;
+    }
+    const auto attribute_limit = state.options.max_ancillary_attributes;
+    const auto attribute_capacity =
+        attribute_limit -
+        std::min(state.ancillary_attribute_count, attribute_limit);
+    if (attribute_count > attribute_capacity) {
+      state.fail(ErrorCode::resource_limit,
+                 "Ancillary metadata attribute limit exceeded", name);
+      return;
+    }
+
+    const auto require = [&](std::string_view attribute_name) {
+      const auto value = attribute(attributes, attribute_name);
+      if (!value) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Ancillary metadata is missing a required attribute", name,
+                   std::string(attribute_name));
+      }
+      return value;
+    };
+    switch (*parsed_ancillary_kind) {
+    case AncillaryKind::rgb_working_space: {
+      const auto gamma = require("gamma");
+      const auto x = require("x");
+      const auto y = require("y");
+      const auto luminance = require("Y");
+      if (!gamma || !x || !y || !luminance) {
+        return;
+      }
+      double gamma_value = 0;
+      if (!ascii_case_equal(*gamma, "sRGB") &&
+          (!parse_finite_double(*gamma, gamma_value) || gamma_value <= 0)) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "RGBWorkingSpace gamma must be sRGB or a positive finite "
+                   "number",
+                   name, "gamma");
+        return;
+      }
+      std::array<double, 3> x_values{};
+      std::array<double, 3> y_values{};
+      std::array<double, 3> luminance_values{};
+      if (!parse_finite_tuple(*x, x_values) ||
+          !parse_finite_tuple(*y, y_values) ||
+          !parse_finite_tuple(*luminance, luminance_values) ||
+          !std::all_of(x_values.begin(), x_values.end(),
+                       [](double value) { return value >= 0 && value <= 1; }) ||
+          !std::all_of(y_values.begin(), y_values.end(),
+                       [](double value) { return value >= 0 && value <= 1; }) ||
+          !std::all_of(luminance_values.begin(), luminance_values.end(),
+                       [](double value) { return value >= 0 && value <= 1; })) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "RGBWorkingSpace x, y, and Y must be finite normalized "
+                   "three-component vectors",
+                   name);
+        return;
+      }
+      break;
+    }
+    case AncillaryKind::display_function: {
+      constexpr std::array<std::string_view, 5> kVectorAttributes{"m", "s", "h",
+                                                                  "l", "r"};
+      for (const auto attribute_name : kVectorAttributes) {
+        const auto value = require(attribute_name);
+        std::array<double, 4> parsed{};
+        if (!value) {
+          return;
+        }
+        if (!parse_finite_tuple(*value, parsed)) {
+          state.fail(ErrorCode::invalid_xisf,
+                     "DisplayFunction parameters must be finite "
+                     "four-component vectors",
+                     name, std::string(attribute_name));
+          return;
+        }
+      }
+      break;
+    }
+    case AncillaryKind::color_filter_array: {
+      const auto pattern = require("pattern");
+      const auto width_text = require("width");
+      const auto height_text = require("height");
+      if (!pattern || !width_text || !height_text) {
+        return;
+      }
+      std::uint64_t width = 0;
+      std::uint64_t height = 0;
+      std::uint64_t element_count = 0;
+      constexpr std::string_view kPatternCharacters = "0RGBWCMY";
+      if (!parse_unsigned(*width_text, width) || width == 0 ||
+          !parse_unsigned(*height_text, height) || height == 0 ||
+          !checked_multiply(width, height, element_count) ||
+          element_count != pattern->size() ||
+          !std::all_of(pattern->begin(), pattern->end(),
+                       [kPatternCharacters](char character) {
+                         return kPatternCharacters.find(character) !=
+                                std::string_view::npos;
+                       })) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "ColorFilterArray requires a valid width by height pattern",
+                   name);
+        return;
+      }
+      break;
+    }
+    case AncillaryKind::resolution: {
+      const auto horizontal = require("horizontal");
+      const auto vertical = require("vertical");
+      if (!horizontal || !vertical) {
+        return;
+      }
+      double horizontal_value = 0;
+      double vertical_value = 0;
+      const auto unit = attribute(attributes, "unit").value_or("inch");
+      if (!parse_finite_double(*horizontal, horizontal_value) ||
+          horizontal_value <= 0 ||
+          !parse_finite_double(*vertical, vertical_value) ||
+          vertical_value <= 0 || (unit != "inch" && unit != "cm")) {
+        state.fail(ErrorCode::invalid_xisf,
+                   "Resolution values must be positive and unit must be inch "
+                   "or cm",
+                   name);
+        return;
+      }
+      break;
+    }
+    }
+
+    const auto uid = attribute(attributes, "uid").value_or("");
+    std::size_t copied_bytes = uid.size();
+    const auto add_copied_bytes = [&](std::size_t count) {
+      if (count > std::numeric_limits<std::size_t>::max() - copied_bytes) {
+        return false;
+      }
+      copied_bytes += count;
+      return true;
+    };
+    for (std::size_t index = 0; index < attribute_count; ++index) {
+      if (!add_copied_bytes(namespace_name(attributes[index * 2]).size()) ||
+          !add_copied_bytes(local_name(attributes[index * 2]).size()) ||
+          !add_copied_bytes(
+              std::string_view(attributes[index * 2 + 1]).size())) {
+        state.fail(ErrorCode::resource_limit,
+                   "Ancillary metadata byte count overflow", name);
+        return;
+      }
+    }
+    if (!consume_ancillary_bytes(state, copied_bytes, name)) {
+      return;
+    }
+
+    AncillaryObject object;
+    object.kind = *parsed_ancillary_kind;
+    object.uid = std::string(uid);
+    object.image_index = image_index;
+    object.attributes.reserve(attribute_count);
+    for (std::size_t index = 0; index < attribute_count; ++index) {
+      XmlAttribute entry;
+      entry.namespace_uri = std::string(namespace_name(attributes[index * 2]));
+      entry.name = std::string(local_name(attributes[index * 2]));
+      entry.value = std::string(attributes[index * 2 + 1]);
+      object.attributes.push_back(std::move(entry));
+    }
+    state.ancillary_attribute_count += attribute_count;
+    const auto object_index = state.ancillary_objects.size();
+    state.ancillary_objects.push_back(std::move(object));
+    if (!uid.empty()) {
+      state.ancillary_uids.emplace(uid, object_index);
+    }
+    if (image_index) {
+      if (state.ancillary_binding_events.size() >=
+          state.options.max_ancillary_bindings) {
+        state.fail(ErrorCode::resource_limit,
+                   "Ancillary binding limit exceeded", name);
+        return;
+      }
+      AncillaryBindingEvent event;
+      event.object_index = object_index;
+      event.image_index = *image_index;
+      state.ancillary_binding_events.push_back(std::move(event));
+    }
+    return;
   }
 
   if (is_xisf_element && name == "Data") {
@@ -1757,6 +2009,15 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
         text, static_cast<std::size_t>(length));
     return;
   }
+  if (!state.qualified_element_stack.empty() &&
+      state.qualified_element_stack.back().namespace_uri == kXisfNamespace &&
+      ancillary_kind(state.qualified_element_stack.back().name) &&
+      contains_non_xml_whitespace(data)) {
+    state.fail(ErrorCode::invalid_xisf,
+               "Attribute-based ancillary metadata cannot contain text",
+               state.qualified_element_stack.back().name);
+    return;
+  }
   if (!state.text_metadata_index) {
     if (state.depth == 1 && !state.element_stack.empty() &&
         state.element_stack.back() == "xisf" &&
@@ -1896,6 +2157,33 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     binding.by_reference = event.by_reference;
     metadata_bindings.push_back(std::move(binding));
   }
+  std::vector<AncillaryBinding> ancillary_bindings;
+  ancillary_bindings.reserve(state.ancillary_binding_events.size());
+  for (const auto &event : state.ancillary_binding_events) {
+    if (event.object_index >= state.ancillary_objects.size() ||
+        event.image_index >= state.images.size()) {
+      return make_error(ErrorCode::internal_error,
+                        "Ancillary binding is outside the document");
+    }
+    ancillary_bindings.push_back(
+        AncillaryBinding{event.object_index, event.image_index, false});
+  }
+  for (const auto &event : state.metadata_binding_events) {
+    if (!event.by_reference || event.scope != MetadataBinding::Scope::image ||
+        !event.image_index) {
+      continue;
+    }
+    const auto target = state.ancillary_uids.find(event.reference);
+    if (target == state.ancillary_uids.end()) {
+      continue;
+    }
+    if (ancillary_bindings.size() >= options.max_ancillary_bindings) {
+      return make_error(ErrorCode::resource_limit,
+                        "Ancillary binding limit exceeded");
+    }
+    ancillary_bindings.push_back(
+        AncillaryBinding{target->second, *event.image_index, true});
+  }
   std::unordered_set<std::string> unit_property_ids;
   std::vector<std::unordered_set<std::string>> image_property_ids(
       state.images.size());
@@ -1942,7 +2230,9 @@ Result<ParsedHeader> parse_header(std::string_view xml,
   Document document(std::move(state.version), std::move(state.images),
                     std::move(state.metadata), file_size, header_length,
                     std::move(metadata_bindings),
-                    std::move(state.extension_elements));
+                    std::move(state.extension_elements),
+                    std::move(state.ancillary_objects),
+                    std::move(ancillary_bindings));
   return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
                       std::move(state.inline_metadata_blocks),
                       std::move(state.attached_ranges)};
@@ -3490,6 +3780,20 @@ const char *to_string(MetadataEntry::ValueForm value_form) noexcept {
     return "Data block";
   }
   return "Attribute";
+}
+
+const char *to_string(AncillaryKind kind) noexcept {
+  switch (kind) {
+  case AncillaryKind::rgb_working_space:
+    return "RGBWorkingSpace";
+  case AncillaryKind::display_function:
+    return "DisplayFunction";
+  case AncillaryKind::color_filter_array:
+    return "ColorFilterArray";
+  case AncillaryKind::resolution:
+    return "Resolution";
+  }
+  return "Unknown";
 }
 
 } // namespace mmxisf

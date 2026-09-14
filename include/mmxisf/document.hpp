@@ -86,7 +86,7 @@ struct MetadataBinding {
   bool by_reference{false};
 };
 
-struct ExtensionAttribute {
+struct XmlAttribute {
   std::string namespace_uri;
   std::string name;
   std::string value;
@@ -99,8 +99,28 @@ struct ExtensionElement {
   std::string parent_name;
   std::optional<std::size_t> parent_extension_index;
   std::optional<std::size_t> image_index;
-  std::vector<ExtensionAttribute> attributes;
+  std::vector<XmlAttribute> attributes;
   std::string text;
+};
+
+enum class AncillaryKind {
+  rgb_working_space,
+  display_function,
+  color_filter_array,
+  resolution
+};
+
+struct AncillaryObject {
+  AncillaryKind kind{AncillaryKind::rgb_working_space};
+  std::string uid;
+  std::optional<std::size_t> image_index;
+  std::vector<XmlAttribute> attributes;
+};
+
+struct AncillaryBinding {
+  std::size_t object_index{0};
+  std::size_t image_index{0};
+  bool by_reference{false};
 };
 
 struct ImageInfo {
@@ -131,12 +151,16 @@ public:
            std::vector<MetadataEntry> metadata, std::uint64_t file_size,
            std::uint32_t header_length,
            std::vector<MetadataBinding> metadata_bindings = {},
-           std::vector<ExtensionElement> extension_elements = {})
+           std::vector<ExtensionElement> extension_elements = {},
+           std::vector<AncillaryObject> ancillary_objects = {},
+           std::vector<AncillaryBinding> ancillary_bindings = {})
       : version_(std::move(version)), images_(std::move(images)),
         metadata_(std::move(metadata)), file_size_(file_size),
         header_length_(header_length),
         metadata_bindings_(std::move(metadata_bindings)),
-        extension_elements_(std::move(extension_elements)) {}
+        extension_elements_(std::move(extension_elements)),
+        ancillary_objects_(std::move(ancillary_objects)),
+        ancillary_bindings_(std::move(ancillary_bindings)) {}
 
   [[nodiscard]] const std::string &version() const noexcept { return version_; }
   [[nodiscard]] const std::vector<ImageInfo> &images() const noexcept {
@@ -153,6 +177,14 @@ public:
   extension_elements() const noexcept {
     return extension_elements_;
   }
+  [[nodiscard]] const std::vector<AncillaryObject> &
+  ancillary_objects() const noexcept {
+    return ancillary_objects_;
+  }
+  [[nodiscard]] const std::vector<AncillaryBinding> &
+  ancillary_bindings() const noexcept {
+    return ancillary_bindings_;
+  }
   [[nodiscard]] std::uint64_t file_size() const noexcept { return file_size_; }
   [[nodiscard]] std::uint32_t header_length() const noexcept {
     return header_length_;
@@ -166,6 +198,8 @@ private:
   std::uint32_t header_length_{0};
   std::vector<MetadataBinding> metadata_bindings_;
   std::vector<ExtensionElement> extension_elements_;
+  std::vector<AncillaryObject> ancillary_objects_;
+  std::vector<AncillaryBinding> ancillary_bindings_;
 };
 
 [[nodiscard]] MMXISF_API const char *to_string(SampleFormat format) noexcept;
@@ -183,5 +217,6 @@ to_string(NominalChannelOrder order) noexcept;
 to_string(MetadataEntry::Scope scope) noexcept;
 [[nodiscard]] MMXISF_API const char *
 to_string(MetadataEntry::ValueForm value_form) noexcept;
+[[nodiscard]] MMXISF_API const char *to_string(AncillaryKind kind) noexcept;
 
 } // namespace mmxisf

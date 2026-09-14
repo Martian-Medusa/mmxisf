@@ -25,6 +25,12 @@
   and copied semantic bytes; limit violations fail as `resource_limit`.
 - Explicitly no raw-XML, prefix, CDATA-boundary, comment, processing-instruction,
   or byte-identical writer round-trip claim.
+- Validated, attribute-preserving inspection for `RGBWorkingSpace`,
+  `DisplayFunction`, `ColorFilterArray`, and `Resolution`, including direct and
+  `Reference`-resolved image associations.
+- Ancillary inspection preserves exact XML-decoded parameter text, never
+  synthesizes specification defaults, and never applies a color or display
+  transform to scientific pixels.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -51,10 +57,16 @@ scientific contract.
 - Synthetic nested extension tests cover two namespaces, qualified and
   unqualified attributes, document order, direct mixed text, parent linkage,
   image association, and each dedicated resource limit.
+- Synthetic ancillary tests cover all four selected families, standalone and
+  direct image placement, shared `uid` references, malformed required/numeric/
+  vector/CFA fields, and all dedicated resource limits. The existing private
+  PixInsight corpus remains 9/9 metadata-open PASS after stricter validation.
 
 ## Still required for M7
 
 - Obtain independently produced UInt64 and complex fixtures from another
   producer, with provenance and exact pixel hashes.
-- Implement any additional metadata object families selected for the 1.0
-  monolithic profile.
+- Add explicit data-block inspection/decode policies for `ICCProfile` and
+  `Thumbnail`; neither is claimed by the attribute-only ancillary slice.
+- Decide the later `Structure`/`Table` profile and whether typed numeric
+  convenience accessors are justified without weakening raw-text provenance.

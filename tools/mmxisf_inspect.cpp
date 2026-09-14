@@ -59,6 +59,10 @@ int main(int argc, char **argv) {
             << "metadata: " << document.metadata().size() << "\n"
             << "metadata-bindings: " << document.metadata_bindings().size()
             << "\n"
+            << "ancillary-objects: " << document.ancillary_objects().size()
+            << "\n"
+            << "ancillary-bindings: " << document.ancillary_bindings().size()
+            << "\n"
             << "extensions: " << document.extension_elements().size() << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
@@ -178,6 +182,29 @@ int main(int argc, char **argv) {
     }
     std::cout << '\t' << (binding.by_reference ? "Reference" : "Direct")
               << '\n';
+  }
+  for (std::size_t index = 0; index < document.ancillary_objects().size();
+       ++index) {
+    const auto &object = document.ancillary_objects()[index];
+    std::cout << "ancillary[" << index << "]\t"
+              << mmxisf::to_string(object.kind);
+    if (!object.uid.empty()) {
+      std::cout << "\tuid=" << object.uid;
+    }
+    if (object.image_index) {
+      std::cout << "\tdirect-image[" << *object.image_index << ']';
+    }
+    std::cout << '\n';
+    for (const auto &attribute : object.attributes) {
+      std::cout << "ancillary[" << index << "].attribute\t{"
+                << attribute.namespace_uri << '}' << attribute.name << '='
+                << std::quoted(attribute.value) << '\n';
+    }
+  }
+  for (const auto &binding : document.ancillary_bindings()) {
+    std::cout << "ancillary-binding\tobject[" << binding.object_index
+              << "]\timage[" << binding.image_index << "]\t"
+              << (binding.by_reference ? "Reference" : "Direct") << '\n';
   }
   for (std::size_t index = 0; index < document.extension_elements().size();
        ++index) {

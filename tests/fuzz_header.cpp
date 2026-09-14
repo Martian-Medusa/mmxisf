@@ -57,6 +57,10 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_extension_elements = 512;
   options.max_extension_attributes = 4'096;
   options.max_extension_bytes = 256U * 1024U;
+  options.max_ancillary_objects = 512;
+  options.max_ancillary_attributes = 4'096;
+  options.max_ancillary_bindings = 2'000;
+  options.max_ancillary_bytes = 256U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
   options.max_serialized_property_bytes = 1024U * 1024U;
   options.max_decoded_property_bytes = 1024U * 1024U;
@@ -95,6 +99,7 @@ std::vector<std::uint8_t> seed_unit() {
       "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
       "xmlns:ext=\"urn:mmxisf:fuzz\" version=\"1.0\">"
       "<ext:Probe ext:mode=\"fuzz\">before<ext:Nested/>after</ext:Probe>"
+      "<Resolution horizontal=\"72\" vertical=\"72\" unit=\"inch\"/>"
       "<Property id=\"test\" type=\"String\">value</Property>"
       "<Property id=\"Test:Boolean\" type=\"Boolean\" value=\"true\"/>"
       "<Property id=\"Test:Integer\" type=\"Int32\" value=\"-42\"/>"

@@ -195,6 +195,10 @@ for every block-backed Property without decoding image pixels.
 The normal inspector output also lists the bounded semantic inventory of
 non-XISF XML extension elements and their namespace-aware attributes; this is
 inspection data, not a byte-identical XML round-trip representation.
+Validated RGB working-space, display-function, CFA, and resolution objects are
+listed separately with direct or referenced image associations. Their source
+parameters are descriptive; the reader does not apply display/color transforms
+or synthesize absent defaults.
 
 For a local sanitizer mutation smoke:
 
@@ -231,8 +235,8 @@ current preview scope is the first supported uncompressed, zlib-, LZ4-, or
 Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
 can still open a broader set of headers and displays inventoried extension
-elements/attributes alongside core metadata, while unsupported image decoding
-fails closed.
+elements/attributes and validated ancillary core objects alongside metadata,
+while unsupported image decoding fails closed.
 
 ## License
 

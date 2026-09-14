@@ -2381,13 +2381,13 @@ int main() {
              "extension direct text and image association are preserved");
       const auto mode =
           std::find_if(capture.attributes.begin(), capture.attributes.end(),
-                       [](const mmxisf::ExtensionAttribute &attribute) {
+                       [](const mmxisf::XmlAttribute &attribute) {
                          return attribute.namespace_uri == "urn:mmxisf:test" &&
                                 attribute.name == "mode";
                        });
       const auto plain = std::find_if(
           capture.attributes.begin(), capture.attributes.end(),
-          [](const mmxisf::ExtensionAttribute &attribute) {
+          [](const mmxisf::XmlAttribute &attribute) {
             return attribute.namespace_uri.empty() && attribute.name == "plain";
           });
       expect(mode != capture.attributes.end() && mode->value == "science" &&
@@ -2425,6 +2425,148 @@ int main() {
   expect(!extension_byte_limit && extension_byte_limit.error().code ==
                                       mmxisf::ErrorCode::resource_limit,
          "cumulative extension byte limit is enforced");
+
+  const auto ancillary_path = write_fixture(
+      "mmxisf-ancillary-metadata.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"attachment:4096:1\">"
+          "<RGBWorkingSpace gamma=\"sRGB\" x=\"0.64:0.30:0.15\" "
+          "y=\"0.33:0.60:0.06\" Y=\"0.21:0.72:0.07\" name=\"Test RGB\"/>"
+          "<DisplayFunction m=\"0.5:0.5:0.5:0.5\" s=\"0:0:0:0\" "
+          "h=\"1:1:1:1\" l=\"0:0:0:0\" r=\"1:1:1:1\"/>"
+          "<ColorFilterArray pattern=\"GRBG\" width=\"2\" height=\"2\" "
+          "name=\"Bayer\"/>"
+          "<Resolution horizontal=\"120\" vertical=\"121.5\" unit=\"cm\"/>"
+          "</Image>"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"attachment:4097:1\"><Reference ref=\"PrintResolution\"/>"
+          "</Image>"
+          "<Resolution uid=\"PrintResolution\" horizontal=\"72\" "
+          "vertical=\"72\"/>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x11}, std::byte{0x22}}, 4096);
+  auto ancillary = mmxisf::Reader::open_file(ancillary_path);
+  expect(ancillary.has_value(), "standard ancillary metadata fixture opens");
+  if (ancillary) {
+    const auto &document = ancillary.value().document();
+    const auto &objects = document.ancillary_objects();
+    const auto &bindings = document.ancillary_bindings();
+    expect(objects.size() == 5,
+           "four direct and one shared ancillary objects are inventoried");
+    expect(bindings.size() == 5,
+           "direct and referenced ancillary associations are retained");
+    if (objects.size() == 5) {
+      expect(objects[0].kind == mmxisf::AncillaryKind::rgb_working_space &&
+                 objects[1].kind == mmxisf::AncillaryKind::display_function &&
+                 objects[2].kind == mmxisf::AncillaryKind::color_filter_array &&
+                 objects[3].kind == mmxisf::AncillaryKind::resolution &&
+                 objects[4].kind == mmxisf::AncillaryKind::resolution,
+             "ancillary kinds retain document order");
+      expect(objects[0].image_index == 0 && objects[3].image_index == 0 &&
+                 !objects[4].image_index && objects[4].uid == "PrintResolution",
+             "direct and standalone ancillary provenance is explicit");
+      const auto gamma = std::find_if(
+          objects[0].attributes.begin(), objects[0].attributes.end(),
+          [](const mmxisf::XmlAttribute &entry) {
+            return entry.namespace_uri.empty() && entry.name == "gamma";
+          });
+      expect(gamma != objects[0].attributes.end() && gamma->value == "sRGB",
+             "ancillary source attribute text is preserved");
+      expect(std::string_view(mmxisf::to_string(objects[2].kind)) ==
+                 "ColorFilterArray",
+             "ancillary kind has a stable diagnostic name");
+    }
+    if (bindings.size() == 5) {
+      expect(bindings[0].object_index == 0 && bindings[0].image_index == 0 &&
+                 !bindings[0].by_reference && bindings[3].object_index == 3 &&
+                 !bindings[3].by_reference,
+             "direct ancillary bindings retain object and image indices");
+      expect(bindings[4].object_index == 4 && bindings[4].image_index == 1 &&
+                 bindings[4].by_reference,
+             "referenced root ancillary object resolves to the image");
+    }
+  }
+
+  const auto invalid_ancillary = [&](const std::string &fixture_name,
+                                     const std::string &element) {
+    const auto path = write_fixture(
+        fixture_name,
+        std::string(
+            "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">") +
+            element + valid_metadata() + "</xisf>");
+    auto opened = mmxisf::Reader::open_file(path);
+    return !opened && opened.error().code == mmxisf::ErrorCode::invalid_xisf;
+  };
+  expect(invalid_ancillary("mmxisf-invalid-rgb-working-space.xisf",
+                           "<RGBWorkingSpace gamma=\"2.2\" x=\"0.6:0.3:0.1\" "
+                           "y=\"0.3:0.6:0.1\"/>"),
+         "RGBWorkingSpace requires all normalized three-component vectors");
+  expect(invalid_ancillary("mmxisf-invalid-display-function.xisf",
+                           "<DisplayFunction m=\"0.5:0.5:0.5\" s=\"0:0:0:0\" "
+                           "h=\"1:1:1:1\" l=\"0:0:0:0\" r=\"1:1:1:1\"/>"),
+         "DisplayFunction requires finite four-component vectors");
+  expect(invalid_ancillary(
+             "mmxisf-invalid-cfa.xisf",
+             "<ColorFilterArray pattern=\"RGB\" width=\"2\" height=\"2\"/>"),
+         "ColorFilterArray dimensions must match its pattern");
+  expect(invalid_ancillary(
+             "mmxisf-invalid-resolution.xisf",
+             "<Resolution horizontal=\"0\" vertical=\"72\" unit=\"px\"/>"),
+         "Resolution requires positive values and a supported unit");
+  expect(invalid_ancillary(
+             "mmxisf-ancillary-character-data.xisf",
+             "<Resolution horizontal=\"72\" vertical=\"72\">unexpected"
+             "</Resolution>"),
+         "attribute-based ancillary objects reject direct character data");
+  expect(invalid_ancillary(
+             "mmxisf-invalid-ancillary-placement.xisf",
+             "<Metadata><Resolution horizontal=\"72\" vertical=\"72\"/>"
+             "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
+             "value=\"2026-09-13T00:00:00Z\"/>"
+             "<Property id=\"XISF:CreatorApplication\" type=\"String\">"
+             "mmxisf test</Property></Metadata>"),
+         "ancillary metadata outside xisf or Image fails closed");
+
+  mmxisf::ReaderOptions four_ancillary_objects;
+  four_ancillary_objects.max_ancillary_objects = 4;
+  auto ancillary_object_limit =
+      mmxisf::Reader::open_file(ancillary_path, four_ancillary_objects);
+  expect(!ancillary_object_limit && ancillary_object_limit.error().code ==
+                                        mmxisf::ErrorCode::resource_limit,
+         "cumulative ancillary object limit is enforced");
+
+  mmxisf::ReaderOptions four_ancillary_attributes;
+  four_ancillary_attributes.max_ancillary_attributes = 4;
+  auto ancillary_attribute_limit =
+      mmxisf::Reader::open_file(ancillary_path, four_ancillary_attributes);
+  expect(!ancillary_attribute_limit && ancillary_attribute_limit.error().code ==
+                                           mmxisf::ErrorCode::resource_limit,
+         "cumulative ancillary attribute limit is enforced");
+
+  mmxisf::ReaderOptions tiny_ancillary_bytes;
+  tiny_ancillary_bytes.max_ancillary_bytes = 1;
+  auto ancillary_byte_limit =
+      mmxisf::Reader::open_file(ancillary_path, tiny_ancillary_bytes);
+  expect(!ancillary_byte_limit && ancillary_byte_limit.error().code ==
+                                      mmxisf::ErrorCode::resource_limit,
+         "cumulative ancillary byte limit is enforced");
+
+  mmxisf::ReaderOptions four_ancillary_bindings;
+  four_ancillary_bindings.max_ancillary_bindings = 4;
+  auto ancillary_binding_limit =
+      mmxisf::Reader::open_file(ancillary_path, four_ancillary_bindings);
+  expect(!ancillary_binding_limit && ancillary_binding_limit.error().code ==
+                                         mmxisf::ErrorCode::resource_limit,
+         "cumulative ancillary binding limit is enforced");
+
+  mmxisf::ReaderOptions no_ancillary_bindings;
+  no_ancillary_bindings.max_ancillary_bindings = 0;
+  auto metadata_reference_with_no_ancillary_budget =
+      mmxisf::Reader::open_file(forward_reference_path, no_ancillary_bindings);
+  expect(metadata_reference_with_no_ancillary_budget.has_value(),
+         "ordinary metadata references do not consume ancillary bindings");
 
   const auto nonzero_trailing_path = write_fixture(
       "mmxisf-nonzero-trailing-space.xisf",

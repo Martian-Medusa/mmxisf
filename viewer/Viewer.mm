@@ -472,6 +472,9 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
   add(@"Document", @"Summary", @"Extensions", @"Count",
       [NSString stringWithFormat:@"%lu", document.extension_elements().size()],
       @"");
+  add(@"Document", @"Summary", @"Ancillary objects", @"Count",
+      [NSString stringWithFormat:@"%lu", document.ancillary_objects().size()],
+      @"");
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     NSString *scope = [NSString stringWithFormat:@"Image %lu", index];
@@ -482,8 +485,8 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
     add(scope, @"Image", @"colorSpace", @"Enum", ns_string(image.color_space),
         @"");
     add(scope, @"Image", @"nominalChannelOrder", @"Sequence",
-        [NSString
-            stringWithUTF8String:mmxisf::to_string(image.nominal_channel_order)],
+        [NSString stringWithUTF8String:mmxisf::to_string(
+                                           image.nominal_channel_order)],
         @"");
     add(scope, @"Image", @"pixelOrigin", @"Coordinate convention",
         [NSString stringWithUTF8String:mmxisf::to_string(image.pixel_origin)],
@@ -569,6 +572,42 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
       scope = [NSString stringWithFormat:@"Image %lu", *entry.image_index];
     }
     add_metadata(entry, scope, false);
+  }
+  const auto add_ancillary = [&](const mmxisf::AncillaryObject &object,
+                                 std::size_t index, NSString *scope,
+                                 bool by_reference) {
+    NSString *kind = by_reference ? @"Ancillary · Reference" : @"Ancillary";
+    add(scope, kind,
+        [NSString stringWithUTF8String:mmxisf::to_string(object.kind)],
+        @"Validated XISF core object", @"",
+        object.uid.empty()
+            ? [NSString stringWithFormat:@"Inventory index %lu", index]
+            : [NSString stringWithFormat:@"uid=%@ · inventory index %lu",
+                                         ns_string(object.uid), index]);
+    for (const auto &attribute : object.attributes) {
+      add(scope, @"Ancillary attribute",
+          expanded_name(attribute.namespace_uri, attribute.name),
+          [NSString stringWithFormat:@"On ancillary object %lu", index],
+          display_string(attribute.value), @"");
+    }
+  };
+  std::vector<bool> bound_ancillary(document.ancillary_objects().size(), false);
+  for (const auto &binding : document.ancillary_bindings()) {
+    if (binding.object_index >= document.ancillary_objects().size()) {
+      continue;
+    }
+    add_ancillary(document.ancillary_objects()[binding.object_index],
+                  binding.object_index,
+                  [NSString stringWithFormat:@"Image %lu", binding.image_index],
+                  binding.by_reference);
+    bound_ancillary[binding.object_index] = true;
+  }
+  for (std::size_t index = 0; index < document.ancillary_objects().size();
+       ++index) {
+    if (!bound_ancillary[index]) {
+      add_ancillary(document.ancillary_objects()[index], index, @"Standalone",
+                    false);
+    }
   }
   for (std::size_t index = 0; index < document.extension_elements().size();
        ++index) {
