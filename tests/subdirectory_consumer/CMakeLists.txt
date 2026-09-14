@@ -21,6 +21,10 @@ if(NOT _consumer_had_build_testing AND DEFINED BUILD_TESTING)
   message(FATAL_ERROR
     "Embedded mmxisf leaked the global BUILD_TESTING option into its consumer")
 endif()
+if(MMXISF_INSTALL)
+  message(FATAL_ERROR
+    "Embedded mmxisf enabled installation rules without consumer opt-in")
+endif()
 
 foreach(_unexpected_target IN ITEMS
     mmxisf_version_test

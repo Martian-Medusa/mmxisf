@@ -12,10 +12,12 @@ include(GNUInstallDirs)
 
 set(MMXISF_DEFAULT_BUILD_TESTS OFF)
 set(MMXISF_DEFAULT_BUILD_TOOLS OFF)
+set(MMXISF_DEFAULT_INSTALL OFF)
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   include(CTest)
   set(MMXISF_DEFAULT_BUILD_TESTS ${BUILD_TESTING})
   set(MMXISF_DEFAULT_BUILD_TOOLS ON)
+  set(MMXISF_DEFAULT_INSTALL ON)
 endif()
 
 set(MMXISF_INSTALL_SBOM_DIR "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom")
@@ -33,6 +35,8 @@ option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
 option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
 option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)
 option(MMXISF_BUILD_DOCS "Build the generated mmxisf API reference" OFF)
+option(MMXISF_INSTALL "Add mmxisf installation and package rules"
+  ${MMXISF_DEFAULT_INSTALL})
 option(
   MMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE
   "Reject dependencies below the dated production security baseline"
@@ -320,72 +324,76 @@ if(MMXISF_BUILD_VIEWER)
   add_subdirectory(viewer)
 endif()
 
-configure_package_config_file(
-  cmake/mmxisfConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
-  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
-  PATH_VARS
-    MMXISF_INSTALL_SBOM_DIR
-    MMXISF_INSTALL_CONFORMANCE_DIR
-)
+if(MMXISF_INSTALL OR MMXISF_BUILD_TESTS)
+  configure_package_config_file(
+    cmake/mmxisfConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
+    PATH_VARS
+      MMXISF_INSTALL_SBOM_DIR
+      MMXISF_INSTALL_CONFORMANCE_DIR
+  )
 
-if(PROJECT_VERSION_MAJOR EQUAL 0)
-  set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMinorVersion)
-else()
-  set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMajorVersion)
-endif()
+  if(PROJECT_VERSION_MAJOR EQUAL 0)
+    set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMinorVersion)
+  else()
+    set(MMXISF_PACKAGE_VERSION_COMPATIBILITY SameMajorVersion)
+  endif()
 
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY ${MMXISF_PACKAGE_VERSION_COMPATIBILITY}
-)
-
-install(
-  TARGETS mmxisf
-  EXPORT mmxisfTargets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-if(MMXISF_BUILD_TOOLS)
-  install(TARGETS mmxisf_inspect RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif()
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(
-  FILES LICENSE NOTICE SECURITY.md CONTRIBUTING.md THIRD_PARTY_NOTICES.md
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf"
-)
-install(
-  FILES
-    sbom/source-dependencies.spdx.json
-    "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
-  DESTINATION "${MMXISF_INSTALL_SBOM_DIR}"
-)
-install(
-  FILES
-    docs/support-profile-0.1.0.json
-    docs/conformance/xisf-1.0-matrix.json
-    docs/specification-baseline.json
-  DESTINATION "${MMXISF_INSTALL_CONFORMANCE_DIR}"
-)
-if(MMXISF_BUILD_DOCS)
-  install(
-    DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/api/html/"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/mmxisf/api"
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY ${MMXISF_PACKAGE_VERSION_COMPATIBILITY}
   )
 endif()
-install(
-  EXPORT mmxisfTargets
-  FILE mmxisfTargets.cmake
-  NAMESPACE mmxisf::
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
-)
-install(
-  FILES
-    cmake/FindLZ4.cmake
-    cmake/FindZSTD.cmake
-    "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
-)
+
+if(MMXISF_INSTALL)
+  install(
+    TARGETS mmxisf
+    EXPORT mmxisfTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+  if(MMXISF_BUILD_TOOLS)
+    install(TARGETS mmxisf_inspect RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  endif()
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(
+    FILES LICENSE NOTICE SECURITY.md CONTRIBUTING.md THIRD_PARTY_NOTICES.md
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf"
+  )
+  install(
+    FILES
+      sbom/source-dependencies.spdx.json
+      "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
+    DESTINATION "${MMXISF_INSTALL_SBOM_DIR}"
+  )
+  install(
+    FILES
+      docs/support-profile-0.1.0.json
+      docs/conformance/xisf-1.0-matrix.json
+      docs/specification-baseline.json
+    DESTINATION "${MMXISF_INSTALL_CONFORMANCE_DIR}"
+  )
+  if(MMXISF_BUILD_DOCS)
+    install(
+      DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/api/html/"
+      DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/mmxisf/api"
+    )
+  endif()
+  install(
+    EXPORT mmxisfTargets
+    FILE mmxisfTargets.cmake
+    NAMESPACE mmxisf::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
+  )
+  install(
+    FILES
+      cmake/FindLZ4.cmake
+      cmake/FindZSTD.cmake
+      "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
+      "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
+  )
+endif()
