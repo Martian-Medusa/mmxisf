@@ -105,6 +105,11 @@ target_link_libraries(
   mmxisf
   PRIVATE EXPAT::EXPAT LZ4::LZ4 OpenSSL::Crypto ZLIB::ZLIB ZSTD::ZSTD
 )
+if(BUILD_SHARED_LIBS AND UNIX AND NOT APPLE)
+  # vcpkg commonly supplies static dependency archives even when mmxisf itself
+  # is shared. Do not re-export their C entry points from libmmxisf.so.
+  target_link_options(mmxisf PRIVATE "LINKER:--exclude-libs,ALL")
+endif()
 
 if(MMXISF_BUILD_VIEWER)
   add_library(mmxisf_viewer_preview STATIC viewer/Preview.cpp)
@@ -224,6 +229,17 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateBinarySbom.cmake
   )
+  if(BUILD_SHARED_LIBS AND UNIX)
+    add_test(
+      NAME mmxisf.shared-export-surface
+      COMMAND
+        ${CMAKE_COMMAND}
+        -DMMXISF_SHARED_LIBRARY=$<TARGET_FILE:mmxisf>
+        -DMMXISF_NM=${CMAKE_NM}
+        -DMMXISF_PLATFORM=${CMAKE_SYSTEM_NAME}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSharedExports.cmake
+    )
+  endif()
   add_test(
     NAME mmxisf.production-dependency-baseline-contract
     COMMAND
