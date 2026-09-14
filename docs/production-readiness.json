@@ -21,8 +21,8 @@
       "id": "quality.local-macos-arm64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-9a1331b.json",
-      "note": "Exact development commit 9a1331baa3ff76108fe64f8296f8b3c80fde55b8 passed the maintained viewer-free macOS arm64 gate from a deterministic extracted source archive: warnings-as-errors static 18/18 and shared 19/19, installed and relocated consumers 2/2 each, embedded consumers 1/1 each, ASan/UBSan 18/18 plus 20,000 deterministic mutations, ThreadSanitizer 18/18, generated documentation, and the 39-of-39 export check. Distinct static and shared builds were byte-identical with Apple's reproducible archive mode. The system dependency graph is not production-baseline evidence, and the viewer was excluded."
+      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json",
+      "note": "Exact development commit bec3e79ae48e0e8381abd7c22bbe588baa815e86 passed the viewer-free pinned-vcpkg macOS arm64 production gate from a deterministic extracted source archive: warnings-as-errors static 18/18 and shared 19/19, installed and relocated consumers 2/2 each, embedded consumers 1/1 each, dependency floors, SBOMs, generated documentation, and the 39-of-39 export check. Distinct static and shared builds were byte-identical with Apple's reproducible archive mode. The Darwin export allowlist prevents statically linked implementation dependencies from entering the public dylib interface. Sanitizer coverage remains retained separately at exact development commit 9a1331baa3ff76108fe64f8296f8b3c80fde55b8; the viewer was excluded."
     },
     {
       "id": "quality.local-linux-amd64",
@@ -126,8 +126,8 @@
       "id": "security.production-dependency-baseline-control",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json",
-      "note": "The pinned vcpkg graph and fail-closed dated floors passed isolated local macOS arm64 and extracted-source Linux amd64 gates. On Linux exact development commit 8c33a6526efa7ee968d26c40faedd7ede1e383d8 passed cache-population and isolated cache-restoration static/shared 12/12 suites, installed consumers 1/1, documentation, binary SBOM, standard-runtime-only dynamic linkage, and byte-identical library reproduction. Windows, frozen-candidate, and final advisory audits remain separate gates."
+      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json",
+      "note": "The pinned vcpkg graph and fail-closed dated floors passed exact extracted-source macOS arm64 and Linux amd64 gates. On macOS exact development commit bec3e79ae48e0e8381abd7c22bbe588baa815e86 passed static 18/18, shared 19/19, direct and relocated installed consumers, embedded consumers, documentation, binary SBOMs, system-runtime-only dynamic linkage, and byte-identical library reproduction. The retained Linux gate provides independent GCC/container evidence. Windows, frozen-candidate, and final advisory audits remain separate gates."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-28aef67.json",
-      "note": "Exact development commit 28aef678ebc104aa924f38d929bdbe15edb6db03 produced two byte-identical source archives and passed independent commit/archive verification. The extracted archive passed the pinned dependency graph, warnings-as-errors static 18/18 and shared 19/19 suites, installed and relocated consumers 2/2, embedded consumers 1/1, source-candidate mutation contracts, the nine-header public API baseline and mutation contracts, package isolation, SBOMs, API documentation, installed examples, and the 39-of-39 shared-export contract. Distinct repeated static and shared builds were byte-identical in the recorded environment. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json",
+      "note": "Exact development commit bec3e79ae48e0e8381abd7c22bbe588baa815e86 produced two byte-identical source archives and passed independent commit/archive verification. The extracted archive passed the pinned dependency graph, warnings-as-errors static 18/18 and shared 19/19 suites, installed and relocated consumers 2/2, embedded consumers 1/1, source-candidate mutation contracts, the nine-header public API baseline and mutation contracts, package isolation, SBOMs, API documentation, installed examples, and the 39-of-39 shared-export contract. Distinct repeated static and shared builds were byte-identical in the recorded macOS arm64 environment; retained Linux amd64 evidence independently covers the GCC/container path. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",

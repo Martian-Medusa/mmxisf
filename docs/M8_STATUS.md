@@ -92,6 +92,21 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `bec3e79ae48e0e8381abd7c22bbe588baa815e86` produced a deterministic
+  334,413-byte source archive with SHA-256
+  `2c73cc0674093caa25c5745b69b86de6cc67920c26bf39fcf0f173aea99507fa`.
+  Its extracted source passed the pinned-vcpkg macOS arm64 production gate:
+  warnings-as-errors static 18/18 and shared 19/19, direct and relocated
+  package consumers 2/2, embedded consumers 1/1, production dependency floors,
+  SBOMs, API documentation, and byte-identical repeated static and shared
+  builds. An initial shared build exposed 8,145 implementation-dependency
+  symbols; the committed Darwin export allowlist reduced the final dylib to
+  exactly the intended 39 `mmxisf` exports and system-runtime-only dynamic
+  linkage. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json`. This remains an
+  unpublished, unfrozen, library-only result; the viewer was excluded.
+
+- Exact development commit
   `9a1331baa3ff76108fe64f8296f8b3c80fde55b8` produced a deterministic
   332,493-byte source archive with SHA-256
   `d6610086403f52a746bf5839a367983b448af576bdd2f2edcadb2f6ee8a92822`.
