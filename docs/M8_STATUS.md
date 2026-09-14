@@ -1,6 +1,7 @@
 # M8 progress: hardening and distribution
 
-- Status: FIRST_LONG_FUZZ_PASS; CURRENT_HEAD_MATRIX_PENDING;
+- Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
+  SUPPLY_CHAIN_CI_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
 - Publication status: private repository; no tag or release
@@ -67,15 +68,22 @@
   workflow-reported ZIP SHA-256
   `d629c94c8b581c6535840115cebc9a8d5b9fe82af565697350b261a7eaf02b30`.
   Later SHA-3 and CI-only changes are outside this historical campaign.
-- Cross-platform shared-library evidence is pending the first CI run containing
-  this matrix.
+- The first complete Linux/macOS/Windows static/shared matrix passed on exact
+  commit `cd78b31c2156a86439740cbd6a2f703d296dfc5c` in run
+  [`34797999205`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34797999205).
+  All six library builds and their isolated installed-package consumers passed;
+  the same run also passed deterministic source packaging, generated API
+  documentation, the 20,000-case sanitizer smoke, and 20,000 coverage-guided
+  mutations. The action-pin upgrade and retained binary-SBOM uploads were
+  committed later and therefore remain pending their own exact-head run.
 - The source/license/supply-chain review is recorded in
   `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. Binary
   vulnerability review and the public security intake remain release gates.
 
 ## Still required for public beta
 
-- Complete and record the first static/shared cross-platform CI matrix.
+- Complete the first exact-head matrix with the upgraded immutable action pins,
+  retained binary SBOMs, and sequential writer-sink API.
 - Repeat the long campaign on the exact release candidate and preserve/promote
   any minimized regressions; the first retained campaign is complete.
 - Enable a private vulnerability-reporting channel before publication.
