@@ -79,6 +79,22 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `81b26911afb14ba2aa3ba7e09854301ed7387be0` produced a deterministic
+  318,030-byte source archive with SHA-256
+  `f5a634d2d4c84fc4ebea32f09d9119c00c5b0f6a06f659acbc6cba77e4813ff1`.
+  Its extracted-source Linux amd64 production-dependency gate passed static
+  14/14 and shared 15/15, direct and relocated installed consumers 1/1, and
+  embedded consumers 1/1 for both linkage forms. Both embedded variants also
+  produced no mmxisf install payload when their parent install command ran,
+  while top-level installation remained enabled and complete. Shared consumers
+  configured with discovery of Expat, LZ4, OpenSSL, zlib, and Zstandard
+  explicitly disabled. All nine public headers, the pre-1.0 package-version
+  rule, documentation, dependency floors, SBOMs, and the exact 39-of-39 shared-
+  export surface passed. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-81b2691.json`; the viewer was not
+  built and contributes nothing to this result.
+
+- Exact development commit
   `6edba5fd7fe2b12fbf30a598b7ff1b7615014ce3` produced a deterministic
   316,685-byte source archive with SHA-256
   `f72528dd4456b7d3a2dce95ae15d79a72af6c7118d3073f06fdcaa8534ad0d90`.
