@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json",
-      "note": "Exact development commit 8c33a6526efa7ee968d26c40faedd7ede1e383d8 passed two extracted-source Ubuntu 24.04 amd64 production-dependency builds: cache population and isolated cache restoration. Both passed GCC static/shared 12/12, installed consumers 1/1, dependency floors, documentation, and binary SBOM checks; restored static and shared libraries were byte-identical to the population builds. The broader Clang sanitizer gate remains recorded for exact earlier development commit 392ebd328858696b86c3e02a4e7cb9b57f956297."
+      "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
+      "note": "Exact development commit 1489bc13f07a4db0b0077a9dc9b4abd62ea293ef passed an extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static/shared 12/12, installed consumers 1/1, dependency floors, documentation, and binary SBOM checks. The earlier 8c33a65 gate separately proved cache population/restoration and byte-identical libraries; the broader Clang sanitizer gate remains recorded for 392ebd3."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -110,10 +110,10 @@
     },
     {
       "id": "performance.supported-host-review",
-      "status": "NOT_TESTED",
+      "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Representative performance has not been reviewed on every supported production host."
+      "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
+      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements now exist for Apple M2 macOS arm64 and Ryzen 5 5500U Linux amd64; the host-specific Apple regression budget passed. The support profile is unfrozen, no Linux public threshold is declared, Windows remains unmeasured, and no portable SLA is claimed, so the complete supported-host review remains LIMITED."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-source-archive-vcpkg-macos-arm64.json",
-      "note": "Exact commit ba360cc53b97bcdff3e198f576bfe82bca5d5a44 produced two byte-identical source archives. A build using only the extracted archive and pinned production dependency graph passed warnings-as-errors, 12/12 tests, install, installed-package consumer 1/1, binary SBOM validation, system-only viewer linkage, and strict ad-hoc signing on macOS arm64."
+      "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
+      "note": "Exact development commit 1489bc13f07a4db0b0077a9dc9b4abd62ea293ef produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static/shared 12/12 suites, installed consumers 1/1, binary SBOM, and documentation on Linux amd64. Earlier macOS arm64 clean-room evidence additionally covers system-only viewer linkage and strict ad-hoc signing."
     },
     {
       "id": "distribution.release-artifact-identity",

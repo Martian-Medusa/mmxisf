@@ -81,3 +81,29 @@ because the library cannot control the consumer's filesystem or device.
   storage class;
 - larger independent zlib/LZ4 fixtures if a performance claim is made for
   those codecs. Exact functional interop for both codecs is already committed.
+
+## Linux amd64 development checkpoint
+
+Exact development commit `1489bc13f07a4db0b0077a9dc9b4abd62ea293ef`
+was built from its deterministic source archive on the `mllse` Ryzen 5 5500U
+host with the pinned production vcpkg graph. Static and shared suites passed
+12/12 and both installed-package consumers passed 1/1 before measurement.
+
+For the same deterministic 6064x4040 Planar UInt8 RGB Zstandard fixture used by
+the writer and row-delivery checkpoints, five warm-cache runs produced:
+
+| Path | Median elapsed | Median throughput | Maximum RSS |
+| --- | ---: | ---: | ---: |
+| writer | 0.507 s | 138.357 MiB/s | 116,174,848 bytes |
+| owning reader + SHA-256 | 0.280104843 s | 250.231 MiB/s | 148,111,360 bytes |
+| row reader + SHA-256 | 0.343088044 s | 204.294 MiB/s | 53,428,224 bytes |
+
+All five writer outputs were byte-identical and decoded to the established
+pixel SHA-256. The row path reduced observed maximum RSS by 94,683,136 bytes
+(63.927%) relative to the owning reader. Exact per-run values, environment,
+binary/SBOM identities, and retained log hashes are recorded in
+[`performance-runs/2026-09-14-linux-amd64-1489bc1.json`](performance-runs/2026-09-14-linux-amd64-1489bc1.json).
+
+This extends representative evidence to Linux amd64. It is not a portable SLA:
+the server was not workload-isolated, measurements used warm cache, the support
+profile is not frozen, and Windows remains unmeasured.

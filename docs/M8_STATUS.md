@@ -330,6 +330,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.json`.
   This is a passing unfrozen development snapshot, not the mandatory final
   frozen-candidate binary and complete-toolchain audit.
+- Exact development commit `1489bc13f07a4db0b0077a9dc9b4abd62ea293ef`
+  then passed an extracted-source Linux amd64 production-graph replay on
+  `mllse`: static/shared suites 12/12, installed consumers 1/1, dependency
+  floors, SBOM, and generated documentation. Five deterministic 6064x4040
+  UInt8 RGB writer and reader runs added a second-host performance profile.
+  Median writer throughput was 138.357 MiB/s, owning decode plus SHA-256 was
+  250.231 MiB/s, and row decode plus SHA-256 was 204.294 MiB/s. Row delivery
+  reduced maximum RSS from 148,111,360 to 53,428,224 bytes. Exact inputs,
+  per-run values, toolchain, binary identities, and retained-log hashes are in
+  `docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json`. This advances the
+  supported-host review to **LIMITED**; the profile is unfrozen and Windows
+  remains unmeasured, so no portable SLA or candidate claim is made.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit
