@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "mmxisf/byte_sink.hpp"
 #include "mmxisf/document.hpp"
 #include "mmxisf/result.hpp"
 
@@ -96,6 +97,12 @@ struct WriteSummary {
   std::vector<BlockLocation> property_blocks;
 };
 
+struct SinkWriteOptions {
+  // Required only when compression needs a multi-subblock spool. The writer
+  // appends private suffixes and never overwrites existing paths.
+  std::filesystem::path scratch_file_stem;
+};
+
 class MMXISF_API Writer {
 public:
   // The 0.1 writer accepts attached Planar Gray or RGB images using the
@@ -117,6 +124,27 @@ public:
              std::span<const ImageWriteView> images,
              std::span<const MetadataWriteEntry> metadata,
              const WriterOptions &options, std::stop_token stop_token = {});
+
+  // Writes a complete monolithic unit sequentially to caller-owned storage.
+  // On failure, the sink may contain a prefix; transactional rollback remains
+  // the caller's responsibility. write_file() retains its stronger atomic,
+  // no-overwrite filesystem contract.
+  [[nodiscard]] static Result<WriteSummary>
+  write_to(ByteSink &destination, const ImageWriteView &image,
+           const WriterOptions &options,
+           const SinkWriteOptions &sink_options = {},
+           std::stop_token stop_token = {});
+  [[nodiscard]] static Result<WriteSummary>
+  write_to(ByteSink &destination, std::span<const ImageWriteView> images,
+           const WriterOptions &options,
+           const SinkWriteOptions &sink_options = {},
+           std::stop_token stop_token = {});
+  [[nodiscard]] static Result<WriteSummary>
+  write_to(ByteSink &destination, std::span<const ImageWriteView> images,
+           std::span<const MetadataWriteEntry> metadata,
+           const WriterOptions &options,
+           const SinkWriteOptions &sink_options = {},
+           std::stop_token stop_token = {});
 };
 
 } // namespace mmxisf

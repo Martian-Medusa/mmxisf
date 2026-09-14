@@ -149,6 +149,11 @@ bounded, item-aligned
 subblocks so codec/shuffle scratch does not scale to the complete block.
 References remain a later profile.
 
+`Writer::write_to` exposes the same deterministic serializer through a
+caller-owned sequential `ByteSink`. Generic sinks have explicit partial-output
+and flush semantics; callers requiring an atomic no-overwrite file continue to
+use `write_file`.
+
 The optional build-tree `mmxisf-writer-benchmark` exercises a deterministic
 73.5 MB RGB compression/checksum profile without committing a large fixture;
 its current local measurement method and limits are documented in

@@ -64,6 +64,81 @@ std::vector<char> read_file(const std::filesystem::path &path) {
           std::istreambuf_iterator<char>()};
 }
 
+class VectorSink final : public mmxisf::ByteSink {
+public:
+  explicit VectorSink(
+      std::size_t max_write = std::numeric_limits<std::size_t>::max(),
+      bool fail_flush = false)
+      : max_write_(max_write), fail_flush_(fail_flush) {}
+
+  mmxisf::Result<std::size_t>
+  write(std::span<const std::byte> source) override {
+    const auto count = std::min(max_write_, source.size());
+    bytes.insert(bytes.end(), source.begin(), source.begin() + count);
+    return count;
+  }
+
+  mmxisf::Result<void> flush() override {
+    if (fail_flush_) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::io_error,
+                           .message = "test flush failure"};
+    }
+    flushed = true;
+    return {};
+  }
+
+  std::vector<std::byte> bytes;
+  bool flushed{false};
+
+private:
+  std::size_t max_write_;
+  bool fail_flush_;
+};
+
+class FailingSink final : public mmxisf::ByteSink {
+public:
+  explicit FailingSink(std::size_t byte_limit) : byte_limit_(byte_limit) {}
+
+  mmxisf::Result<std::size_t>
+  write(std::span<const std::byte> source) override {
+    if (bytes.size() >= byte_limit_) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::io_error,
+                           .message = "test sink failure"};
+    }
+    const auto count = std::min(source.size(), byte_limit_ - bytes.size());
+    bytes.insert(bytes.end(), source.begin(), source.begin() + count);
+    return count;
+  }
+
+  mmxisf::Result<void> flush() override {
+    flushed = true;
+    return {};
+  }
+
+  std::vector<std::byte> bytes;
+  bool flushed{false};
+
+private:
+  std::size_t byte_limit_;
+};
+
+class ZeroProgressSink final : public mmxisf::ByteSink {
+public:
+  mmxisf::Result<std::size_t> write(std::span<const std::byte>) override {
+    return std::size_t{0};
+  }
+  mmxisf::Result<void> flush() override { return {}; }
+};
+
+class OversizedCountSink final : public mmxisf::ByteSink {
+public:
+  mmxisf::Result<std::size_t>
+  write(std::span<const std::byte> source) override {
+    return source.size() + 1;
+  }
+  mmxisf::Result<void> flush() override { return {}; }
+};
+
 std::string sha256(std::span<const char> bytes) {
   std::array<unsigned char, 32> digest{};
   unsigned int digest_size = 0;
@@ -1272,6 +1347,138 @@ void test_rejection_and_cleanup() {
          "cancelled writer left a destination file");
 }
 
+void test_byte_sink_contract() {
+  mmxisf::Result<void> success;
+  expect(success.has_value(), "default Result<void> is not successful");
+  bool success_error_threw = false;
+  try {
+    static_cast<void>(success.error());
+  } catch (const std::bad_variant_access &) {
+    success_error_threw = true;
+  }
+  expect(success_error_threw,
+         "successful Result<void> exposed a nonexistent error");
+  mmxisf::Result<void> error(mmxisf::Error{.code = mmxisf::ErrorCode::io_error,
+                                           .message = "test error"});
+  bool error_value_threw = false;
+  try {
+    error.value();
+  } catch (const std::bad_variant_access &) {
+    error_value_threw = true;
+  }
+  expect(!error.has_value() && error_value_threw &&
+             error.error().code == mmxisf::ErrorCode::io_error,
+         "failed Result<void> access semantics changed");
+
+  std::array<std::byte, 512> pixels{};
+  for (std::size_t index = 0; index < pixels.size(); ++index) {
+    pixels[index] = static_cast<std::byte>((index * 37U + 11U) & 0xffU);
+  }
+  mmxisf::ImageWriteView image;
+  image.id = "sink";
+  image.width = pixels.size();
+  image.height = 1;
+  image.channels = 1;
+  image.sample_format = mmxisf::SampleFormat::uint8;
+  image.color_space = "Gray";
+  image.pixels = pixels;
+
+  const auto plain_path = output_path("mmxisf-writer-sink-plain.xisf");
+  auto plain_file = mmxisf::Writer::write_file(plain_path, image, options());
+  VectorSink partial_sink(7);
+  auto plain_sink = mmxisf::Writer::write_to(partial_sink, image, options());
+  const auto plain_bytes = read_file(plain_path);
+  expect(
+      plain_file && plain_sink && partial_sink.flushed &&
+          plain_sink.value().file_size == partial_sink.bytes.size() &&
+          partial_sink.bytes.size() == plain_bytes.size() &&
+          std::equal(partial_sink.bytes.begin(), partial_sink.bytes.end(),
+                     reinterpret_cast<const std::byte *>(plain_bytes.data())),
+      "partial ByteSink output differs from atomic file output");
+
+  auto compressed_options = options();
+  compressed_options.compression_subblock_bytes = 64;
+  image.compression = mmxisf::CompressionCodec::zstd;
+  image.byte_shuffle = true;
+  image.checksum = mmxisf::ChecksumAlgorithm::sha3_256;
+  const auto compressed_path =
+      output_path("mmxisf-writer-sink-compressed.xisf");
+  auto compressed_file =
+      mmxisf::Writer::write_file(compressed_path, image, compressed_options);
+  const auto scratch = output_path("mmxisf-writer-sink-scratch");
+  auto scratch_spool = scratch;
+  scratch_spool += ".mmxisf-block-0-tmp";
+  cleanup_paths.push_back(scratch_spool);
+  VectorSink compressed_sink(31);
+  auto compressed_result = mmxisf::Writer::write_to(
+      compressed_sink, image, compressed_options,
+      mmxisf::SinkWriteOptions{.scratch_file_stem = scratch});
+  const auto compressed_bytes = read_file(compressed_path);
+  expect(
+      compressed_file && compressed_result && compressed_sink.flushed &&
+          compressed_sink.bytes.size() == compressed_bytes.size() &&
+          std::equal(
+              compressed_sink.bytes.begin(), compressed_sink.bytes.end(),
+              reinterpret_cast<const std::byte *>(compressed_bytes.data())) &&
+          !std::filesystem::exists(scratch_spool),
+      "multi-subblock ByteSink output or scratch cleanup changed");
+
+  VectorSink missing_scratch;
+  auto missing =
+      mmxisf::Writer::write_to(missing_scratch, image, compressed_options);
+  expect(!missing &&
+             missing.error().code == mmxisf::ErrorCode::invalid_argument &&
+             missing_scratch.bytes.empty() && !missing_scratch.flushed,
+         "multi-subblock ByteSink accepted a missing scratch stem");
+
+  {
+    std::ofstream stale(scratch_spool, std::ios::binary);
+    stale << "keep";
+  }
+  VectorSink stale_sink;
+  auto stale = mmxisf::Writer::write_to(
+      stale_sink, image, compressed_options,
+      mmxisf::SinkWriteOptions{.scratch_file_stem = scratch});
+  expect(!stale && stale.error().code == mmxisf::ErrorCode::io_error &&
+             stale_sink.bytes.empty() &&
+             read_file(scratch_spool) == std::vector<char>{'k', 'e', 'e', 'p'},
+         "ByteSink writer overwrote a stale scratch file");
+
+  image.compression = mmxisf::CompressionCodec::none;
+  image.byte_shuffle = false;
+  image.checksum = mmxisf::ChecksumAlgorithm::none;
+  FailingSink failing_sink(100);
+  auto failed = mmxisf::Writer::write_to(failing_sink, image, options());
+  expect(!failed && failed.error().code == mmxisf::ErrorCode::io_error &&
+             !failing_sink.bytes.empty() && !failing_sink.flushed,
+         "ByteSink failure did not preserve the documented partial prefix");
+
+  ZeroProgressSink zero_sink;
+  auto zero = mmxisf::Writer::write_to(zero_sink, image, options());
+  expect(!zero && zero.error().code == mmxisf::ErrorCode::io_error,
+         "zero-progress ByteSink did not fail closed");
+
+  OversizedCountSink oversized_sink;
+  auto oversized = mmxisf::Writer::write_to(oversized_sink, image, options());
+  expect(!oversized && oversized.error().code == mmxisf::ErrorCode::io_error,
+         "oversized ByteSink write count did not fail closed");
+
+  VectorSink flush_failure(std::numeric_limits<std::size_t>::max(), true);
+  auto flush = mmxisf::Writer::write_to(flush_failure, image, options());
+  expect(!flush && flush.error().code == mmxisf::ErrorCode::io_error &&
+             !flush_failure.flushed,
+         "ByteSink flush failure was not propagated");
+
+  std::stop_source cancellation;
+  cancellation.request_stop();
+  VectorSink cancelled_sink;
+  auto cancelled = mmxisf::Writer::write_to(cancelled_sink, image, options(),
+                                            {}, cancellation.get_token());
+  expect(!cancelled && cancelled.error().code == mmxisf::ErrorCode::cancelled &&
+             cancelled_sink.bytes.empty() && !cancelled_sink.flushed,
+         "pre-cancelled ByteSink write emitted data");
+}
+
 } // namespace
 
 int main() {
@@ -1288,6 +1495,7 @@ int main() {
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();
     test_rejection_and_cleanup();
+    test_byte_sink_contract();
     std::cout << "PASS: deterministic multi-image scalar writer\n";
     return 0;
   } catch (const std::exception &exception) {

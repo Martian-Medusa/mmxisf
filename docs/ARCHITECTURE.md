@@ -76,12 +76,14 @@ The pre-release writer now provides:
   Property attachments, plus deterministic XML/layout planning, explicit
   volatile provenance, finite budgets, and cooperative cancellation;
 - one internal Property type/category/layout registry shared by parsing,
-  reading, and writing so aliases and element widths cannot drift by subsystem.
+  reading, and writing so aliases and element widths cannot drift by subsystem;
+- byte-identical sequential output through a caller-owned `ByteSink`, including
+  partial-write handling and explicit flush errors; generic sinks retain
+  caller-owned rollback semantics while `write_file` keeps the atomic contract.
 
 Later milestones still need:
 
-- a bounded row/tile callback for low-copy analysis;
-- injectable byte sinks for files, memory, and tests.
+- a bounded row/tile decode callback for low-copy analysis.
 
 Remote locations must not trigger network access. A future network resolver is
 an explicit opt-in consumer capability with scheme allowlists, budgets, cache,

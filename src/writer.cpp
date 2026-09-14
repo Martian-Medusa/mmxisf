@@ -986,7 +986,32 @@ make_header(std::span<const ImageWriteView> images,
   return header;
 }
 
-Result<std::uint64_t> write_all(std::ofstream &output,
+class OstreamByteSink final : public ByteSink {
+public:
+  explicit OstreamByteSink(std::ofstream &output) : output_(output) {}
+
+  Result<std::size_t> write(std::span<const std::byte> source) override {
+    output_.write(reinterpret_cast<const char *>(source.data()),
+                  static_cast<std::streamsize>(source.size()));
+    if (!output_) {
+      return make_error(ErrorCode::io_error, "Unable to write XISF bytes");
+    }
+    return source.size();
+  }
+
+  Result<void> flush() override {
+    output_.flush();
+    if (!output_) {
+      return make_error(ErrorCode::io_error, "Unable to flush XISF bytes");
+    }
+    return {};
+  }
+
+private:
+  std::ofstream &output_;
+};
+
+Result<std::uint64_t> write_all(ByteSink &output,
                                 std::span<const std::byte> bytes,
                                 std::stop_token stop_token) {
   constexpr std::size_t kChunkBytes = 8U * 1024U * 1024U;
@@ -996,17 +1021,20 @@ Result<std::uint64_t> write_all(std::ofstream &output,
       return make_error(ErrorCode::cancelled, "XISF write was cancelled");
     }
     const auto count = std::min(kChunkBytes, bytes.size() - written);
-    output.write(reinterpret_cast<const char *>(bytes.data() + written),
-                 static_cast<std::streamsize>(count));
-    if (!output) {
-      return make_error(ErrorCode::io_error, "Unable to write XISF bytes");
+    auto result = output.write(bytes.subspan(written, count));
+    if (!result) {
+      return result.error();
     }
-    written += count;
+    if (result.value() == 0 || result.value() > count) {
+      return make_error(ErrorCode::io_error,
+                        "ByteSink returned an invalid write count");
+    }
+    written += result.value();
   }
   return static_cast<std::uint64_t>(written);
 }
 
-Result<std::uint64_t> write_file_contents(std::ofstream &output,
+Result<std::uint64_t> write_file_contents(ByteSink &output,
                                           const std::filesystem::path &path,
                                           std::uint64_t expected_size,
                                           std::stop_token stop_token) {
@@ -1122,6 +1150,12 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
     const bool use_spool = decoded_size > chunk_limit;
     std::ofstream spool_output;
     if (use_spool) {
+      if (destination.empty()) {
+        return make_error(
+            ErrorCode::invalid_argument,
+            "ByteSink multi-subblock compression requires a scratch file "
+            "stem");
+      }
       block.spool_path = destination;
       block.spool_path += request.spool_suffix;
       if (!path_is_available(block.spool_path)) {
@@ -1136,6 +1170,7 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
                           "Unable to create writer compression spool");
       }
     }
+    OstreamByteSink spool_sink(spool_output);
 
     std::uint64_t input_offset = 0;
     std::uint64_t serialized_so_far = 0;
@@ -1180,7 +1215,7 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       const auto compressed_size =
           static_cast<std::uint64_t>(compressed.value().size());
       if (use_spool) {
-        auto spooled = write_all(spool_output, compressed.value(), stop_token);
+        auto spooled = write_all(spool_sink, compressed.value(), stop_token);
         if (!spooled) {
           return spooled.error();
         }
@@ -1192,10 +1227,9 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       input_offset += uncompressed_size;
     }
     if (use_spool) {
-      spool_output.flush();
-      if (!spool_output) {
-        return make_error(ErrorCode::io_error,
-                          "Unable to flush writer compression spool");
+      auto flushed = spool_sink.flush();
+      if (!flushed) {
+        return flushed.error();
       }
       spool_output.close();
       if (!spool_output) {
@@ -1247,14 +1281,15 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
 }
 
 Result<WriteSummary>
-write_file_impl(const std::filesystem::path &destination,
-                std::span<const ImageWriteView> images,
-                std::span<const MetadataWriteEntry> metadata,
-                const WriterOptions &options, std::stop_token stop_token) {
+write_impl(const std::filesystem::path &destination_or_scratch,
+           ByteSink *external_sink, std::span<const ImageWriteView> images,
+           std::span<const MetadataWriteEntry> metadata,
+           const WriterOptions &options, std::stop_token stop_token) {
+  const bool writes_file = external_sink == nullptr;
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "XISF write was cancelled");
   }
-  if (destination.empty()) {
+  if (writes_file && destination_or_scratch.empty()) {
     return make_error(ErrorCode::invalid_argument,
                       "Writer destination cannot be empty");
   }
@@ -1562,19 +1597,23 @@ write_file_impl(const std::filesystem::path &destination,
     pixel_sizes.push_back(pixel_bytes);
   }
 
-  if (!path_is_available(destination)) {
-    return make_error(ErrorCode::io_error,
-                      "Writer destination already exists or cannot be checked");
-  }
-  auto temporary = destination;
-  temporary += ".mmxisf-tmp";
-  if (!path_is_available(temporary)) {
-    return make_error(
-        ErrorCode::io_error,
-        "Writer temporary path already exists or cannot be checked");
-  }
+  std::filesystem::path temporary;
   TemporaryFilesCleanup cleanup;
-  cleanup.track(temporary);
+  if (writes_file) {
+    if (!path_is_available(destination_or_scratch)) {
+      return make_error(
+          ErrorCode::io_error,
+          "Writer destination already exists or cannot be checked");
+    }
+    temporary = destination_or_scratch;
+    temporary += ".mmxisf-tmp";
+    if (!path_is_available(temporary)) {
+      return make_error(
+          ErrorCode::io_error,
+          "Writer temporary path already exists or cannot be checked");
+    }
+    cleanup.track(temporary);
+  }
 
   std::vector<PreparedBlock> prepared(images.size());
   std::uint64_t cumulative_serialized_bytes = 0;
@@ -1597,8 +1636,8 @@ write_file_impl(const std::filesystem::path &destination,
         .max_cumulative_remaining = options.max_cumulative_serialized_bytes -
                                     cumulative_serialized_bytes,
         .spool_suffix = ".mmxisf-block-" + std::to_string(index) + "-tmp"};
-    auto block =
-        prepare_block(destination, request, options, cleanup, stop_token);
+    auto block = prepare_block(destination_or_scratch, request, options,
+                               cleanup, stop_token);
     if (!block) {
       return block.error();
     }
@@ -1643,8 +1682,8 @@ write_file_impl(const std::filesystem::path &destination,
             cumulative_serialized_property_bytes,
         .spool_suffix =
             ".mmxisf-property-block-" + std::to_string(index) + "-tmp"};
-    auto block =
-        prepare_block(destination, request, options, cleanup, stop_token);
+    auto block = prepare_block(destination_or_scratch, request, options,
+                               cleanup, stop_token);
     if (!block) {
       return block.error();
     }
@@ -1769,10 +1808,21 @@ write_file_impl(const std::filesystem::path &destination,
   }
   const auto file_size = file_size_result.value();
 
-  std::ofstream output(temporary, std::ios::binary | std::ios::trunc);
-  if (!output) {
-    return make_error(ErrorCode::io_error,
-                      "Unable to create temporary XISF file");
+  std::ofstream output_file;
+  std::unique_ptr<OstreamByteSink> file_sink;
+  ByteSink *output = external_sink;
+  if (writes_file) {
+    output_file.open(temporary, std::ios::binary | std::ios::trunc);
+    if (!output_file) {
+      return make_error(ErrorCode::io_error,
+                        "Unable to create temporary XISF file");
+    }
+    file_sink = std::make_unique<OstreamByteSink>(output_file);
+    output = file_sink.get();
+  }
+  if (output == nullptr) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer output sink was not initialized");
   }
 
   std::array<std::byte, 16> preamble{
@@ -1783,12 +1833,12 @@ write_file_impl(const std::filesystem::path &destination,
   preamble[9] = static_cast<std::byte>((header_length >> 8U) & 0xffU);
   preamble[10] = static_cast<std::byte>((header_length >> 16U) & 0xffU);
   preamble[11] = static_cast<std::byte>((header_length >> 24U) & 0xffU);
-  auto preamble_written = write_all(output, preamble, stop_token);
+  auto preamble_written = write_all(*output, preamble, stop_token);
   if (!preamble_written) {
     return preamble_written.error();
   }
   const auto header_bytes = std::as_bytes(std::span(header));
-  auto header_written = write_all(output, header_bytes, stop_token);
+  auto header_written = write_all(*output, header_bytes, stop_token);
   if (!header_written) {
     return header_written.error();
   }
@@ -1800,7 +1850,7 @@ write_file_impl(const std::filesystem::path &destination,
       const auto count = static_cast<std::size_t>(
           std::min<std::uint64_t>(padding, zeros.size()));
       auto padding_written =
-          write_all(output, std::span(zeros).first(count), stop_token);
+          write_all(*output, std::span(zeros).first(count), stop_token);
       if (!padding_written) {
         return padding_written.error();
       }
@@ -1810,12 +1860,12 @@ write_file_impl(const std::filesystem::path &destination,
     auto pixels_written =
         prepared_block.spool_path.empty()
             ? write_all(
-                  output,
+                  *output,
                   prepared_block.storage.empty()
                       ? images[index].pixels
                       : std::span<const std::byte>(prepared_block.storage),
                   stop_token)
-            : write_file_contents(output, prepared_block.spool_path,
+            : write_file_contents(*output, prepared_block.spool_path,
                                   prepared_block.serialized_size, stop_token);
     if (!pixels_written) {
       return pixels_written.error();
@@ -1831,7 +1881,7 @@ write_file_impl(const std::filesystem::path &destination,
       const auto count = static_cast<std::size_t>(
           std::min<std::uint64_t>(padding, zeros.size()));
       auto padding_written =
-          write_all(output, std::span(zeros).first(count), stop_token);
+          write_all(*output, std::span(zeros).first(count), stop_token);
       if (!padding_written) {
         return padding_written.error();
       }
@@ -1841,12 +1891,12 @@ write_file_impl(const std::filesystem::path &destination,
     auto property_written =
         prepared_block.spool_path.empty()
             ? write_all(
-                  output,
+                  *output,
                   prepared_block.storage.empty()
                       ? metadata[index].block_bytes
                       : std::span<const std::byte>(prepared_block.storage),
                   stop_token)
-            : write_file_contents(output, prepared_block.spool_path,
+            : write_file_contents(*output, prepared_block.spool_path,
                                   prepared_block.serialized_size, stop_token);
     if (!property_written) {
       return property_written.error();
@@ -1854,22 +1904,27 @@ write_file_impl(const std::filesystem::path &destination,
     output_position =
         metadata_blocks[index].offset + metadata_blocks[index].size;
   }
-  output.flush();
-  if (!output) {
-    return make_error(ErrorCode::io_error, "Unable to flush XISF file");
+  auto flushed = output->flush();
+  if (!flushed) {
+    return flushed.error();
   }
-  output.close();
-  if (!output) {
-    return make_error(ErrorCode::io_error, "Unable to close XISF file");
+  if (writes_file) {
+    output_file.close();
+    if (!output_file) {
+      return make_error(ErrorCode::io_error, "Unable to close XISF file");
+    }
   }
   if (stop_token.stop_requested()) {
     return make_error(ErrorCode::cancelled, "XISF write was cancelled");
   }
-  std::error_code filesystem_error;
-  std::filesystem::create_hard_link(temporary, destination, filesystem_error);
-  if (filesystem_error) {
-    return make_error(ErrorCode::io_error,
-                      "Unable to commit temporary XISF file");
+  if (writes_file) {
+    std::error_code filesystem_error;
+    std::filesystem::create_hard_link(temporary, destination_or_scratch,
+                                      filesystem_error);
+    if (filesystem_error) {
+      return make_error(ErrorCode::io_error,
+                        "Unable to commit temporary XISF file");
+    }
   }
   WriteSummary summary;
   summary.file_size = file_size;
@@ -1893,7 +1948,44 @@ Writer::write_file(const std::filesystem::path &destination,
                    std::span<const MetadataWriteEntry> metadata,
                    const WriterOptions &options, std::stop_token stop_token) {
   try {
-    return write_file_impl(destination, images, metadata, options, stop_token);
+    return write_impl(destination, nullptr, images, metadata, options,
+                      stop_token);
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Writer could not allocate within configured budgets");
+  } catch (const std::exception &) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer dependency raised an unexpected exception");
+  } catch (...) {
+    return make_error(ErrorCode::internal_error,
+                      "Writer failed with an unexpected exception");
+  }
+}
+
+Result<WriteSummary> Writer::write_to(ByteSink &destination,
+                                      const ImageWriteView &image,
+                                      const WriterOptions &options,
+                                      const SinkWriteOptions &sink_options,
+                                      std::stop_token stop_token) {
+  return write_to(destination, std::span(&image, 1), {}, options, sink_options,
+                  stop_token);
+}
+
+Result<WriteSummary> Writer::write_to(ByteSink &destination,
+                                      std::span<const ImageWriteView> images,
+                                      const WriterOptions &options,
+                                      const SinkWriteOptions &sink_options,
+                                      std::stop_token stop_token) {
+  return write_to(destination, images, {}, options, sink_options, stop_token);
+}
+
+Result<WriteSummary> Writer::write_to(
+    ByteSink &destination, std::span<const ImageWriteView> images,
+    std::span<const MetadataWriteEntry> metadata, const WriterOptions &options,
+    const SinkWriteOptions &sink_options, std::stop_token stop_token) {
+  try {
+    return write_impl(sink_options.scratch_file_stem, &destination, images,
+                      metadata, options, stop_token);
   } catch (const std::bad_alloc &) {
     return make_error(ErrorCode::resource_limit,
                       "Writer could not allocate within configured budgets");

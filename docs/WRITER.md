@@ -24,6 +24,13 @@ The current writer rejects big-endian image and Normal/interleaved output,
 references, and raw XML.
 Reader support for any other feature does not imply writer support.
 
+The same profile can be emitted to a caller-owned sequential `ByteSink` with
+`Writer::write_to`. A sink may accept short writes; the writer completes them
+in bounded chunks and propagates write or flush failures. The sink is not
+closed, committed, or rolled back by the library. On failure it may contain a
+prefix of the XISF unit, so callers needing atomic publication must provide a
+transactional sink or use `write_file`.
+
 ## Minimal use
 
 ```cpp
@@ -148,6 +155,26 @@ independently bound this data before a destination is created.
 The corresponding serialized limits are `max_serialized_property_bytes` and
 `max_cumulative_serialized_property_bytes`.
 
+## Caller-owned sinks and scratch storage
+
+Uncompressed and single-subblock writes need no filesystem access when using a
+`ByteSink`. Multi-subblock compression must know the complete serialized block
+sizes before final header emission, so the caller supplies a unique scratch
+stem when that profile is used:
+
+```cpp
+mmxisf::SinkWriteOptions sink_options;
+sink_options.scratch_file_stem = "/private/controlled/job-42";
+auto result = mmxisf::Writer::write_to(
+    sink, images, metadata, options, sink_options);
+```
+
+The library appends private per-block suffixes, refuses to overwrite any stale
+scratch file, and removes the files it created on success, cancellation, or
+failure. An empty stem fails before output only when a multi-subblock spool is
+actually required. Scratch confidentiality, directory permissions, and unique
+stem selection are caller responsibilities.
+
 ## Failure and filesystem contract
 
 Geometry arithmetic, image and metadata counts, decoded and serialized
@@ -157,10 +184,10 @@ destination is created. Output is written to a sibling temporary file, flushed,
 closed, and committed through a no-overwrite hard link. An existing destination
 or stale `.mmxisf-tmp` sibling is never replaced.
 
-Cancellation is cooperative between bounded write chunks and immediately
-before commit. A cancelled or failed write removes its incomplete temporary
-file and does not produce a successful destination. Filesystems that do not
-support hard links fail explicitly in the current profile.
+Cancellations are cooperative between bounded write chunks and immediately
+before commit. A cancelled or failed `write_file` removes its incomplete
+temporary file and does not produce a successful destination. Filesystems that
+do not support hard links fail explicitly in the current profile.
 
 `WriteSummary::image_blocks` reports every attached block. The legacy
 `image_block` field aliases the first block for source compatibility with the

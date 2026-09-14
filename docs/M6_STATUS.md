@@ -39,10 +39,17 @@
 - A sibling temporary file is linked into a previously absent destination only
   after a successful flush. Existing destination and stale temporary paths are
   never overwritten; failed/cancelled writes remove incomplete temporary data.
+- A caller-owned sequential `ByteSink` can receive identical serializer output
+  with bounded partial-write loops, explicit flush/error propagation, and no
+  implicit close or rollback. Multi-subblock calls require an explicit scratch
+  stem with the same stale-file and cleanup guarantees.
 
 ## Evidence available now
 
-- Warning-as-error Release build and 6/6 tests: PASS locally on macOS.
+- Warning-as-error static and shared Release builds and 8/8 tests: PASS
+  locally on macOS. Fresh installed-package consumers pass for both linkages.
+- AddressSanitizer/UndefinedBehaviorSanitizer 8/8 tests, deterministic 20,000
+  case fuzz smoke, and warning-free generated API reference: PASS locally.
 - Repeated equivalent Gray writes are byte-identical and reopen through
   `mmxisf` with exact descriptors, required metadata, and pixels. The original
   single-image RGB oracle hash remains unchanged after the multi-image API
@@ -119,6 +126,10 @@
   overhead above the caller buffer to 49.13 MiB. See
   [M6_WRITER_PERFORMANCE.md](M6_WRITER_PERFORMANCE.md); this is a local
   regression gate, not a portable SLA.
+- Short-write and multi-subblock sink outputs are byte-identical to atomic file
+  outputs. Sink write, zero-progress, impossible write count, flush,
+  cancellation, missing scratch, and stale scratch cases fail with the
+  documented partial-output boundary.
 
 ## Still required for M6
 
@@ -126,5 +137,3 @@
 - Validate writer-produced vector/matrix Properties natively in PixInsight.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.
-- Add a sink abstraction after actual file-writer behavior establishes its
-  ownership and failure requirements.

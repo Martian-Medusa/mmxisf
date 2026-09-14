@@ -18,7 +18,9 @@ first public release, while ABI stability is not promised before 1.0.
    ICC profile bytes with `mmxisf::Reader::read_icc_profile`, or a producer
    thumbnail with `mmxisf::Reader::read_thumbnail`.
 5. Write deterministic local monolithic files with
-   `mmxisf::Writer::write_file` and explicit `mmxisf::WriterOptions` budgets.
+   `mmxisf::Writer::write_file`, or use `mmxisf::Writer::write_to` with a
+   caller-owned sequential `mmxisf::ByteSink`, and explicit
+   `mmxisf::WriterOptions` budgets.
 
 Every fallible operation returns `mmxisf::Result<T>`. Test the result before
 calling `value()` or `error()`; those accessors follow `std::variant` semantics
@@ -35,7 +37,8 @@ and do not silently manufacture a fallback value.
 - `Reader::read_image_into` writes only to the supplied span and reports the
   exact decoded byte count.
 - Writer image and Property spans are borrowed only for the duration of the
-  synchronous `Writer::write_file` call.
+  synchronous `Writer::write_file` or `Writer::write_to` call. A `ByteSink`
+  remains caller-owned and is neither closed nor rolled back by the library.
 - References returned by `Reader::document()` remain valid until the reader is
   destroyed or moved from.
 
@@ -54,6 +57,12 @@ The writer accepts a deliberately bounded profile documented in
 `docs/WRITER.md`. It rejects unsupported layouts and does not overwrite an
 existing destination. Output is committed only after successful flush; failed
 or cancelled writes remove their incomplete temporary files.
+
+`Writer::write_to` emits the same bytes through a caller-owned sequential
+`ByteSink`. Partial writes are completed, zero progress and sink/flush failures
+fail explicitly, and a multi-subblock write requires a caller-selected scratch
+stem. Unlike `write_file`, a generic sink cannot be rolled back: it may retain a
+prefix after failure and the caller owns transaction and close semantics.
 
 ## Resource and trust boundary
 

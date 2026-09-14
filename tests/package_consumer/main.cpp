@@ -32,7 +32,9 @@ int main() {
   mmxisf::ImageWriteView write_image;
   mmxisf::MetadataWriteEntry write_metadata;
   mmxisf::WriterOptions writer_options;
+  mmxisf::SinkWriteOptions sink_options;
   mmxisf::WriteSummary write_summary;
+  mmxisf::Result<void> void_result;
   return options.max_header_bytes > 0 && options.max_encoded_block_bytes > 0 &&
                  options.max_serialized_property_bytes > 0 &&
                  options.max_decoded_property_bytes > 0 &&
@@ -112,6 +114,7 @@ int main() {
                  writer_options.max_cumulative_serialized_property_bytes > 0 &&
                  writer_options.max_serialized_image_bytes > 0 &&
                  writer_options.max_cumulative_serialized_bytes > 0 &&
+                 sink_options.scratch_file_stem.empty() && void_result &&
                  write_metadata.kind == mmxisf::MetadataWriteKind::property &&
                  write_metadata.value_form ==
                      mmxisf::MetadataWriteValueForm::direct &&
