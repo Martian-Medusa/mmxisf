@@ -170,11 +170,31 @@ or header crosses the public API. Runtime libraries, when dynamically selected
 by a platform build, remain an explicit deployment responsibility recorded in
 the binary SBOM.
 
+Two small public-API examples are built in a standalone checkout and installed
+as source under `share/doc/mmxisf/examples`. `mmxisf-example-read` opens an
+XISF unit, reports the first image, and decodes it to native-endian Planar
+bytes. `mmxisf-example-write` creates a deterministic 2x2 UInt16 Gray file with
+a SHA-256 block checksum. Given an installed package, build the same sources
+independently with the directory exported as `mmxisf_EXAMPLES_DIR`, or directly
+with:
+
+```sh
+cmake -S /install/prefix/share/doc/mmxisf/examples \
+  -B build-mmxisf-examples \
+  -DCMAKE_PREFIX_PATH=/install/prefix
+cmake --build build-mmxisf-examples
+```
+
+Both programs handle ordinary library failures through `Result<T>` and print
+the stable error category plus bounded diagnostic message. The writer refuses
+to overwrite an existing destination by design.
+
 Consumers may also embed the source tree with CMake `add_subdirectory` or
 `FetchContent` and link the same `mmxisf::mmxisf` target. Embedded builds create
-only the library by default; developer tests, tools, fuzzers, documentation,
-and the optional viewer remain off unless the consumer explicitly enables
-their `MMXISF_BUILD_*` options. `MMXISF_INSTALL` is likewise off for embedded
+only the library by default; developer tests, tools, examples, fuzzers,
+documentation, and the optional viewer remain off unless the consumer
+explicitly enables their `MMXISF_BUILD_*` options. `MMXISF_INSTALL` is likewise
+off for embedded
 use, preventing mmxisf files from entering the parent application's install
 set without opt-in. Embedded configuration also leaves the parent project's
 global `BUILD_TESTING` option untouched. Maintained external-consumer gates

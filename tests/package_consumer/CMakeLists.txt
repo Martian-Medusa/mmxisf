@@ -22,7 +22,8 @@ endif()
 foreach(_contract_variable
     mmxisf_SUPPORT_PROFILE
     mmxisf_CONFORMANCE_MATRIX
-    mmxisf_SPECIFICATION_BASELINE)
+    mmxisf_SPECIFICATION_BASELINE
+    mmxisf_EXAMPLES_DIR)
   if(NOT DEFINED ${_contract_variable} OR
      NOT EXISTS "${${_contract_variable}}")
     message(FATAL_ERROR
@@ -53,6 +54,8 @@ if(DEFINED MMXISF_EXPECTED_PACKAGE_PREFIX)
     "${mmxisf_CONFORMANCE_MATRIX}" "Conformance matrix")
   mmxisf_require_path_in_expected_prefix(
     "${mmxisf_SPECIFICATION_BASELINE}" "Specification baseline")
+  mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_EXAMPLES_DIR}" "Public API examples")
 
   get_target_property(_imported_configurations mmxisf::mmxisf
     IMPORTED_CONFIGURATIONS)
@@ -97,8 +100,23 @@ endif()
 
 add_executable(mmxisf_package_consumer main.cpp)
 target_link_libraries(mmxisf_package_consumer PRIVATE mmxisf::mmxisf)
+add_executable(mmxisf_package_example_read
+  "${mmxisf_EXAMPLES_DIR}/read_image.cpp")
+target_link_libraries(mmxisf_package_example_read PRIVATE mmxisf::mmxisf)
+add_executable(mmxisf_package_example_write
+  "${mmxisf_EXAMPLES_DIR}/write_image.cpp")
+target_link_libraries(mmxisf_package_example_write PRIVATE mmxisf::mmxisf)
 mmxisf_add_public_header_self_containment_test(
   mmxisf_installed_public_headers_self_containment
   "${CMAKE_CURRENT_LIST_DIR}/../../include/mmxisf")
 
 add_test(NAME mmxisf.package-consumer COMMAND mmxisf_package_consumer)
+add_test(
+  NAME mmxisf.package-examples
+  COMMAND
+    ${CMAKE_COMMAND}
+    -DMMXISF_READ_EXAMPLE=$<TARGET_FILE:mmxisf_package_example_read>
+    -DMMXISF_WRITE_EXAMPLE=$<TARGET_FILE:mmxisf_package_example_write>
+    -DMMXISF_EXAMPLE_OUTPUT=${CMAKE_CURRENT_BINARY_DIR}/mmxisf-package-example.xisf
+    -P ${CMAKE_CURRENT_LIST_DIR}/../cmake/RunExamples.cmake
+)

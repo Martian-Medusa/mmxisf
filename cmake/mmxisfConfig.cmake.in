@@ -20,6 +20,10 @@ set_and_check(
   "@PACKAGE_MMXISF_INSTALL_SBOM_DIR@/binary-dependencies.spdx.json"
 )
 set_and_check(
+  mmxisf_EXAMPLES_DIR
+  "@PACKAGE_MMXISF_INSTALL_EXAMPLES_DIR@"
+)
+set_and_check(
   mmxisf_SUPPORT_PROFILE
   "@PACKAGE_MMXISF_INSTALL_CONFORMANCE_DIR@/support-profile-0.1.0.json"
 )

@@ -25,6 +25,10 @@ if(MMXISF_INSTALL)
   message(FATAL_ERROR
     "Embedded mmxisf enabled installation rules without consumer opt-in")
 endif()
+if(MMXISF_BUILD_EXAMPLES)
+  message(FATAL_ERROR
+    "Embedded mmxisf enabled public examples without consumer opt-in")
+endif()
 
 foreach(_unexpected_target IN ITEMS
     mmxisf_version_test
@@ -34,6 +38,8 @@ foreach(_unexpected_target IN ITEMS
     mmxisf_independent_producer_test
     mmxisf_inspect
     mmxisf_writer_benchmark
+    mmxisf_example_read
+    mmxisf_example_write
     mmxisf_viewer
     mmxisf_viewer_preview
     mmxisf_fuzz_header
