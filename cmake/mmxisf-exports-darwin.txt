@@ -1,0 +1,5 @@
+# Keep the public mmxisf C++ namespace visible while hiding symbols pulled from
+# static implementation dependencies. Mach-O symbols include a leading
+# underscore before the Itanium C++ ABI name.
+__ZN6mmxisf*
+__ZNK6mmxisf*

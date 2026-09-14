@@ -137,6 +137,18 @@ if(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     TARGET mmxisf APPEND PROPERTY LINK_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mmxisf-exports.map"
   )
+elseif(BUILD_SHARED_LIBS AND APPLE)
+  # vcpkg supplies static dependency archives. Without an explicit export
+  # list, ld64 promotes thousands of their symbols into the public dylib.
+  target_link_options(
+    mmxisf
+    PRIVATE
+      "LINKER:-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/cmake/mmxisf-exports-darwin.txt"
+  )
+  set_property(
+    TARGET mmxisf APPEND PROPERTY LINK_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mmxisf-exports-darwin.txt"
+  )
 endif()
 
 if(MMXISF_BUILD_VIEWER)

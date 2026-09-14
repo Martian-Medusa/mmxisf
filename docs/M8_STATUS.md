@@ -29,9 +29,16 @@ open; it does not turn historical evidence into exact-candidate evidence.
   byte-identity check to static and shared libraries, including macOS arm64.
   The macOS gate explicitly enables Apple's `ZERO_AR_DATE=1` reproducible-
   archive mode instead of post-processing the resulting static library.
+- The pinned-vcpkg macOS arm64 production gate is library-first: viewer-free
+  static/shared builds, direct and relocated installed consumers, embedded
+  consumers, documentation, dependency floors, and binary reproducibility run
+  by default. The viewer requires the separate `MMXISF_VCPKG_VIEWER=ON` opt-in.
 - Static library is the default; shared-library builds use explicit public
   symbol import/export annotations, hidden non-public symbols on supported
   compilers, and the same installed-package consumer.
+- Linux and macOS shared links apply platform-native allowlists for the public
+  `mmxisf` namespace, preventing symbols from statically linked implementation
+  dependencies from becoming part of the dylib/ELF interface.
 - CI covers static and shared installs on Linux, macOS, and Windows. Windows
   shared-library tests add only the installed DLL directory to the test process
   path.
