@@ -41,6 +41,9 @@
 - CI keeps one active run per workflow/ref. A newer push cancels only the
   superseded run for the same branch, so the final commit receives the complete
   matrix without duplicating long Windows dependency builds.
+- The Windows static and shared gates share one dependency installation in a
+  single job, then use isolated build/install/consumer directories. This keeps
+  both linkage variants while removing the dominant duplicated vcpkg setup.
 
 ## Evidence available now
 
