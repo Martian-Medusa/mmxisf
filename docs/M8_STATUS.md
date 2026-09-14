@@ -106,18 +106,22 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
-  `31b0b43fd73d991927a7aca4d1050c764a3722da` passed the new supplemental
-  Windows amd64 cross-gate from its deterministic extracted source archive on
-  `mllse`. MinGW GCC 13 warnings-as-errors static 18/18 and shared 19/19 suites
+  `6d1eab0e6ae45041b967021cfc3979fd8421882e` passed the supplemental Windows
+  amd64 cross-gate from its deterministic 342,832-byte extracted source archive
+  (SHA-256 `209f1314bf5e7754275d19b83fd7ea4a2002898d269bd15eb01d44e0711b6dad`)
+  on `mllse`. MinGW GCC 13 warnings-as-errors static 19/19 and shared 20/20 suites
   ran under 64-bit Wine, as did direct and relocated installed consumers 2/2
   and embedded consumers 1/1. The DLL exposes exactly 39 named `mmxisf`
   symbols, and distinct builds produced byte-identical static libraries, DLLs,
   and import libraries. The pinned production dependency graph and binary SBOM
-  gates also passed. Exact source, container, toolchain, artifact, and retained
-  path evidence is recorded in
-  `docs/quality-runs/2026-09-14-mingw-amd64-31b0b43.json`. This is a useful
-  Windows-target compatibility result, but MinGW/Wine is not native Windows or
-  MSVC evidence and does not close the frozen-candidate platform gate.
+  gates also passed. The new MSVC export parser passed positive, unexpected,
+  and empty-table contracts, while the native gate script passed a syntax check
+  using a digest-pinned official PowerShell container. Exact source, container,
+  toolchain, artifact, and retained-path evidence is recorded in
+  `docs/quality-runs/2026-09-14-mingw-amd64-6d1eab0.json`. This is a useful
+  Windows-target compatibility result, but MinGW/Wine and a PowerShell syntax
+  check are not native Windows or MSVC execution evidence and do not close the
+  frozen-candidate platform gate.
 
 - Exact development commit
   `bec3e79ae48e0e8381abd7c22bbe588baa815e86` produced a deterministic
