@@ -89,6 +89,22 @@ open; it does not turn historical evidence into exact-candidate evidence.
   no publication is authorized.
 
 - Exact development commit
+  `1c4c8119ebe65732ad13cd953563a14db6e83b91` produced a deterministic
+  323,047-byte source archive with SHA-256
+  `0a2f9c90ef69914753bbba57ec499b21d910d2b5cffdcde4c193415081bd1917`
+  and a 632-byte schema-1.1 source manifest. The manifest binds the exact
+  commit and archive to the PREPARED support-profile hash without inventing an
+  immutable candidate ref; forcing ref verification in that state failed
+  closed as designed. The extracted archive then passed the pinned Linux amd64
+  production gate: static 15/15, shared 16/16, direct and relocated installed
+  consumers 2/2, and embedded consumers 1/1 for both linkage forms. Installed
+  examples, all nine public headers, dependency floors, SBOMs, documentation,
+  package isolation, and the exact 39-of-39 shared-export contract passed. Full
+  evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-1c4c811.json`; no viewer was built
+  or counted, and this remains unfrozen development evidence.
+
+- Exact development commit
   `7a259188b91de0d92dddf0a79628e8ca7e40a148` produced a deterministic
   320,657-byte source archive with SHA-256
   `e046ae7018b7f895ddd3845fce2d7de5896f6e096f7fa8df66a9f3422896f615`.
