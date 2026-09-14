@@ -97,6 +97,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
   builder/tamper contracts pass, but the PJSR lifecycle itself remains
   **NOT_TESTED**. The bundle is local, ad-hoc signed, unpublished, unconfigured,
   and unqualified, so `pfi.product-input-wiring` remains `LIMITED`.
+- PFI commit `dd0e88b18faaf96ef8161a476b8251ea1c85cec5` removes the
+  selected provider's remaining host-metadata preflight dependency. A separate
+  create-only manifest enumerates the container, projects ordered metadata, and
+  decodes only the three bounded PFI WCS blocks without reading image pixels;
+  PJSR caps the manifest at 16 MiB and rechecks source identity. The test proves
+  that metadata inspection succeeds on a fixture whose invalid declared pixel
+  checksum makes the later image decode fail. The exact 465,856-byte updated
+  provider has SHA-256
+  `f01ef8fe5f0a1872d6e0fcd7fe74d290519766e82974274eddd5636c7dfb0559`
+  and passed the fresh warnings-as-errors 8/8 gate. Native execution and product
+  qualification remain open, so the ledger status does not change.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
