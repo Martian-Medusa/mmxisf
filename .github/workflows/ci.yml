@@ -4,6 +4,12 @@ on:
   # Temporarily manual-only while routine development uses the documented local
   # gates. Dispatch the full matrix only for selected cross-platform checkpoints.
   workflow_dispatch:
+    inputs:
+      include_viewer:
+        description: Run the optional macOS viewer PoC gate
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -19,16 +25,12 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            viewer: OFF
             shared: "OFF"
           - os: macos-15
-            viewer: ON
             shared: "OFF"
           - os: ubuntu-latest
-            viewer: OFF
             shared: "ON"
           - os: macos-15
-            viewer: OFF
             shared: "ON"
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,7 +52,7 @@ jobs:
         run: >-
           cmake -S . -B build
           -DMMXISF_BUILD_TESTS=ON
-          -DMMXISF_BUILD_VIEWER=${{ matrix.viewer }}
+          -DMMXISF_BUILD_VIEWER=OFF
           -DBUILD_SHARED_LIBS=${{ matrix.shared }}
           -DCMAKE_BUILD_TYPE=Release
       - name: Build
@@ -75,6 +77,33 @@ jobs:
           path: build/binary-dependencies.spdx.json
           if-no-files-found: error
           retention-days: 14
+
+  viewer-poc:
+    if: ${{ inputs.include_viewer }}
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 26.3
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+      - name: Install dependencies
+        run: |
+          brew install expat lz4 openssl@3 zstd
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix expat);$(brew --prefix lz4);$(brew --prefix openssl@3);$(brew --prefix zstd)" >> "$GITHUB_ENV"
+      - name: Configure optional viewer PoC
+        run: >-
+          cmake -S . -B build-viewer
+          -DMMXISF_BUILD_TESTS=ON
+          -DMMXISF_BUILD_VIEWER=ON
+          -DBUILD_SHARED_LIBS=OFF
+          -DCMAKE_BUILD_TYPE=Release
+          -DMMXISF_VIEWER_OUTPUT_DIR=${{ github.workspace }}/artifacts
+      - name: Build and test optional viewer PoC
+        run: |
+          cmake --build build-viewer --config Release
+          ctest --test-dir build-viewer -C Release --output-on-failure
+          codesign --verify --deep --strict --verbose=2 "artifacts/mmXISF Viewer PoC.app"
 
   windows-build:
     runs-on: windows-latest

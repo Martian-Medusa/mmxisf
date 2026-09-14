@@ -8,17 +8,22 @@ gate_root=${MMXISF_LOCAL_GATE_ROOT:-"$repository_root/build-local-gates"}
 parallel_jobs=${MMXISF_LOCAL_JOBS:-2}
 warning_flags=${MMXISF_LOCAL_CXX_FLAGS:-"-Wall -Wextra -Wpedantic -Werror"}
 thread_sanitizer_enabled=${MMXISF_LOCAL_TSAN:-ON}
+viewer_enabled=${MMXISF_LOCAL_VIEWER:-OFF}
 sanitizer_cc=${MMXISF_LOCAL_SANITIZER_CC:-${CC:-cc}}
 sanitizer_cxx=${MMXISF_LOCAL_SANITIZER_CXX:-${CXX:-c++}}
 
-case $(uname -s) in
-  Darwin)
-    viewer_enabled=ON
+case "$viewer_enabled" in
+  ON|OFF)
     ;;
   *)
-    viewer_enabled=OFF
+    printf '%s\n' "MMXISF_LOCAL_VIEWER must be ON or OFF" >&2
+    exit 2
     ;;
 esac
+if [ "$viewer_enabled" = ON ] && [ "$(uname -s)" != Darwin ]; then
+  printf '%s\n' "MMXISF_LOCAL_VIEWER=ON requires macOS" >&2
+  exit 2
+fi
 
 configure_build_test()
 {
@@ -54,7 +59,7 @@ verify_installed_package()
 
 mkdir -p "$gate_root"
 
-configure_build_test "$gate_root/static" OFF "$viewer_enabled"
+configure_build_test "$gate_root/static" OFF OFF
 verify_installed_package "$gate_root/static" "$gate_root/install-static" \
   "$gate_root/consumer-static"
 
@@ -97,6 +102,7 @@ cmake --build "$gate_root/docs" --target mmxisf_docs \
 test -s "$gate_root/docs/api/html/index.html"
 
 if [ "$viewer_enabled" = ON ]; then
+  configure_build_test "$gate_root/viewer" OFF ON
   viewer_bundle="$gate_root/artifacts/mmXISF Viewer PoC.app"
   codesign --verify --deep --strict --verbose=2 "$viewer_bundle"
 fi

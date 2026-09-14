@@ -166,10 +166,11 @@ byte identity, and retain one archive, its SHA-256, and a machine-readable
 identity manifest as a short-lived workflow artifact. The same script can
 prepare a local rehearsal from a clean checkout; it refuses to overwrite an
 output directory or package a ref other than the checked-out `HEAD`. Routine
-development currently uses local static, shared, sanitizer, package-consumer,
-and viewer gates to conserve hosted runner minutes. This is release rehearsal
-only; the manifest records `publicationAuthorized: false`, and no tag or public
-release is created.
+development currently uses local static, shared, sanitizer, and package-
+consumer gates to conserve hosted runner minutes. The viewer has a separate
+opt-in gate and never contributes to the standalone-library result. This is
+release rehearsal only; the manifest records `publicationAuthorized: false`,
+and no tag or public release is created.
 
 Generate the versioned HTML API reference locally with:
 
@@ -204,13 +205,17 @@ tools/run_local_quality_gates.sh
 It performs warning-as-error static and shared builds, both installed-package
 consumer tests, the ASan/UBSan suite and deterministic 20,000-case mutation
 smoke, the ThreadSanitizer suite including concurrent same-reader and
-same-destination-writer contracts, generated API documentation, and—on
-macOS—the bundled viewer build and strict code-signature verification. Outputs stay under the ignored
-`build-local-gates` directory. `MMXISF_LOCAL_GATE_ROOT`, `MMXISF_LOCAL_JOBS`,
-`MMXISF_LOCAL_CXX_FLAGS`, and `MMXISF_LOCAL_TSAN=OFF` can override its output
-location, parallelism, warning flags, or explicitly skip TSan on an unsupported
-local compiler. The command records only evidence for the host where it runs;
-it does not replace the manually dispatched Linux/macOS/Windows matrix.
+same-destination-writer contracts, and generated API documentation. Outputs
+stay under the ignored `build-local-gates` directory. On macOS,
+`MMXISF_LOCAL_VIEWER=ON tools/run_local_quality_gates.sh` additionally runs the
+isolated viewer PoC build and strict code-signature check after the complete
+viewer-free library gate. `MMXISF_LOCAL_GATE_ROOT`, `MMXISF_LOCAL_JOBS`,
+`MMXISF_LOCAL_CXX_FLAGS`, `MMXISF_LOCAL_TSAN=OFF`, and
+`MMXISF_LOCAL_VIEWER=ON` control those explicit choices. The command records
+only evidence for the host where it runs; it does not replace the manually
+dispatched Linux/macOS/Windows matrix. The manual CI workflow follows the same
+boundary: its library matrix is always viewer-free, while the viewer job runs
+only when the `include_viewer` input is selected.
 
 The pre-release `Writer::write_file` API emits one or more attached little-
 endian Planar Gray or RGB images using UInt8, UInt16, UInt32, Float32, or

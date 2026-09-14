@@ -236,6 +236,18 @@ add_custom_command(
   VERBATIM
 )
 
+# CMake can refresh generated bundle resources (notably the timestamped binary
+# SBOM) without relinking the executable, so POST_BUILD alone does not run on
+# every incremental build. Re-seal the optional bundle after all resource-copy
+# rules on every top-level viewer build.
+add_custom_target(
+  mmxisf_viewer_seal ALL
+  COMMAND /usr/bin/codesign --force --deep --sign -
+          "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+  DEPENDS mmxisf_viewer
+  VERBATIM
+)
+
 set_target_properties(
   mmxisf_viewer
   PROPERTIES
