@@ -380,6 +380,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json`. The viewer was not
   built and does not contribute to this standalone-library gate. Windows and a
   frozen exact candidate remain open.
+- Exact development commit `69a7037a858cf9c2056e37fbb2047a7f413c6ddb`
+  made the product boundary executable in both local and hosted test
+  orchestration. The default local gate and all four Unix entries of the manual
+  CI matrix now build the reusable C++ library with the viewer disabled. The
+  exact clean macOS arm64 run passed static 13/13, shared 14/14, installed
+  consumers 1/1 each, ASan/UBSan 13/13 plus 20,000 mutations, TSan 13/13, and
+  API documentation. A separately opted-in viewer build passed 15/15 plus deep
+  signature verification, including a repeated incremental build after fixing
+  SBOM resealing. Its result remains ancillary. Exact evidence is retained in
+  `docs/quality-runs/2026-09-14-macos-arm64-69a7037.json`; the manual CI workflow
+  was not dispatched.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

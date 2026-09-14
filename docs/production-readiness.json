@@ -21,8 +21,8 @@
       "id": "quality.local-macos-arm64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-aac94f8.json",
-      "note": "Exact development commit aac94f80ac54c198ad3918840bf3a41186d3957f passed the maintained local warnings-as-errors static library suite 15/15, viewer-free shared library suite 13/13, installed static/shared consumers 1/1, ASan/UBSan 13/13 plus 20,000 deterministic mutations, ThreadSanitizer 13/13, generated documentation, and package-contract checks. The viewer bundle result is recorded as ancillary and does not contribute to library readiness."
+      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-69a7037.json",
+      "note": "Exact development commit 69a7037a858cf9c2056e37fbb2047a7f413c6ddb passed the maintained viewer-free local library gate: warnings-as-errors static 13/13 and shared 14/14, installed consumers 1/1 each, ASan/UBSan 13/13 plus 20,000 deterministic mutations, ThreadSanitizer 13/13, generated documentation, and package-contract checks. The isolated opt-in viewer passed separately and does not contribute to library readiness."
     },
     {
       "id": "quality.local-linux-amd64",
