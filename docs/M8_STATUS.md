@@ -89,6 +89,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
   no publication is authorized.
 
 - Exact development commit
+  `a0bb9a6fe794d9074eb3d163e66b9b8e7152f9f2` adds an independent,
+  fail-closed source-candidate verifier. Its positive contract and five
+  mutations cover publication authority, expected commit, archive name,
+  archive SHA-256, and support-profile binding. The clean commit produced a
+  deterministic 325,686-byte archive with SHA-256
+  `4f7469def9cf95c28ee1c2eff12c34d004cc88f7d3358700ad401af7310bda10`.
+  Verification passed both locally and after transfer to the pinned Linux
+  container. The extracted source then passed static 16/16, shared 17/17,
+  direct and relocated installed consumers 2/2, and embedded consumers 1/1
+  for both linkage forms. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-a0bb9a6.json`; this remains an
+  unpublished, unfrozen library-only result.
+
+- Exact development commit
   `1c4c8119ebe65732ad13cd953563a14db6e83b91` produced a deterministic
   323,047-byte source archive with SHA-256
   `0a2f9c90ef69914753bbba57ec499b21d910d2b5cffdcde4c193415081bd1917`

@@ -1,0 +1,160 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T16:07:25Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "a0bb9a6fe794d9074eb3d163e66b9b8e7152f9f2",
+  "sourceState": "DETERMINISTIC_EXTRACTED_ARCHIVE",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "archive": "mmxisf-0.1.0-source-a0bb9a6fe794.tar.gz",
+    "archiveSizeBytes": 325686,
+    "archiveSha256": "4f7469def9cf95c28ee1c2eff12c34d004cc88f7d3358700ad401af7310bda10",
+    "candidateManifestSchema": "mmxisf.source-candidate/1.1.0",
+    "candidateManifestSizeBytes": 632,
+    "candidateManifestSha256": "acb95c284393762b42a2f08fdc51f7341b07bee4aaea37cdd1bec41197589e1b",
+    "supportProfileState": "PREPARED",
+    "supportProfileCandidateRef": "",
+    "supportProfileSha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "status": "PREPARED_NOT_PUBLISHED",
+    "independentVerification": "PASS_LOCAL_AND_POST_TRANSFER_LINUX_CONTAINER"
+  },
+  "host": {
+    "name": "mllse",
+    "operatingSystem": "Ubuntu Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "processor": "AMD Ryzen 5 5500U with Radeon Graphics",
+    "logicalCpuCount": 12
+  },
+  "buildEnvironment": {
+    "containerImageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "containerImageSizeBytes": 967837114,
+    "baseImage": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "compiler": "GCC 13.3.0",
+    "cmake": "3.28.3",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror -Wno-missing-field-initializers",
+    "vcpkgCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "vcpkgManifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d",
+    "dependencies": {
+      "Expat": "2.8.4",
+      "zlib": "1.3.2#2",
+      "LZ4": "1.10.0",
+      "Zstandard": "1.5.7",
+      "OpenSSL": "3.6.4"
+    }
+  },
+  "results": {
+    "staticWarningsAsErrors": "PASS_16_OF_16",
+    "sharedWarningsAsErrors": "PASS_17_OF_17",
+    "sourceCandidateContract": "PASS_POSITIVE_AND_5_MUTATIONS_STATIC_SHARED",
+    "installedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES",
+    "relocatedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES",
+    "installedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "relocatedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "embeddedStaticConsumer": "PASS_1_OF_1",
+    "embeddedSharedConsumer": "PASS_1_OF_1",
+    "embeddedInstallPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "embeddedCtestPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "embeddedExampleTargetPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "installedPublicHeadersSelfContained": "PASS_9_OF_9_STATIC_AND_SHARED",
+    "embeddedPublicHeadersSelfContained": "PASS_9_OF_9_STATIC_AND_SHARED",
+    "preOnePackageVersionContract": "PASS",
+    "supportProfileContract": "PASS_SCHEMA_1_1_PREPARED_UNFROZEN",
+    "productionDependencyBaseline": "PASS",
+    "generatedApiDocumentation": "PASS",
+    "viewerBuilt": false
+  },
+  "sourceCandidateVerifier": {
+    "validManifest": "PASS",
+    "postTransferArchive": "PASS",
+    "rejectedMutations": [
+      "publication authorization set true",
+      "unexpected commit",
+      "unsafe or unexpected archive name",
+      "archive SHA-256 mismatch",
+      "support-profile binding mismatch"
+    ],
+    "bindings": [
+      "expected commit",
+      "project version",
+      "archive name",
+      "archive byte size",
+      "archive SHA-256",
+      "checksum file",
+      "archive prefix",
+      "determinism result",
+      "support-profile state, ref, and SHA-256"
+    ]
+  },
+  "packageBoundary": {
+    "topLevelInstallEnabledByDefault": true,
+    "embeddedInstallEnabledByDefault": false,
+    "embeddedExamplesEnabledByDefault": false,
+    "embeddedInstallProbeFiles": 0,
+    "staticConfigFindsPrivateLinkDependencies": true,
+    "sharedConfigFindsPrivateBuildDependencies": false,
+    "sharedPublicDependencyTargets": 0,
+    "relocatedContractsVerified": [
+      "imported library",
+      "binary SBOM",
+      "support profile",
+      "conformance matrix",
+      "specification baseline",
+      "installed public examples"
+    ]
+  },
+  "sharedLibraryContract": {
+    "definedDynamicExports": 39,
+    "mmxisfApiExports": 39,
+    "unexpectedExports": 0,
+    "directRuntimeDependencies": [
+      "libstdc++.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "productionDependenciesLinkedStaticallyAndHidden": true,
+    "validator": "mmxisf.shared-export-surface"
+  },
+  "artifacts": [
+    {
+      "path": "build-vcpkg-linux-amd64-a0bb9a6/static/libmmxisf.a",
+      "sizeBytes": 807198,
+      "sha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-a0bb9a6/shared/libmmxisf.so.0.1.0",
+      "sizeBytes": 8569864,
+      "sha256": "fdb9f5d20769383c486d83d5558681da4dbff7c41c87bc1e4b93d4efcccfc478"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-a0bb9a6/install-static/share/mmxisf/sbom/binary-dependencies.spdx.json",
+      "sizeBytes": 3043,
+      "sha256": "28e4c2c62fef4580a0ac0031397138d246fc4f6427cfa92335fee90524d64d40"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-a0bb9a6/install-shared/share/mmxisf/sbom/binary-dependencies.spdx.json",
+      "sizeBytes": 3043,
+      "sha256": "5afab2a5f0d330cb311411596e3ff643a040d3746533f8127c7fe1457cb1069c"
+    },
+    {
+      "path": "docs/support-profile-0.1.0.json",
+      "sha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4"
+    },
+    {
+      "path": "docs/conformance/xisf-1.0-matrix.json",
+      "sha256": "cfd74ea0a2d314f00e1a572442559426f2707957a0c5e417abbb5ba06c978ca9"
+    }
+  ],
+  "limitations": [
+    "This is exact-development-commit Linux amd64 evidence, not a frozen release-candidate result.",
+    "Windows and exact-candidate macOS/Linux validation remain separate gates.",
+    "Sanitizer and long-fuzz results are retained in separate runs and were not repeated in this production-dependency replay.",
+    "A positive immutable-ref check is possible only after an owner-approved candidate ref exists.",
+    "The optional viewer was excluded and does not contribute to standalone library readiness."
+  ],
+  "retainedEvidence": {
+    "remoteRoot": "/home/matt/mmxisf-gates/a0bb9a6fe794"
+  }
+}

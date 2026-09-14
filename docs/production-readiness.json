@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-1c4c811.json",
-      "note": "Exact development commit 1c4c8119ebe65732ad13cd953563a14db6e83b91 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 15/15, shared 16/16, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. The package tests built and executed its installed reader/writer examples, including with all five private dependency searches disabled for shared linkage. All nine public headers, schema-1.1 support-profile binding, the pre-1.0 package-version contract, dependency floors, documentation, and binary SBOM checks passed. Embedded projects created no global CTest state, example targets, or mmxisf install payload without explicit opt-in. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-a0bb9a6.json",
+      "note": "Exact development commit a0bb9a6fe794d9074eb3d163e66b9b8e7152f9f2 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 16/16, shared 17/17, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. Its new source-candidate contract accepted the valid manifest and rejected five identity, integrity, and publication-authority mutations in both library configurations. The package tests built and executed installed reader/writer examples with all five private dependency searches disabled for shared linkage. All nine public headers, schema-1.1 support-profile binding, package-version contract, dependency floors, documentation, SBOMs, package isolation, and the exact 39-of-39 shared-export surface passed; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-1c4c811.json",
-      "note": "Exact development commit 1c4c8119ebe65732ad13cd953563a14db6e83b91 produced two byte-identical source archives and a schema-1.1 manifest that independently binds commit, archive, and PREPARED support-profile hash. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 15/15 and shared 16/16 suites, installed and relocated consumers 2/2, embedded consumers 1/1, independent compilation of all nine public headers, the pre-1.0 version contract, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. Installed examples built and ran in all package-consumer variants, shared consumers required no private development dependency discovery, and embedded builds added no implicit install payload or example targets. Forced immutable-ref verification failed closed because no owner-approved frozen ref exists. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-a0bb9a6.json",
+      "note": "Exact development commit a0bb9a6fe794d9074eb3d163e66b9b8e7152f9f2 produced two byte-identical source archives and a schema-1.1 manifest. An independent verifier bound the expected commit, project version, archive identity and bytes, checksum, prefix, determinism result, and support-profile identity locally and again after transfer to Linux. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 16/16 and shared 17/17 suites, installed and relocated consumers 2/2, embedded consumers 1/1, all nine public headers, package isolation, SBOMs, API documentation, installed examples, and the 39-of-39 shared-export contract. Five mutated manifests were rejected. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",
