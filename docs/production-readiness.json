@@ -25,6 +25,13 @@
       "note": "Exact commit 405aba83ba5292dd3ff0e8bf46728c4edf317c1a passed the maintained local static, shared, ASan/UBSan, ThreadSanitizer, package-consumer, documentation, viewer-signature, and readiness-contract gate with 12/12 tests in each library configuration and 20,000 sanitizer mutations."
     },
     {
+      "id": "quality.local-linux-amd64",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/security-audits/2026-09-14-docker-ubuntu-24.04-amd64.json",
+      "note": "Exact commit 50fc120391e7f156c069bfdd13e41e4942be2ccf passed an extracted-source Ubuntu 24.04 amd64 gate: GCC static/shared 12/12 each, installed consumers 1/1 each, Clang ASan/UBSan 12/12 plus 20,000 mutations, ThreadSanitizer 12/12, generated documentation, and retained static/shared binary SBOM identities. The system dependency versions do not satisfy the separate production floor."
+    },
+    {
       "id": "quality.exact-candidate-cross-platform",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],

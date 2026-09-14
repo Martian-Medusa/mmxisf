@@ -260,6 +260,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   The separate pinned-static vcpkg build also passed 12/12 plus install and its
   installed consumer 1/1. This is current local evidence, not frozen-candidate
   Linux/Windows evidence.
+- Exact commit `50fc120391e7f156c069bfdd13e41e4942be2ccf` passed the
+  reproducible local Linux amd64 Docker gate using only its deterministic
+  extracted source archive. On Ubuntu 24.04, GCC 13 warnings-as-errors static
+  and shared builds passed 12/12 each and both installed consumers passed 1/1;
+  Clang 18 ASan/UBSan passed 12/12 plus 20,000 deterministic mutations,
+  ThreadSanitizer passed 12/12, and the generated API documentation passed.
+  The pinned base image, toolchain, exact system packages, source archive and
+  static/shared binary-SBOM hashes are retained in
+  `docs/security-audits/2026-09-14-docker-ubuntu-24.04-amd64.json`. The Ubuntu
+  system packages are intentionally recorded as compatibility evidence only:
+  they do not satisfy the separate conservative production dependency floor,
+  and this is not Windows or frozen-candidate evidence.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit
