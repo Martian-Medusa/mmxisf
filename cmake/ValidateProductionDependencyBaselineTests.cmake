@@ -47,29 +47,29 @@ function(mmxisf_run_baseline_case name expect_success
 endfunction()
 
 mmxisf_run_baseline_case(
-  exact-floor TRUE 2.8.2 1.3.2 1.10.0 1.5.7 3.5.8 ""
+  exact-floor TRUE 2.8.4 1.3.2 1.10.0 1.5.7 3.5.8 ""
 )
 mmxisf_run_baseline_case(
   current-development FALSE 2.5.0 1.3 1.9.4 1.5.5 3.2.0
   "Expat 2.5.0 is below"
 )
 mmxisf_run_baseline_case(
-  expat-low FALSE 2.8.1 1.3.2 1.10.0 1.5.7 3.5.8
-  "Expat 2.8.1 is below"
+  expat-low FALSE 2.8.3 1.3.2 1.10.0 1.5.7 3.5.8
+  "Expat 2.8.3 is below"
 )
 mmxisf_run_baseline_case(
-  zlib-low FALSE 2.8.2 1.3.1 1.10.0 1.5.7 3.5.8
+  zlib-low FALSE 2.8.4 1.3.1 1.10.0 1.5.7 3.5.8
   "zlib 1.3.1 is below"
 )
 mmxisf_run_baseline_case(
-  lz4-low FALSE 2.8.2 1.3.2 1.9.4 1.5.7 3.5.8
+  lz4-low FALSE 2.8.4 1.3.2 1.9.4 1.5.7 3.5.8
   "LZ4 1.9.4 is below"
 )
 mmxisf_run_baseline_case(
-  zstd-low FALSE 2.8.2 1.3.2 1.10.0 1.5.6 3.5.8
+  zstd-low FALSE 2.8.4 1.3.2 1.10.0 1.5.6 3.5.8
   "Zstandard 1.5.6 is below"
 )
 mmxisf_run_baseline_case(
-  openssl-low FALSE 2.8.2 1.3.2 1.10.0 1.5.7 3.5.7
+  openssl-low FALSE 2.8.4 1.3.2 1.10.0 1.5.7 3.5.7
   "OpenSSL 3.5.7 is below"
 )

@@ -29,7 +29,7 @@ foreach(required_version
 endforeach()
 
 mmxisf_require_dependency_version(
-  "Expat" "${MMXISF_EXPAT_VERSION}" "2.8.2"
+  "Expat" "${MMXISF_EXPAT_VERSION}" "2.8.4"
 )
 mmxisf_require_dependency_version(
   "zlib" "${MMXISF_ZLIB_VERSION}" "1.3.2"

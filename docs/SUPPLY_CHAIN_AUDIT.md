@@ -47,7 +47,10 @@ It fails the production dependency baseline: Expat 2.5.0 and the end-of-life
 OpenSSL 3.2.0 are hard blockers, while zlib, LZ4, and Zstandard must also be
 refreshed to the documented release floor. Release-candidate configuration now
 has an opt-in fail-closed dependency-baseline check; beta and production builds
-must enable it.
+must enable it. A checked vcpkg manifest pins an immutable official registry
+commit whose five selected ports meet the dated floor without modifying the
+host package installation; Dependabot monitors that baseline independently
+from the GitHub Actions pins.
 
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain

@@ -97,6 +97,32 @@ build/mmxisf-inspect --decode-rows path/to/image.xisf
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
 OpenSSL Crypto development packages. No dependency is downloaded implicitly.
 
+For an isolated, versioned dependency graph, use the checked `vcpkg.json` with
+a vcpkg checkout at its pinned built-in registry commit, then configure through
+the vcpkg toolchain and enable the production floor:
+
+```sh
+cmake -S . -B build-vcpkg \
+  -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DMMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE=ON \
+  -DMMXISF_BUILD_TESTS=ON
+cmake --build build-vcpkg
+ctest --test-dir build-vcpkg --output-on-failure
+```
+
+Manifest mode keeps its installed dependency graph isolated from system and
+MacPorts packages. The pinned baseline is reproducible input, not a permanent
+security approval; refresh and audit it before freezing every candidate.
+
+On macOS arm64, a bootstrapped vcpkg checkout can run the complete isolated
+baseline, installed-consumer, static-linkage, viewer-signature, and architecture
+gate with:
+
+```sh
+MMXISF_VCPKG_ROOT=/path/to/vcpkg \
+  tools/run_vcpkg_macos_arm64_gate.sh
+```
+
 The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
 library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static

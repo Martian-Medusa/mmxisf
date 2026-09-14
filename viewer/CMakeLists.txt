@@ -46,8 +46,6 @@ if(EXPAT_LIBRARY MATCHES "\\.dylib$")
             "$<TARGET_FILE:mmxisf_viewer>"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/libexpat.1.dylib"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
@@ -85,8 +83,6 @@ if(ZLIB_LIBRARY MATCHES "\\.dylib$")
             "$<TARGET_FILE:mmxisf_viewer>"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_ZLIB_BUNDLE_NAME}"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
@@ -124,8 +120,6 @@ if(LZ4_LIBRARY MATCHES "\\.dylib$")
             "$<TARGET_FILE:mmxisf_viewer>"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_LZ4_BUNDLE_NAME}"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
@@ -163,8 +157,6 @@ if(ZSTD_LIBRARY MATCHES "\\.dylib$")
             "$<TARGET_FILE:mmxisf_viewer>"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_ZSTD_BUNDLE_NAME}"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
@@ -204,8 +196,6 @@ if(OPENSSL_CRYPTO_LIBRARY MATCHES "\\.dylib$")
             "$<TARGET_FILE:mmxisf_viewer>"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
@@ -219,11 +209,19 @@ if(OPENSSL_CRYPTO_LIBRARY MATCHES "\\.dylib$" AND
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
     COMMAND /usr/bin/codesign --force --sign -
             "$<TARGET_BUNDLE_DIR:mmxisf_viewer>/Contents/Frameworks/${MMXISF_CRYPTO_BUNDLE_NAME}"
-    COMMAND /usr/bin/codesign --force --sign -
-            "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
     VERBATIM
   )
 endif()
+
+# Sign the complete bundle once, after every optional copied dylib has been
+# rewritten and signed. This is also required for all-static dependency builds:
+# signing only the Mach-O executable leaves Resources outside the code seal.
+add_custom_command(
+  TARGET mmxisf_viewer POST_BUILD
+  COMMAND /usr/bin/codesign --force --deep --sign -
+          "$<TARGET_BUNDLE_DIR:mmxisf_viewer>"
+  VERBATIM
+)
 
 set_target_properties(
   mmxisf_viewer

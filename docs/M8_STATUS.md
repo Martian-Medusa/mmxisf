@@ -217,7 +217,10 @@ open; it does not turn historical evidence into exact-candidate evidence.
   REQUIRED**: Expat 2.5.0 predates security fixes, OpenSSL 3.2.0 is end-of-life,
   and zlib, LZ4, and Zstandard are below the conservative production floors.
   An opt-in configure gate now rejects those versions for candidate builds;
-  the public security intake and a fresh frozen-candidate review remain open.
+  a checked vcpkg manifest pins official registry commit
+  `a1cae005c39be7b18ba319fced856b68d7276271` with all five ports at or above
+  the corrected Expat 2.8.4 floor. An actual isolated build, the public security
+  intake, and a fresh frozen-candidate review remain open.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

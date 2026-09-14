@@ -1,5 +1,15 @@
 version: 2
 updates:
+  - package-ecosystem: vcpkg
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
   - package-ecosystem: github-actions
     directory: /
     schedule:
