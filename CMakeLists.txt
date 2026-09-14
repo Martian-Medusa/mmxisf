@@ -105,10 +105,20 @@ target_link_libraries(
   mmxisf
   PRIVATE EXPAT::EXPAT LZ4::LZ4 OpenSSL::Crypto ZLIB::ZLIB ZSTD::ZSTD
 )
-if(BUILD_SHARED_LIBS AND UNIX AND NOT APPLE)
+if(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
   # vcpkg commonly supplies static dependency archives even when mmxisf itself
-  # is shared. Do not re-export their C entry points from libmmxisf.so.
-  target_link_options(mmxisf PRIVATE "LINKER:--exclude-libs,ALL")
+  # is shared. Do not re-export their C entry points or weak standard-library
+  # template instantiations from libmmxisf.so.
+  target_link_options(
+    mmxisf
+    PRIVATE
+      "LINKER:--exclude-libs,ALL"
+      "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/cmake/mmxisf-exports.map"
+  )
+  set_property(
+    TARGET mmxisf APPEND PROPERTY LINK_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mmxisf-exports.map"
+  )
 endif()
 
 if(MMXISF_BUILD_VIEWER)

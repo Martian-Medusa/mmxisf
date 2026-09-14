@@ -1,0 +1,7 @@
+{
+  global:
+    _ZN6mmxisf*;
+    _ZNK6mmxisf*;
+  local:
+    *;
+};
