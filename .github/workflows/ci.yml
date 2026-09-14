@@ -65,11 +65,21 @@ jobs:
         run: >-
           cmake -S tests/package_consumer -B build-consumer
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
+          -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install"
           -DCMAKE_BUILD_TYPE=Release
       - name: Build installed-package consumer
         run: cmake --build build-consumer --config Release
       - name: Test installed-package consumer
         run: ctest --test-dir build-consumer -C Release --output-on-failure
+      - name: Test relocated installed package (Unix)
+        run: |
+          cmake -E copy_directory install install-relocated
+          cmake -S tests/package_consumer -B build-consumer-relocated \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-relocated" \
+            -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-relocated" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-consumer-relocated --config Release
+          ctest --test-dir build-consumer-relocated -C Release --output-on-failure
       - name: Configure source-subdirectory consumer (Unix)
         run: >-
           cmake -S tests/subdirectory_consumer -B build-subdirectory-consumer
@@ -139,9 +149,17 @@ jobs:
         run: |
           cmake -S tests/package_consumer -B consumer-static -A x64 `
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-static" `
+            -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-static" `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           cmake --build consumer-static --config Release
           ctest --test-dir consumer-static -C Release --output-on-failure
+          cmake -E copy_directory install-static install-static-relocated
+          cmake -S tests/package_consumer -B consumer-static-relocated -A x64 `
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-static-relocated" `
+            -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-static-relocated" `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build consumer-static-relocated --config Release
+          ctest --test-dir consumer-static-relocated -C Release --output-on-failure
       - name: Test static source-subdirectory consumption
         run: |
           cmake -S tests/subdirectory_consumer -B subdirectory-consumer-static -A x64 `
@@ -167,6 +185,7 @@ jobs:
         run: >-
           cmake -S tests/package_consumer -B consumer-shared -A x64
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared"
+          -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-shared"
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
       - name: Build installed shared package consumer
         timeout-minutes: 5
@@ -177,6 +196,18 @@ jobs:
           $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\install-shared\bin;$vcpkgRuntime;$env:PATH"
           ctest --test-dir consumer-shared -C Release --output-on-failure --timeout 30
+      - name: Test relocated installed shared package
+        timeout-minutes: 5
+        run: |
+          cmake -E copy_directory install-shared install-shared-relocated
+          cmake -S tests/package_consumer -B consumer-shared-relocated -A x64 `
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared-relocated" `
+            -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-shared-relocated" `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          cmake --build consumer-shared-relocated --config Release
+          $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
+          $env:PATH = "${{ github.workspace }}\install-shared-relocated\bin;$vcpkgRuntime;$env:PATH"
+          ctest --test-dir consumer-shared-relocated -C Release --output-on-failure --timeout 30
       - name: Test shared source-subdirectory consumption
         run: |
           cmake -S tests/subdirectory_consumer -B subdirectory-consumer-shared -A x64 `

@@ -20,6 +20,53 @@ foreach(_contract_variable
   endif()
 endforeach()
 
+if(DEFINED MMXISF_EXPECTED_PACKAGE_PREFIX)
+  file(REAL_PATH "${MMXISF_EXPECTED_PACKAGE_PREFIX}"
+    _expected_package_prefix)
+
+  function(mmxisf_require_path_in_expected_prefix path description)
+    file(REAL_PATH "${path}" _actual_path)
+    string(FIND "${_actual_path}" "${_expected_package_prefix}/"
+      _prefix_position)
+    if(NOT _prefix_position EQUAL 0)
+      message(FATAL_ERROR
+        "${description} resolved outside the expected package prefix: "
+        "${_actual_path} (expected ${_expected_package_prefix})")
+    endif()
+  endfunction()
+
+  mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_BINARY_SBOM}" "Binary SBOM")
+  mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_SUPPORT_PROFILE}" "Support profile")
+  mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_CONFORMANCE_MATRIX}" "Conformance matrix")
+  mmxisf_require_path_in_expected_prefix(
+    "${mmxisf_SPECIFICATION_BASELINE}" "Specification baseline")
+
+  get_target_property(_imported_configurations mmxisf::mmxisf
+    IMPORTED_CONFIGURATIONS)
+  if(NOT _imported_configurations)
+    set(_imported_configurations NOCONFIG)
+  endif()
+  set(_checked_imported_artifact false)
+  foreach(_configuration IN LISTS _imported_configurations)
+    foreach(_artifact_property IN ITEMS
+        IMPORTED_LOCATION_${_configuration}
+        IMPORTED_IMPLIB_${_configuration})
+      get_target_property(_artifact mmxisf::mmxisf ${_artifact_property})
+      if(_artifact AND NOT _artifact MATCHES "-NOTFOUND$")
+        mmxisf_require_path_in_expected_prefix(
+          "${_artifact}" "Imported mmxisf artifact")
+        set(_checked_imported_artifact true)
+      endif()
+    endforeach()
+  endforeach()
+  if(NOT _checked_imported_artifact)
+    message(FATAL_ERROR "Installed mmxisf target exports no package artifact")
+  endif()
+endif()
+
 file(READ "${mmxisf_SUPPORT_PROFILE}" _support_profile)
 string(JSON _support_profile_schema GET "${_support_profile}" schema)
 if(NOT _support_profile_schema STREQUAL "mmxisf.support-profile/1.0.0")

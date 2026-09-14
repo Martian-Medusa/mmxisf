@@ -47,6 +47,8 @@ run_variant() {
   build_directory="$build_root/$variant"
   install_directory="$build_root/install-$variant"
   consumer_directory="$build_root/consumer-$variant"
+  relocated_install_directory="$build_root/install-$variant-relocated"
+  relocated_consumer_directory="$build_root/consumer-$variant-relocated"
   subdirectory_consumer_directory="$build_root/subdirectory-consumer-$variant"
 
   cmake -S "$repository_root" -B "$build_directory" \
@@ -70,10 +72,24 @@ run_variant() {
     -B "$consumer_directory" \
     -G Ninja \
     "-DCMAKE_PREFIX_PATH=$install_directory;$installed_directory/x64-linux" \
+    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
     -DCMAKE_BUILD_TYPE=Release \
     "-DCMAKE_CXX_FLAGS=$warning_flags"
   cmake --build "$consumer_directory" --parallel "$parallel_jobs"
   ctest --test-dir "$consumer_directory" --output-on-failure
+
+  cmake -E copy_directory "$install_directory" \
+    "$relocated_install_directory"
+  cmake -S "$repository_root/tests/package_consumer" \
+    -B "$relocated_consumer_directory" \
+    -G Ninja \
+    "-DCMAKE_PREFIX_PATH=$relocated_install_directory;$installed_directory/x64-linux" \
+    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$relocated_install_directory" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$relocated_consumer_directory" \
+    --parallel "$parallel_jobs"
+  ctest --test-dir "$relocated_consumer_directory" --output-on-failure
 
   cmake -S "$repository_root/tests/subdirectory_consumer" \
     -B "$subdirectory_consumer_directory" \

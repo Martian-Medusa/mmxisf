@@ -173,6 +173,12 @@ modes also compile every public header in its own translation unit; the gate
 fails if a header depends on another public header being included first or if
 the checked public-header inventory becomes stale.
 
+Installed-package gates additionally copy each static and shared installation
+to a new prefix and build a fresh consumer there. The consumer verifies that
+the imported library, SBOM, support profile, conformance matrix, and
+specification baseline all resolve inside that copied prefix, preventing hidden
+build-tree or original-install dependencies.
+
 Each manually dispatched full CI revision uses
 `cmake/PrepareSourceCandidate.cmake` to create the source archive twice, require
 byte identity, and retain one archive, its SHA-256, and a machine-readable

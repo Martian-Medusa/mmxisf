@@ -46,15 +46,31 @@ verify_installed_package()
   build_directory=$1
   install_directory=$2
   consumer_directory=$3
+  relocated_install_directory="$install_directory-relocated"
+  relocated_consumer_directory="$consumer_directory-relocated"
   cmake --install "$build_directory" --config Release \
     --prefix "$install_directory"
   cmake -S "$repository_root/tests/package_consumer" \
     -B "$consumer_directory" \
     "-DCMAKE_PREFIX_PATH=$install_directory" \
+    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
     -DCMAKE_BUILD_TYPE=Release \
     "-DCMAKE_CXX_FLAGS=$warning_flags"
   cmake --build "$consumer_directory" --parallel "$parallel_jobs"
   ctest --test-dir "$consumer_directory" -C Release --output-on-failure
+
+  cmake -E remove_directory "$relocated_install_directory"
+  cmake -E copy_directory "$install_directory" \
+    "$relocated_install_directory"
+  cmake -S "$repository_root/tests/package_consumer" \
+    -B "$relocated_consumer_directory" \
+    "-DCMAKE_PREFIX_PATH=$relocated_install_directory" \
+    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$relocated_install_directory" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$relocated_consumer_directory" --parallel "$parallel_jobs"
+  ctest --test-dir "$relocated_consumer_directory" -C Release \
+    --output-on-failure
 }
 
 verify_subdirectory_consumer()
