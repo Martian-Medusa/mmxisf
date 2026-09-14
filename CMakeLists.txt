@@ -129,6 +129,12 @@ if(MMXISF_BUILD_TESTS)
   add_executable(mmxisf_version_test tests/version_test.cpp)
   target_link_libraries(mmxisf_version_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.version COMMAND mmxisf_version_test)
+  add_executable(mmxisf_public_api_contract_test
+    tests/public_api_contract.cpp)
+  target_link_libraries(mmxisf_public_api_contract_test
+    PRIVATE mmxisf::mmxisf)
+  add_test(NAME mmxisf.public-api-contract
+    COMMAND mmxisf_public_api_contract_test)
   add_executable(mmxisf_reader_test tests/reader_test.cpp)
   target_link_libraries(mmxisf_reader_test PRIVATE mmxisf::mmxisf)
   add_test(NAME mmxisf.reader COMMAND mmxisf_reader_test)

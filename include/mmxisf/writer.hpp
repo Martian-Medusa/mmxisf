@@ -53,7 +53,8 @@ struct MetadataWriteEntry {
   std::string value;
   std::string comment;
   // Block-backed vector/matrix Properties borrow exact serialized element
-  // bytes for the duration of write_file(). No byte-order conversion occurs.
+  // bytes for the duration of the synchronous write_file() or write_to() call.
+  // No byte-order conversion occurs.
   MetadataWriteValueForm value_form{MetadataWriteValueForm::direct};
   std::optional<std::uint64_t> length;
   std::optional<std::uint64_t> rows;
