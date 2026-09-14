@@ -25,6 +25,10 @@ open; it does not turn historical evidence into exact-candidate evidence.
   package, not source-tree headers.
 - The maintained Linux production-dependency gate builds each static and shared
   library twice in distinct build directories and requires byte identity.
+- The maintained viewer-free local Unix gate applies the same distinct-build
+  byte-identity check to static and shared libraries, including macOS arm64.
+  The macOS gate explicitly enables Apple's `ZERO_AR_DATE=1` reproducible-
+  archive mode instead of post-processing the resulting static library.
 - Static library is the default; shared-library builds use explicit public
   symbol import/export annotations, hidden non-public symbols on supported
   compilers, and the same installed-package consumer.

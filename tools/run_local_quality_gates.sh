@@ -24,6 +24,12 @@ if [ "$viewer_enabled" = ON ] && [ "$(uname -s)" != Darwin ]; then
   printf '%s\n' "MMXISF_LOCAL_VIEWER=ON requires macOS" >&2
   exit 2
 fi
+if [ "$(uname -s)" = Darwin ]; then
+  # Apple's archiver otherwise records member mtimes in static libraries.
+  # ZERO_AR_DATE is the platform-supported reproducible-archive mode and also
+  # keeps ranlib's table of contents deterministic.
+  export ZERO_AR_DATE=1
+fi
 
 configure_build_test()
 {
@@ -110,6 +116,45 @@ verify_subdirectory_consumer()
   ctest --test-dir "$consumer_directory" -C Release --output-on-failure
 }
 
+verify_reproducible_library()
+{
+  primary_directory=$1
+  reproduction_directory=$2
+  shared=$3
+  cmake -S "$repository_root" -B "$reproduction_directory" \
+    -DMMXISF_BUILD_TESTS=OFF \
+    -DMMXISF_BUILD_TOOLS=OFF \
+    -DMMXISF_BUILD_EXAMPLES=OFF \
+    -DMMXISF_BUILD_VIEWER=OFF \
+    -DMMXISF_BUILD_DOCS=OFF \
+    -DMMXISF_INSTALL=OFF \
+    "-DBUILD_SHARED_LIBS=$shared" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$reproduction_directory" --target mmxisf \
+    --parallel "$parallel_jobs"
+  if [ "$shared" = ON ]; then
+    case "$(uname -s)" in
+      Darwin)
+        primary_library="$primary_directory/libmmxisf.0.1.0.dylib"
+        reproduced_library="$reproduction_directory/libmmxisf.0.1.0.dylib"
+        ;;
+      Linux)
+        primary_library="$primary_directory/libmmxisf.so.0.1.0"
+        reproduced_library="$reproduction_directory/libmmxisf.so.0.1.0"
+        ;;
+      *)
+        printf '%s\n' "Unsupported shared-library platform" >&2
+        exit 2
+        ;;
+    esac
+  else
+    primary_library="$primary_directory/libmmxisf.a"
+    reproduced_library="$reproduction_directory/libmmxisf.a"
+  fi
+  cmake -E compare_files "$primary_library" "$reproduced_library"
+}
+
 mkdir -p "$gate_root"
 
 configure_build_test "$gate_root/static" OFF OFF
@@ -119,6 +164,11 @@ verify_installed_package "$gate_root/static" "$gate_root/install-static" \
 configure_build_test "$gate_root/shared" ON OFF
 verify_installed_package "$gate_root/shared" "$gate_root/install-shared" \
   "$gate_root/consumer-shared" shared
+
+verify_reproducible_library "$gate_root/static" \
+  "$gate_root/reproduction-static" OFF
+verify_reproducible_library "$gate_root/shared" \
+  "$gate_root/reproduction-shared" ON
 
 verify_subdirectory_consumer "$gate_root/subdirectory-consumer-static" OFF
 verify_subdirectory_consumer "$gate_root/subdirectory-consumer-shared" ON
