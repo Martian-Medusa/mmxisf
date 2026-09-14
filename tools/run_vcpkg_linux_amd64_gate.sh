@@ -41,6 +41,37 @@ fi
 toolchain="$vcpkg_root/scripts/buildsystems/vcpkg.cmake"
 installed_directory="$build_root/vcpkg_installed"
 
+configure_installed_consumer() {
+  consumer_directory=$1
+  install_directory=$2
+  linkage=$3
+  if [ "$linkage" = shared ]; then
+    cmake --no-warn-unused-cli \
+      -S "$repository_root/tests/package_consumer" \
+      -B "$consumer_directory" \
+      -G Ninja \
+      "-DCMAKE_PREFIX_PATH=$install_directory" \
+      "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
+      -DMMXISF_EXPECTED_LINKAGE=shared \
+      -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE \
+      -DCMAKE_BUILD_TYPE=Release \
+      "-DCMAKE_CXX_FLAGS=$warning_flags"
+  else
+    cmake -S "$repository_root/tests/package_consumer" \
+      -B "$consumer_directory" \
+      -G Ninja \
+      "-DCMAKE_PREFIX_PATH=$install_directory;$installed_directory/x64-linux" \
+      "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
+      -DMMXISF_EXPECTED_LINKAGE=static \
+      -DCMAKE_BUILD_TYPE=Release \
+      "-DCMAKE_CXX_FLAGS=$warning_flags"
+  fi
+}
+
 run_variant() {
   variant=$1
   shared=$2
@@ -68,25 +99,15 @@ run_variant() {
   ctest --test-dir "$build_directory" --output-on-failure
   cmake --install "$build_directory" --prefix "$install_directory"
 
-  cmake -S "$repository_root/tests/package_consumer" \
-    -B "$consumer_directory" \
-    -G Ninja \
-    "-DCMAKE_PREFIX_PATH=$install_directory;$installed_directory/x64-linux" \
-    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
-    -DCMAKE_BUILD_TYPE=Release \
-    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  configure_installed_consumer "$consumer_directory" "$install_directory" \
+    "$variant"
   cmake --build "$consumer_directory" --parallel "$parallel_jobs"
   ctest --test-dir "$consumer_directory" --output-on-failure
 
   cmake -E copy_directory "$install_directory" \
     "$relocated_install_directory"
-  cmake -S "$repository_root/tests/package_consumer" \
-    -B "$relocated_consumer_directory" \
-    -G Ninja \
-    "-DCMAKE_PREFIX_PATH=$relocated_install_directory;$installed_directory/x64-linux" \
-    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$relocated_install_directory" \
-    -DCMAKE_BUILD_TYPE=Release \
-    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  configure_installed_consumer "$relocated_consumer_directory" \
+    "$relocated_install_directory" "$variant"
   cmake --build "$relocated_consumer_directory" \
     --parallel "$parallel_jobs"
   ctest --test-dir "$relocated_consumer_directory" --output-on-failure

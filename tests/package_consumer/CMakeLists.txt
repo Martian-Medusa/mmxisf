@@ -5,6 +5,16 @@ project(mmxisf_package_consumer LANGUAGES CXX)
 enable_testing()
 find_package(mmxisf 0.1 REQUIRED CONFIG)
 include("${CMAKE_CURRENT_LIST_DIR}/../cmake/AddPublicHeaderSelfContainment.cmake")
+if(NOT DEFINED mmxisf_LINKAGE OR
+   NOT mmxisf_LINKAGE MATCHES "^(static|shared)$")
+  message(FATAL_ERROR "Installed mmxisf package did not export its linkage")
+endif()
+if(DEFINED MMXISF_EXPECTED_LINKAGE AND
+   NOT mmxisf_LINKAGE STREQUAL MMXISF_EXPECTED_LINKAGE)
+  message(FATAL_ERROR
+    "Installed mmxisf linkage is ${mmxisf_LINKAGE}; expected "
+    "${MMXISF_EXPECTED_LINKAGE}")
+endif()
 if(NOT DEFINED mmxisf_BINARY_SBOM OR NOT EXISTS "${mmxisf_BINARY_SBOM}")
   message(FATAL_ERROR
     "Installed mmxisf package did not export its binary dependency SBOM")

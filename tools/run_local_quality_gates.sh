@@ -41,33 +41,56 @@ configure_build_test()
   ctest --test-dir "$build_directory" -C Release --output-on-failure
 }
 
+configure_installed_consumer()
+{
+  consumer_directory=$1
+  install_directory=$2
+  linkage=$3
+  if [ "$linkage" = shared ]; then
+    cmake --no-warn-unused-cli \
+      -S "$repository_root/tests/package_consumer" \
+      -B "$consumer_directory" \
+      "-DCMAKE_PREFIX_PATH=$install_directory" \
+      "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
+      -DMMXISF_EXPECTED_LINKAGE=shared \
+      -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE \
+      -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE \
+      -DCMAKE_BUILD_TYPE=Release \
+      "-DCMAKE_CXX_FLAGS=$warning_flags"
+  else
+    cmake -S "$repository_root/tests/package_consumer" \
+      -B "$consumer_directory" \
+      "-DCMAKE_PREFIX_PATH=$install_directory" \
+      "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
+      -DMMXISF_EXPECTED_LINKAGE=static \
+      -DCMAKE_BUILD_TYPE=Release \
+      "-DCMAKE_CXX_FLAGS=$warning_flags"
+  fi
+}
+
 verify_installed_package()
 {
   build_directory=$1
   install_directory=$2
   consumer_directory=$3
+  linkage=$4
   relocated_install_directory="$install_directory-relocated"
   relocated_consumer_directory="$consumer_directory-relocated"
   cmake --install "$build_directory" --config Release \
     --prefix "$install_directory"
-  cmake -S "$repository_root/tests/package_consumer" \
-    -B "$consumer_directory" \
-    "-DCMAKE_PREFIX_PATH=$install_directory" \
-    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$install_directory" \
-    -DCMAKE_BUILD_TYPE=Release \
-    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  configure_installed_consumer "$consumer_directory" "$install_directory" \
+    "$linkage"
   cmake --build "$consumer_directory" --parallel "$parallel_jobs"
   ctest --test-dir "$consumer_directory" -C Release --output-on-failure
 
   cmake -E remove_directory "$relocated_install_directory"
   cmake -E copy_directory "$install_directory" \
     "$relocated_install_directory"
-  cmake -S "$repository_root/tests/package_consumer" \
-    -B "$relocated_consumer_directory" \
-    "-DCMAKE_PREFIX_PATH=$relocated_install_directory" \
-    "-DMMXISF_EXPECTED_PACKAGE_PREFIX=$relocated_install_directory" \
-    -DCMAKE_BUILD_TYPE=Release \
-    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  configure_installed_consumer "$relocated_consumer_directory" \
+    "$relocated_install_directory" "$linkage"
   cmake --build "$relocated_consumer_directory" --parallel "$parallel_jobs"
   ctest --test-dir "$relocated_consumer_directory" -C Release \
     --output-on-failure
@@ -91,11 +114,11 @@ mkdir -p "$gate_root"
 
 configure_build_test "$gate_root/static" OFF OFF
 verify_installed_package "$gate_root/static" "$gate_root/install-static" \
-  "$gate_root/consumer-static"
+  "$gate_root/consumer-static" static
 
 configure_build_test "$gate_root/shared" ON OFF
 verify_installed_package "$gate_root/shared" "$gate_root/install-shared" \
-  "$gate_root/consumer-shared"
+  "$gate_root/consumer-shared" shared
 
 verify_subdirectory_consumer "$gate_root/subdirectory-consumer-static" OFF
 verify_subdirectory_consumer "$gate_root/subdirectory-consumer-shared" ON

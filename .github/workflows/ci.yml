@@ -62,22 +62,52 @@ jobs:
       - name: Install package
         run: cmake --install build --config Release --prefix install
       - name: Configure installed-package consumer (Unix)
-        run: >-
-          cmake -S tests/package_consumer -B build-consumer
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install"
-          -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install"
-          -DCMAKE_BUILD_TYPE=Release
+        run: |
+          dependency_args=()
+          linkage=static
+          if [ "${{ matrix.shared }}" = ON ]; then
+            linkage=shared
+            dependency_args+=(
+              -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE
+            )
+          fi
+          cmake --no-warn-unused-cli \
+            -S tests/package_consumer -B build-consumer \
+            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install" \
+            -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install" \
+            -DMMXISF_EXPECTED_LINKAGE="$linkage" \
+            -DCMAKE_BUILD_TYPE=Release \
+            "${dependency_args[@]}"
       - name: Build installed-package consumer
         run: cmake --build build-consumer --config Release
       - name: Test installed-package consumer
         run: ctest --test-dir build-consumer -C Release --output-on-failure
       - name: Test relocated installed package (Unix)
         run: |
+          dependency_args=()
+          linkage=static
+          if [ "${{ matrix.shared }}" = ON ]; then
+            linkage=shared
+            dependency_args+=(
+              -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE
+              -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE
+            )
+          fi
           cmake -E copy_directory install install-relocated
-          cmake -S tests/package_consumer -B build-consumer-relocated \
+          cmake --no-warn-unused-cli \
+            -S tests/package_consumer -B build-consumer-relocated \
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-relocated" \
             -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-relocated" \
-            -DCMAKE_BUILD_TYPE=Release
+            -DMMXISF_EXPECTED_LINKAGE="$linkage" \
+            -DCMAKE_BUILD_TYPE=Release \
+            "${dependency_args[@]}"
           cmake --build build-consumer-relocated --config Release
           ctest --test-dir build-consumer-relocated -C Release --output-on-failure
       - name: Configure source-subdirectory consumer (Unix)
@@ -150,6 +180,7 @@ jobs:
           cmake -S tests/package_consumer -B consumer-static -A x64 `
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-static" `
             -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-static" `
+            -DMMXISF_EXPECTED_LINKAGE=static `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           cmake --build consumer-static --config Release
           ctest --test-dir consumer-static -C Release --output-on-failure
@@ -157,6 +188,7 @@ jobs:
           cmake -S tests/package_consumer -B consumer-static-relocated -A x64 `
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-static-relocated" `
             -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-static-relocated" `
+            -DMMXISF_EXPECTED_LINKAGE=static `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           cmake --build consumer-static-relocated --config Release
           ctest --test-dir consumer-static-relocated -C Release --output-on-failure
@@ -183,10 +215,16 @@ jobs:
       - name: Configure installed shared package consumer
         timeout-minutes: 5
         run: >-
-          cmake -S tests/package_consumer -B consumer-shared -A x64
+          cmake --no-warn-unused-cli
+          -S tests/package_consumer -B consumer-shared -A x64
           -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared"
           -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-shared"
-          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DMMXISF_EXPECTED_LINKAGE=shared
+          -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE
+          -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE
+          -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE
+          -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE
+          -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE
       - name: Build installed shared package consumer
         timeout-minutes: 5
         run: cmake --build consumer-shared --config Release
@@ -200,10 +238,16 @@ jobs:
         timeout-minutes: 5
         run: |
           cmake -E copy_directory install-shared install-shared-relocated
-          cmake -S tests/package_consumer -B consumer-shared-relocated -A x64 `
+          cmake --no-warn-unused-cli `
+            -S tests/package_consumer -B consumer-shared-relocated -A x64 `
             -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared-relocated" `
             -DMMXISF_EXPECTED_PACKAGE_PREFIX="${{ github.workspace }}/install-shared-relocated" `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+            -DMMXISF_EXPECTED_LINKAGE=shared `
+            -DCMAKE_DISABLE_FIND_PACKAGE_EXPAT=TRUE `
+            -DCMAKE_DISABLE_FIND_PACKAGE_LZ4=TRUE `
+            -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=TRUE `
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZLIB=TRUE `
+            -DCMAKE_DISABLE_FIND_PACKAGE_ZSTD=TRUE
           cmake --build consumer-shared-relocated --config Release
           $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\install-shared-relocated\bin;$vcpkgRuntime;$env:PATH"

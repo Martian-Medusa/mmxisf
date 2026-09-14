@@ -162,6 +162,14 @@ headers, the target platform, compiler, build configuration, and static/shared
 linkage. Missing or malformed version macros fail configuration rather than
 producing guessed package data.
 
+The installed config exports `mmxisf_LINKAGE` as `static` or `shared`. Static
+consumers resolve the five private implementation libraries because their
+linker must complete the archive's dependency closure. Shared consumers do not
+need those development packages at CMake configure time: no dependency target
+or header crosses the public API. Runtime libraries, when dynamically selected
+by a platform build, remain an explicit deployment responsibility recorded in
+the binary SBOM.
+
 Consumers may also embed the source tree with CMake `add_subdirectory` or
 `FetchContent` and link the same `mmxisf::mmxisf` target. Embedded builds create
 only the library by default; developer tests, tools, fuzzers, documentation,
