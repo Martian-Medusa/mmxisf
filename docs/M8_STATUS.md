@@ -318,6 +318,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json`.
   This is the newest Linux development checkpoint; it is not a frozen
   candidate, Windows evidence, or a final vulnerability audit.
+- The exact five direct dependencies embedded in the later macOS arm64 PFI
+  provider snapshot for `mmxisf` commit
+  `3fd55e6a0ad99a645388ef842fe040b996756a91` passed a dated official-upstream
+  advisory review. Expat 2.8.4 and OpenSSL 3.6.4 include the reviewed fixes;
+  zlib 1.3.2, LZ4 1.10.0, and Zstandard 1.5.7 match the current upstream release
+  pages. An open report against deprecated unsafe `LZ4_decompress_fast` was
+  screened against the exact source: `mmxisf` uses `LZ4_decompress_safe` and
+  does not call the reported API. The exact provider and SBOM hashes, sources,
+  dispositions, and limitations are retained in
+  `docs/security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.json`.
+  This is a passing unfrozen development snapshot, not the mandatory final
+  frozen-candidate binary and complete-toolchain audit.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

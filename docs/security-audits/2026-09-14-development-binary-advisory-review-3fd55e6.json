@@ -1,0 +1,97 @@
+{
+  "schema": "mmxisf.development-binary-advisory-review/1.0.0",
+  "reviewedAt": "2026-09-14",
+  "result": "PASS_DEVELOPMENT_SNAPSHOT_NOT_FINAL",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "commit": "3fd55e6a0ad99a645388ef842fe040b996756a91"
+  },
+  "provider": {
+    "pfiCommit": "c44f9453a4b83bd33d958068e78a4dab1d7d4da7",
+    "platform": "macOS arm64",
+    "executableSizeBytes": 5705392,
+    "executableSha256": "90e5a167c0de68c4c8fa7289a77bda463f54ce3734bdf1c39b5e159d9cac6aba",
+    "binarySbomSizeBytes": 3059,
+    "binarySbomSha256": "df28b1f4a7bbe5fb11ff8fd3e42db825b3238c34eb48fdd04a3cf53ae2e61a6d",
+    "bundleManifestSha256": "eb13578b7ca8e1bf03dd12c601e76b3bf60d7efb9883e390203ce266b4908136",
+    "nativeValidationScriptSha256": "5cfbaab33b0d1e989e1c1f0f047dc5cb38ac256a6bcf0b8463a8f42983c91a2e"
+  },
+  "dependencyGraph": {
+    "registry": "Microsoft vcpkg builtin registry",
+    "registryCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d"
+  },
+  "dependencies": [
+    {
+      "name": "Expat",
+      "version": "2.8.4",
+      "result": "PASS_FIXED_RELEASE",
+      "finding": "The exact release changelog records fixes for CVE-2026-66046, CVE-2026-76641, CVE-2026-76957, and CVE-2026-76956.",
+      "officialSources": [
+        "https://github.com/libexpat/libexpat/blob/R_2_8_4/expat/Changes",
+        "https://github.com/libexpat/libexpat/security"
+      ]
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "portVersion": 2,
+      "result": "PASS_CURRENT_OFFICIAL_RELEASE_SNAPSHOT",
+      "finding": "The upstream releases page identifies 1.3.2 as the latest published release and states that it addresses findings from a security audit; the upstream GitHub security page listed no published advisories at review time.",
+      "officialSources": [
+        "https://github.com/madler/zlib/releases",
+        "https://github.com/madler/zlib/security"
+      ]
+    },
+    {
+      "name": "LZ4",
+      "version": "1.10.0",
+      "result": "PASS_WITH_API_SCOPE",
+      "finding": "The upstream releases page identifies 1.10.0 as the latest published release and the upstream GitHub security page listed no published advisories. Open upstream issue 1783 concerns the deprecated unsafe LZ4_decompress_fast API; mmxisf uses LZ4_decompress_safe and does not call that API.",
+      "sourceEvidence": [
+        "src/reader.cpp:LZ4_decompress_safe",
+        "src/writer.cpp:LZ4_compress_default",
+        "src/writer.cpp:LZ4_compress_HC"
+      ],
+      "officialSources": [
+        "https://github.com/lz4/lz4/releases",
+        "https://github.com/lz4/lz4/security",
+        "https://github.com/lz4/lz4/issues/1783"
+      ]
+    },
+    {
+      "name": "Zstandard",
+      "version": "1.5.7",
+      "result": "PASS_CURRENT_OFFICIAL_RELEASE_SNAPSHOT",
+      "finding": "The upstream releases page identifies 1.5.7 as the latest published release and the upstream GitHub security page listed no published advisories. mmxisf uses the core ZSTD_decompressDCtx and ZSTD_compress APIs, not the contributed seekable format.",
+      "sourceEvidence": [
+        "src/reader.cpp:ZSTD_decompressDCtx",
+        "src/writer.cpp:ZSTD_compress"
+      ],
+      "officialSources": [
+        "https://github.com/facebook/zstd/releases",
+        "https://github.com/facebook/zstd/security"
+      ]
+    },
+    {
+      "name": "OpenSSL",
+      "version": "3.6.4",
+      "result": "PASS_FIXED_RELEASE",
+      "finding": "OpenSSL identifies 3.6.4 as a security patch release. Its vulnerability list marks the reviewed issues as affecting 3.6 releases before 3.6.4.",
+      "officialSources": [
+        "https://mirror.openssl-library.org/news/openssl-3.6-notes/",
+        "https://mirror.openssl-library.org/news/vulnerabilities/",
+        "https://www.openssl-library.org/source/"
+      ]
+    }
+  ],
+  "limitations": [
+    "This review is bound to an unfrozen development snapshot and does not satisfy the mandatory exact frozen-candidate audit.",
+    "The review covers the five direct binary dependencies recorded in the provider SBOM; it is not a complete operating-system or build-toolchain vulnerability audit.",
+    "An upstream page showing no published advisories does not prove that no unpublished or newly disclosed vulnerability exists.",
+    "The official-source review must be repeated immediately before any tag or binary publication and after every dependency or toolchain change.",
+    "The macOS provider is ad-hoc signed and not notarized; this review does not authorize publication."
+  ]
+}

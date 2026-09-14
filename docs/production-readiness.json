@@ -133,8 +133,8 @@
       "id": "security.exact-binary-vulnerability-audit",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-vcpkg-macos-arm64.json",
-      "note": "The known development-host dependency block has an isolated passing replacement graph, but no frozen candidate exists and therefore its exact binaries and toolchain have not received the final time-sensitive vulnerability review."
+      "evidence": "docs/security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.json",
+      "note": "The exact five direct dependencies in the unfrozen macOS arm64 PFI provider snapshot passed a dated official-upstream review, including an API-scoped disposition for the open LZ4 unsafe-API report. No frozen candidate exists, the complete toolchain is outside that snapshot, and the mandatory final time-sensitive audit therefore remains NOT_TESTED."
     },
     {
       "id": "security.private-reporting-channel",

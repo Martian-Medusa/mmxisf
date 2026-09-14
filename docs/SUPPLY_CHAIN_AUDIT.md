@@ -67,8 +67,13 @@ The newer exact-development-head replay also proved persistent binary-cache
 population and isolated restoration with byte-identical static and shared
 libraries; its exact evidence is retained in
 [`security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json`](security-audits/2026-09-14-vcpkg-cache-linux-amd64-8c33a65.json).
-This adds Linux development evidence; it does not freeze a candidate or replace
-the final time-sensitive vulnerability review.
+The exact dependencies of the later macOS arm64 PFI provider snapshot at
+`3fd55e6a0ad99a645388ef842fe040b996756a91` also passed a dated official-
+upstream advisory review. The result and API-scoped LZ4 disposition are retained
+in
+[`security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.md`](security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.md).
+These add development evidence; they do not freeze a candidate or replace the
+final time-sensitive vulnerability and complete-toolchain review.
 
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain
@@ -87,9 +92,10 @@ the final time-sensitive vulnerability review.
    is private. Enable dependency alerts now if desired, and enable the private
    reporting form when the repository becomes public.
 4. Run an exact-version vulnerability audit for all candidate binaries and the
-   build toolchain immediately before release. The 2026-09-14 development audit
-   is evidence of a known failed baseline, not a substitute for that
-   time-sensitive frozen-candidate check.
+   build toolchain immediately before release. The old host-graph audit remains
+   evidence of a failed baseline; the later exact provider-dependency review is
+   a passing development snapshot. Neither substitutes for the time-sensitive
+   frozen-candidate check.
 5. Native PixInsight interoperability and the release-candidate long fuzz run
    remain independent mandatory gates.
 
