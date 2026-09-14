@@ -174,7 +174,9 @@ Consumers may also embed the source tree with CMake `add_subdirectory` or
 `FetchContent` and link the same `mmxisf::mmxisf` target. Embedded builds create
 only the library by default; developer tests, tools, fuzzers, documentation,
 and the optional viewer remain off unless the consumer explicitly enables
-their `MMXISF_BUILD_*` options. Maintained external-consumer gates compile and
+their `MMXISF_BUILD_*` options. Embedded configuration also leaves the parent
+project's global `BUILD_TESTING` option untouched. Maintained external-consumer
+gates compile and
 run both static and shared source-subdirectory variants independently from the
 installed-package tests and reject accidental developer targets. Both consumer
 modes also compile every public header in its own translation unit; the gate

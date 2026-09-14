@@ -9,8 +9,18 @@ if(NOT DEFINED MMXISF_SOURCE_DIR OR
   message(FATAL_ERROR "MMXISF_SOURCE_DIR must name an mmxisf source tree")
 endif()
 
+if(DEFINED BUILD_TESTING)
+  set(_consumer_had_build_testing true)
+else()
+  set(_consumer_had_build_testing false)
+endif()
 add_subdirectory("${MMXISF_SOURCE_DIR}" mmxisf-source EXCLUDE_FROM_ALL)
 include("${CMAKE_CURRENT_LIST_DIR}/../cmake/AddPublicHeaderSelfContainment.cmake")
+
+if(NOT _consumer_had_build_testing AND DEFINED BUILD_TESTING)
+  message(FATAL_ERROR
+    "Embedded mmxisf leaked the global BUILD_TESTING option into its consumer")
+endif()
 
 foreach(_unexpected_target IN ITEMS
     mmxisf_version_test

@@ -7,13 +7,13 @@ project(
   LANGUAGES CXX
 )
 
-include(CTest)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 set(MMXISF_DEFAULT_BUILD_TESTS OFF)
 set(MMXISF_DEFAULT_BUILD_TOOLS OFF)
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  include(CTest)
   set(MMXISF_DEFAULT_BUILD_TESTS ${BUILD_TESTING})
   set(MMXISF_DEFAULT_BUILD_TOOLS ON)
 endif()
