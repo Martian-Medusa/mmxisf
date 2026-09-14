@@ -128,7 +128,10 @@ if (Test-Path -LiteralPath $BuildRoot) {
 
 $installedDirectory = Join-Path $BuildRoot "vcpkg_installed"
 $vcpkgRuntime = Join-Path $installedDirectory "x64-windows\bin"
-$warningFlags = "/EHsc /W4 /WX /permissive- /Zc:__cplusplus"
+# /Brepro must reach cl.exe as well as lib.exe/link.exe: the librarian can
+# normalize archive metadata, but it cannot remove nondeterminism already
+# present in the compiled COFF members.
+$warningFlags = "/EHsc /W4 /WX /permissive- /Zc:__cplusplus /Brepro"
 if (-not [string]::IsNullOrWhiteSpace($AdditionalCxxFlags)) {
   $warningFlags = "$warningFlags $AdditionalCxxFlags"
 }
