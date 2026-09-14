@@ -2,8 +2,9 @@
 
 - Audit date: 2026-09-14
 - Scope: source-only public-beta candidate preparation
-- Result: CONDITIONAL PASS; binary publication and public security intake remain
-  gated
+- Result: source/license review **CONDITIONAL PASS**; current local macOS
+  development binaries **BLOCKED / UPGRADE REQUIRED**; public security intake
+  remains gated
 
 ## Reviewed controls
 
@@ -40,6 +41,14 @@ have the same license.
 
 ## Open release gates
 
+The dated review of the current macOS arm64 provider is retained in
+[`security-audits/2026-09-14-macos-arm64.md`](security-audits/2026-09-14-macos-arm64.md).
+It fails the production dependency baseline: Expat 2.5.0 and the end-of-life
+OpenSSL 3.2.0 are hard blockers, while zlib, LZ4, and Zstandard must also be
+refreshed to the documented release floor. Release-candidate configuration now
+has an opt-in fail-closed dependency-baseline check; beta and production builds
+must enable it.
+
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain
    binary is not claimed to be reproducible from the source archive alone.
@@ -47,17 +56,19 @@ have the same license.
    available on the development host: Expat 2.5.0, zlib 1.3, LZ4 1.9.4,
    Zstandard 1.5.5, and OpenSSL 3.2.0. The host's MacPorts installation reports
    an operating-system platform mismatch, so this bundle is explicitly a
-   development artifact, not an approved public binary. A release candidate
-   needs dependencies rebuilt from a controlled supported environment, a fresh
-   exact-version vulnerability review, signing, notarization, hashes, and a
-   retained binary SBOM.
+   development artifact, not an approved public binary. The dated audit confirms
+   that this bundle cannot be promoted. A release candidate needs dependencies
+   rebuilt from a controlled supported environment at or above the documented
+   floor, baseline enforcement enabled, a fresh exact-version vulnerability
+   review, signing, notarization, hashes, and a retained binary SBOM.
 3. GitHub vulnerability alerts are disabled for the current private repository.
    GitHub private vulnerability reporting is unavailable while the repository
    is private. Enable dependency alerts now if desired, and enable the private
    reporting form when the repository becomes public.
 4. Run an exact-version vulnerability audit for all candidate binaries and the
-   build toolchain immediately before release. A clean source/license audit is
-   not a substitute for that time-sensitive check.
+   build toolchain immediately before release. The 2026-09-14 development audit
+   is evidence of a known failed baseline, not a substitute for that
+   time-sensitive frozen-candidate check.
 5. Native PixInsight interoperability and the release-candidate long fuzz run
    remain independent mandatory gates.
 

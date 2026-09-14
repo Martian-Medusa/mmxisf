@@ -4,6 +4,7 @@
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
+  CURRENT_MACOS_DEPENDENCY_BASELINE_BLOCKED;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
@@ -210,8 +211,13 @@ open; it does not turn historical evidence into exact-candidate evidence.
   mutations. The action-pin upgrade and retained binary-SBOM uploads were
   committed later and therefore remain pending their own exact-head run.
 - The source/license/supply-chain review is recorded in
-  `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. Binary
-  vulnerability review and the public security intake remain release gates.
+  `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. The dated
+  current macOS arm64 binary review is retained in
+  `docs/security-audits/2026-09-14-macos-arm64.md` and is **BLOCKED / UPGRADE
+  REQUIRED**: Expat 2.5.0 predates security fixes, OpenSSL 3.2.0 is end-of-life,
+  and zlib, LZ4, and Zstandard are below the conservative production floors.
+  An opt-in configure gate now rejects those versions for candidate builds;
+  the public security intake and a fresh frozen-candidate review remain open.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit
@@ -246,4 +252,6 @@ open; it does not turn historical evidence into exact-candidate evidence.
 - Enable a private vulnerability-reporting channel before publication.
 - Resolve native PixInsight interoperability gates for all claimed PFI writer
   profiles; UI automation remains intentionally excluded.
-- Perform a final dependency/license/security audit before any public tag.
+- Rebuild all five dependencies in a controlled supported environment at or
+  above the dated production floors, enable the fail-closed baseline option,
+  and perform a fresh exact-version audit before any public tag.

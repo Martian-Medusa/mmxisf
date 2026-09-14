@@ -19,6 +19,11 @@ option(MMXISF_BUILD_VIEWER "Build the macOS PoC viewer" OFF)
 option(MMXISF_BUILD_FUZZER "Build the Clang libFuzzer harness" OFF)
 option(MMXISF_BUILD_FUZZ_SMOKE "Build the deterministic sanitizer fuzz smoke" OFF)
 option(MMXISF_BUILD_DOCS "Build the generated mmxisf API reference" OFF)
+option(
+  MMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE
+  "Reject dependencies below the dated production security baseline"
+  OFF
+)
 option(BUILD_SHARED_LIBS "Build mmxisf as a shared library" OFF)
 set(
   MMXISF_VIEWER_OUTPUT_DIR
@@ -34,6 +39,9 @@ find_package(ZLIB REQUIRED)
 find_package(ZSTD REQUIRED)
 
 include(cmake/ResolveDependencyVersions.cmake)
+if(MMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE)
+  include(cmake/EnforceProductionDependencyBaseline.cmake)
+endif()
 string(TIMESTAMP MMXISF_SBOM_CREATED "%Y-%m-%dT%H:%M:%SZ" UTC)
 if(BUILD_SHARED_LIBS)
   set(MMXISF_BINARY_LINKAGE "shared")
@@ -192,6 +200,13 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_BINARY_SBOM=${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json
       -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateBinarySbom.cmake
+  )
+  add_test(
+    NAME mmxisf.production-dependency-baseline-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateProductionDependencyBaselineTests.cmake
   )
 endif()
 

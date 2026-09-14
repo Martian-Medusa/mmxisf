@@ -117,10 +117,10 @@
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
-      "status": "NOT_TESTED",
+      "status": "BLOCKED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/SUPPLY_CHAIN_AUDIT.md",
-      "note": "Exact candidate dependency and toolchain versions have not received the time-sensitive binary vulnerability review."
+      "evidence": "docs/security-audits/2026-09-14-macos-arm64.md",
+      "note": "The current macOS development bundle fails the dated production floor on Expat 2.5.0 and end-of-life OpenSSL 3.2.0, and the remaining libraries require refresh. A controlled rebuild and fresh exact frozen-candidate audit are required."
     },
     {
       "id": "security.private-reporting-channel",
