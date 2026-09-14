@@ -43,7 +43,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "Historical long campaigns passed, but the frozen candidate campaign remains pending."
+      "note": "Historical macOS and exact-development-commit Linux amd64 long campaigns passed. The Linux campaign is retained in docs/fuzz-campaigns/2026-09-14-linux-amd64-50fc120.json, but the frozen candidate campaign remains pending."
     },
     {
       "id": "interop.independent-producer-reader",

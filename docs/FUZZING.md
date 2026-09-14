@@ -75,3 +75,21 @@ symbolizer also failed to start, so a future failure would require offline
 symbolization. Exact binary, runtime, corpus-manifest, host, and limit evidence
 is retained in
 [`fuzz-campaigns/2026-09-14-local-macos-arm64.json`](fuzz-campaigns/2026-09-14-local-macos-arm64.json).
+
+## Linux amd64 development campaign on mllse
+
+A matching-toolchain 15-minute campaign also completed in the pinned Ubuntu
+24.04 Docker environment on `mllse`, using only the deterministic extracted
+source archive for exact commit `50fc120391e7f156c069bfdd13e41e4942be2ccf`.
+Clang 18 with ASan/UBSan executed 2,378,414 inputs in 901 seconds. It ended at
+`cov: 15638`, `ft: 43269`, an 853-unit 1,190 KiB effective corpus, 2,639
+executions/second, and 487 MiB peak RSS. No crash artifact, timeout, or sanitizer
+finding was produced.
+
+The full 597,528-byte log and 865-file evolved corpus remain on the private
+server with their hashes recorded in
+[`fuzz-campaigns/2026-09-14-linux-amd64-50fc120.json`](fuzz-campaigns/2026-09-14-linux-amd64-50fc120.json).
+The image lacked an external LLVM symbolizer, so a hypothetical failure would
+have required offline stack symbolization. This is
+`PASS_DEVELOPMENT_NOT_FROZEN`: it strengthens Linux parser evidence but does
+not satisfy the exact frozen-candidate gate or the production dependency floor.

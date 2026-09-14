@@ -207,6 +207,17 @@ open; it does not turn historical evidence into exact-candidate evidence.
   Apple Clang 21 compiler/sanitizers used an LLVM 17 libFuzzer runtime archive
   and the external symbolizer was unavailable. Exact evidence is retained in
   `docs/fuzz-campaigns/2026-09-14-local-macos-arm64.json`.
+- A separate matching-toolchain Linux amd64 campaign on `mllse` used the pinned
+  Ubuntu 24.04 Docker environment and only the deterministic extracted archive
+  for exact commit `50fc120391e7f156c069bfdd13e41e4942be2ccf`. Clang 18
+  ASan/UBSan executed 2,378,414 inputs in 901 seconds, ending at `cov: 15638`,
+  `ft: 43269`, 853 effective corpus units/1,190 KiB, and 487 MiB peak RSS with
+  no crash artifact, timeout, or sanitizer finding. The full log and 865-file
+  evolved corpus remain on the private server with identities retained in
+  `docs/fuzz-campaigns/2026-09-14-linux-amd64-50fc120.json`. The external LLVM
+  symbolizer was absent, so a hypothetical failure would have required offline
+  stack symbolization. This is `PASS_DEVELOPMENT_NOT_FROZEN`; the dependency
+  graph is below the production floor and the exact-candidate gate remains open.
 - The maintained `tools/run_local_quality_gates.sh` completed on exact commit
   `33da19ec13a2e045944012088a76e6f2ca789d5b`: warning-as-error static and
   shared suites 8/8 each, installed-package consumers 1/1 each, ASan/UBSan

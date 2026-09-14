@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "mmxisf.fuzz-campaign-evidence/1.0.0",
+  "status": "PASS_DEVELOPMENT_NOT_FROZEN",
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "commit": "50fc120391e7f156c069bfdd13e41e4942be2ccf",
+    "compiledInputsDifferFromCommit": false,
+    "archive": {
+      "name": "mmxisf-0.1.0-source-50fc120391e7.tar.gz",
+      "sizeBytes": 283730,
+      "sha256": "f6912c49d58ac815c13b52b3b3c69cc042556163b9a68115003b96b016d3314c",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES"
+    }
+  },
+  "host": {
+    "name": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1"
+  },
+  "container": {
+    "base": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "imageId": "sha256:6008232e9f4534fdb162fc3132f66374a833f2da8528945b681df68fb6c0e0e6",
+    "architecture": "amd64"
+  },
+  "toolchain": {
+    "compiler": "Clang 18.1.3",
+    "sanitizers": ["AddressSanitizer", "UndefinedBehaviorSanitizer"],
+    "fuzzerRuntime": "matching Clang 18 libFuzzer runtime",
+    "externalSymbolizer": "UNAVAILABLE"
+  },
+  "binary": {
+    "name": "mmxisf_fuzz_header",
+    "sizeBytes": 12911896,
+    "sha256": "a73b0ee8f45eb41e1244260c75d6a83c3f6d9aeb27848f6d890fee16f9c3bf0f"
+  },
+  "campaign": {
+    "requestedDurationSeconds": 900,
+    "reportedDurationSeconds": 901,
+    "maximumInputBytes": 1048576,
+    "perInputTimeoutSeconds": 10,
+    "rssLimitMiB": 4096,
+    "initialSeedFileCount": 20,
+    "initialSeedLogicalBytes": 126374,
+    "executedUnits": 2378414,
+    "averageExecutionsPerSecond": 2639,
+    "newUnitsAdded": 4175,
+    "coveredEdges": 15638,
+    "features": 43269,
+    "effectiveCorpusUnits": 853,
+    "effectiveCorpusBytesDisplay": "1190Kb",
+    "peakRssMiB": 487,
+    "slowestUnitTimeSeconds": 0,
+    "crashArtifactCount": 0,
+    "sanitizerFindingCount": 0
+  },
+  "retainedServerEvidence": {
+    "campaignLogSizeBytes": 597528,
+    "campaignLogSha256": "6b538981d6b2ea6d339bb9d7a683a977070511d8c9fdaeb488e8aa15900a7ea1",
+    "corpusFileCount": 865,
+    "corpusLogicalBytes": 1248211,
+    "sortedEntryManifestSha256": "c9692585dc9b78a568a4e88e6b9526f07d749c4e9f5c61c7af822ddab86d98a7",
+    "manifestRecord": "sha256 logical-size basename, sorted by path",
+    "serverPath": "/home/matt/mmxisf-gates/50fc120391e7/source/build-linux-long-fuzz",
+    "committed": false
+  },
+  "limitations": [
+    "This is exact-development-commit Linux amd64 hardening evidence, not a frozen release-candidate campaign.",
+    "The Ubuntu system dependency graph is below the project's conservative production floors.",
+    "The external LLVM symbolizer was absent; sanitizer detection remained active, but a finding would have required offline stack symbolization.",
+    "The evolved corpus and full log remain on the private server and are identified here by bounded inventory and hashes; they are not committed or published.",
+    "This result does not satisfy security.exact-candidate-long-fuzz."
+  ]
+}

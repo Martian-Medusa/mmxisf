@@ -15,8 +15,11 @@ RUN apt-get update \
        liblz4-dev \
        libssl-dev \
        libzstd-dev \
+       llvm-18 \
        ninja-build \
        zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
+
+ENV ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-18
