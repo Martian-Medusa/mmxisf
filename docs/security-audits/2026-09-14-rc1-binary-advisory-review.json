@@ -1,0 +1,101 @@
+{
+  "schema": "mmxisf.exact-candidate-binary-advisory-review/1.0.0",
+  "reviewedAtUtc": "2026-09-14T20:47:44Z",
+  "result": "LIMITED_DIRECT_DEPENDENCIES_PASS_TOOLCHAIN_AUDIT_PENDING",
+  "publicationAuthorized": false,
+  "candidate": {
+    "tag": "v0.1.0-rc.1",
+    "commit": "fd62b5b2a0239638d2ea252912212b3fa4f92178",
+    "frozen": true,
+    "sourceArchiveSha256": "cc1d5065726ab61cf151592a29a91edc1b293d2e24554b2f57601763d90ad375"
+  },
+  "dependencyGraph": {
+    "registry": "Microsoft vcpkg builtin registry",
+    "registryCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "manifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d"
+  },
+  "candidateBinarySboms": [
+    {"platform": "macOS arm64 static", "sha256": "372c112bd305044e16a8b08c63d0f07eea7dd69418120f7d0571f6bce9f4cec2"},
+    {"platform": "macOS arm64 shared", "sha256": "95fa0d493960fbe77372fb0cba17980d202ddb671f33820a171cfd9acd54680b"},
+    {"platform": "Linux amd64 static", "sha256": "f76afc97e583bd3bddbcbd9533234494b01f824c604cf5a9fc837f37d89db17b"},
+    {"platform": "Linux amd64 shared", "sha256": "2511560ba9e4a08bea33fa82d5f9208dcec233e53d4b11b205c933c065e06fa5"},
+    {"platform": "Windows amd64 MinGW static", "sha256": "0602ad3873a35873768a9a3b46e032c447afa2655e2d80ec453c935b3c06b96c"},
+    {"platform": "Windows amd64 MinGW shared", "sha256": "e0d16f479d6624518b730a1304a914ac9fd98a1af092477c84e66a1f5734607d"}
+  ],
+  "dependencies": [
+    {
+      "name": "Expat",
+      "version": "2.8.4",
+      "result": "PASS_FIXED_RELEASE",
+      "finding": "The exact upstream 2.8.4 changelog records the reviewed 2026 security fixes; the upstream project advisory page listed no published GitHub advisories at review time.",
+      "officialSources": [
+        "https://github.com/libexpat/libexpat/blob/R_2_8_4/expat/Changes",
+        "https://github.com/libexpat/libexpat/security/advisories"
+      ]
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "portVersion": 2,
+      "result": "PASS_CURRENT_OFFICIAL_RELEASE_SNAPSHOT",
+      "finding": "The upstream releases page identifies 1.3.2 as latest and states that it addresses the completed security-audit findings; the project advisory page listed no published GitHub advisories at review time.",
+      "officialSources": [
+        "https://github.com/madler/zlib/releases",
+        "https://github.com/madler/zlib/security/advisories"
+      ]
+    },
+    {
+      "name": "LZ4",
+      "version": "1.10.0",
+      "result": "PASS_WITH_API_SCOPE",
+      "finding": "The upstream advisory page listed no published advisories. Open issue 1783 concerns deprecated unsafe LZ4_decompress_fast APIs; mmxisf uses LZ4_decompress_safe and does not call the reported API.",
+      "sourceEvidence": [
+        "src/reader.cpp:LZ4_decompress_safe",
+        "src/writer.cpp:LZ4_compress_default",
+        "src/writer.cpp:LZ4_compress_HC"
+      ],
+      "officialSources": [
+        "https://github.com/lz4/lz4/releases/tag/v1.10.0",
+        "https://github.com/lz4/lz4/security/advisories",
+        "https://github.com/lz4/lz4/issues/1783"
+      ]
+    },
+    {
+      "name": "Zstandard",
+      "version": "1.5.7",
+      "result": "PASS_CURRENT_OFFICIAL_RELEASE_SNAPSHOT",
+      "finding": "The exact upstream 1.5.7 release and the project advisory page were reviewed; the advisory page listed no published GitHub advisories. mmxisf uses the core block APIs, not the contributed seekable format.",
+      "sourceEvidence": [
+        "src/reader.cpp:ZSTD_decompressDCtx",
+        "src/writer.cpp:ZSTD_compress"
+      ],
+      "officialSources": [
+        "https://github.com/facebook/zstd/releases/tag/v1.5.7",
+        "https://github.com/facebook/zstd/security/advisories"
+      ]
+    },
+    {
+      "name": "OpenSSL",
+      "version": "3.6.4",
+      "result": "PASS_FIXED_RELEASE",
+      "finding": "The official 3.6 notes identify 3.6.4 as a security patch release, and the vulnerability list identifies the reviewed 3.6-series issues as affecting versions before 3.6.4.",
+      "officialSources": [
+        "https://mirror.openssl-library.org/news/openssl-3.6-notes/",
+        "https://mirror.openssl-library.org/news/vulnerabilities/"
+      ]
+    }
+  ],
+  "toolchainDisposition": {
+    "macosAppleClang21": "NOT_AUDITED_AS_COMPLETE_TOOLCHAIN",
+    "linuxUbuntu24Clang18Gcc13": "NOT_AUDITED_AS_COMPLETE_TOOLCHAIN",
+    "windowsMinGW13Wine9": "COMPATIBILITY_ENVIRONMENT_NOT_SUPPORTED_NATIVE_HOST",
+    "windowsMsvc": "NOT_TESTED"
+  },
+  "limitations": [
+    "The exact direct dependency graph passes the dated official-upstream review, but the complete compiler, SDK, linker, container package, and native Windows toolchain audit is not complete.",
+    "A project page showing no published advisory does not prove that no unpublished or newly disclosed vulnerability exists.",
+    "Native Windows/MSVC binaries and SBOMs do not yet exist for this candidate.",
+    "The review must be refreshed if publication occurs on a later date or any source, dependency, toolchain, or binary changes.",
+    "This LIMITED record does not satisfy the production gate and does not authorize publication."
+  ]
+}

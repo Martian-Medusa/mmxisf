@@ -122,3 +122,21 @@ and limit records are retained in
 This is still `PASS_DEVELOPMENT_NOT_FROZEN`: it proves the versioned campaign
 runner and strengthens current parser evidence, but cannot satisfy the exact
 frozen-candidate gate.
+
+## Frozen RC1 campaign
+
+The same versioned runner completed against the deterministic source archive
+for frozen candidate `v0.1.0-rc.1` at
+`fd62b5b2a0239638d2ea252912212b3fa4f92178`. Matching Clang 18 ASan/UBSan and
+libFuzzer with `llvm-symbolizer-18` executed 2,387,632 inputs in 901 seconds,
+ending at `cov: 15738`, `ft: 43760`, an 821-unit 1,196 KiB effective corpus,
+2,649 executions/second, and 484 MiB peak RSS. The slowest reported input took
+zero whole seconds. The campaign produced no crash artifact, ASan signature,
+UBSan runtime error, or timeout.
+
+The 580,294-byte full log and 828-file evolved corpus remain on `mllse`; their
+hashes, the exact source archive and fuzzer binary identities, seed inventory,
+container digest, limits, and retained path are recorded in
+[`fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json`](fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json).
+This closes `security.exact-candidate-long-fuzz` for RC1. It remains bounded
+evidence, not a claim that every malformed XISF is safe.

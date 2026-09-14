@@ -4,22 +4,26 @@
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   SUPPORT_PROFILE_FROZEN_RC1;
+  EXACT_CANDIDATE_MACOS_LINUX_PASS_WINDOWS_TARGET_PASS_NATIVE_MSVC_PENDING;
+  EXACT_CANDIDATE_LONG_FUZZ_PASS;
+  EXACT_CANDIDATE_PUBLIC_API_REVIEW_PASS;
+  EXACT_CANDIDATE_DIRECT_DEPENDENCY_AUDIT_PASS_TOOLCHAIN_LIMITED;
   PFI_PRODUCT_ROUTING_PASS_BOUNDED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
   PIXINSIGHT_WRITER_PROPERTIES_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
-  EXACT_CANDIDATE_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
 - Publication status: private repository; `v0.1.0-rc.1` candidate tag; no release
 
 The machine-checked `docs/production-readiness.json` ledger currently derives
-`NOT_READY` independently for standalone beta, standalone production, and PFI
-production. It prevents a documentation-only readiness claim while required
-candidate, interoperability, security, distribution, or product gates remain
-open; it does not turn historical evidence into exact-candidate evidence.
+`NOT_READY` independently for standalone beta (13/17 gates PASS), standalone
+production (13/18), and PFI production (18/25). It prevents a documentation-
+only readiness claim while required candidate, interoperability, security,
+distribution, or product gates remain open; it does not turn historical
+evidence into exact-candidate evidence.
 
 ## Implemented distribution gates
 
@@ -725,23 +729,61 @@ open; it does not turn historical evidence into exact-candidate evidence.
   and readiness ledger are frozen to the immutable candidate name
   `v0.1.0-rc.1`. The profile continues to classify all 74 conformance rows and
   keeps the optional viewer and PFI adapter outside the reusable C++ library
-  boundary. This closes only `candidate.support-profile-frozen`; publication,
-  release assets, exact-candidate platform/fuzz/API/security gates, native
-  Windows/MSVC, and PFI operator acceptance remain separately unauthorized or
-  untested.
+  boundary. The freeze itself closed only
+  `candidate.support-profile-frozen`; the subsequent bullets record the exact-
+  candidate work completed without changing that immutable tag.
+- Exact frozen candidate `v0.1.0-rc.1` at
+  `fd62b5b2a0239638d2ea252912212b3fa4f92178` produced the deterministic
+  355,737-byte source archive with SHA-256
+  `cc1d5065726ab61cf151592a29a91edc1b293d2e24554b2f57601763d90ad375`.
+  Candidate-ref and independent Git-archive byte-identity checks passed. Its
+  extracted source passed the viewer-free pinned-vcpkg production graph on
+  macOS arm64 and Linux amd64: static 19/19, shared 20/20, direct/relocated
+  package consumers 2/2, embedded consumers 1/1, dependency floors, SBOMs,
+  API documentation, 39-symbol export allowlists, and byte-identical repeated
+  libraries. The exact candidate also passed the system-graph ASan/UBSan 19/19,
+  20,000-mutation smoke, and ThreadSanitizer 19/19 suites on both hosts.
+  Windows-target MinGW static 19/19 and shared 20/20 plus consumers, exports,
+  SBOMs, and reproducibility passed under Wine. Native Windows amd64/MSVC is
+  still NOT_TESTED, so the exact cross-platform gate is **LIMITED**, not PASS.
+  Full evidence is retained in
+  `docs/quality-runs/2026-09-14-rc1-cross-platform.json`.
+- The exact-candidate public API diff review is **PASS**. All nine installed
+  public headers are byte-identical to the audited baseline; macOS, Linux, and
+  MinGW shared builds retain exactly 39 allowed `mmxisf` exports; installed and
+  relocated consumers pass; and the RC1 release notes state the pre-1.0
+  no-ABI-promise policy. The review is retained in
+  `docs/quality-runs/2026-09-14-rc1-public-api-review.json` and does not replace
+  the native Windows platform gate.
+- The six exact RC1 binary SBOMs bind Expat 2.8.4, zlib 1.3.2#2, LZ4 1.10.0,
+  Zstandard 1.5.7, and OpenSSL 3.6.4. Their refreshed official-upstream review
+  passes, including an API-scoped disposition for the open deprecated-unsafe-
+  LZ4 report. The complete compiler, SDK, linker, container-package, and native
+  MSVC audit remains incomplete, so
+  `docs/security-audits/2026-09-14-rc1-binary-advisory-review.json` is
+  deliberately **LIMITED** rather than a production PASS.
+- The exact frozen candidate completed the versioned 15-minute Linux amd64
+  Clang 18 ASan/UBSan/libFuzzer campaign with an available LLVM symbolizer.
+  It executed 2,387,632 inputs in 901 seconds, reached `cov: 15738` and
+  `ft: 43760`, retained an 821-unit 1,196 KiB effective corpus, and peaked at
+  484 MiB RSS. No crash artifact, sanitizer signature, timeout, or slow input
+  was produced. Exact binary, log, corpus-manifest, source-archive, container,
+  and limit evidence is retained in
+  `docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json`. This closes
+  `security.exact-candidate-long-fuzz` for RC1 without claiming universal parser
+  safety.
 
 ## Still required for public beta
 
-- Manually dispatch and complete an exact-candidate Linux/macOS/Windows matrix
-  with the upgraded immutable action pins, retained binary SBOMs, sequential
-  writer-sink API, and row-delivery API; routine pushes intentionally remain
-  local-only until the hosted-runner budget policy is revisited.
-- Repeat the long campaign on the exact release candidate and preserve/promote
-  any minimized regressions; the first retained campaign is complete.
+- Run the maintained exact-candidate native Windows amd64/MSVC gate. macOS
+  arm64, Linux amd64, and Windows-target MinGW/Wine evidence now pass locally;
+  routine hosted runs remain paused for runner-budget policy.
 - Enable a private vulnerability-reporting channel before publication.
-- Extend native PixInsight writer interoperability only when additional writer
-  profiles are claimed; the current declared matrix/vector/string fixture gate
-  passes, while broad Property/sample/codec coverage remains non-generalized.
-- Rebuild all five dependencies in a controlled supported environment at or
-  above the dated production floors, enable the fail-closed baseline option,
-  and perform a fresh exact-version audit before any public tag.
+- Complete the compiler, SDK, linker, container-package, and native MSVC
+  security disposition. The exact five-library production graph and refreshed
+  upstream dependency review now pass, but the complete toolchain audit does
+  not.
+- With separate owner approval, publish the deterministic source archive and
+  checksum as release assets, download them again, and verify their identity
+  and installed-package consumer. The tag exists, but no GitHub Release or
+  asset publication has been authorized.

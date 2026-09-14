@@ -1,17 +1,19 @@
 # Martian Medusa XISF (`mmxisf`)
 
-`mmxisf` is the planned standalone, clean-room C++ library for reading and
+`mmxisf` is a standalone, clean-room C++ library for reading and
 writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1-M3 implementation is complete for the declared local monolithic
-> profile; M4/M5 library and PFI-adapter paths await native PixInsight evidence.
-> M6 includes a deterministic compressed multi-image Gray/RGB writer with
-> declarative scalar and block-backed metadata. M7 now inventories ancillary
-> objects, ICC profiles, thumbnails, extensions, and bounded heterogeneous
-> tables. M8 hardening and distribution work is in progress. Version
-> `0.1.0` parses bounded
+> Status: `v0.1.0-rc.1` is the first frozen standalone-library candidate. Its
+> exact source passes macOS arm64 and Linux amd64 static/shared production
+> graphs, sanitizers, consumers, export checks, reproducibility, and a
+> 15-minute coverage-guided fuzz campaign. Windows-target MinGW/Wine passes as
+> compatibility evidence; native Windows amd64/MSVC, complete toolchain
+> security disposition, public security intake, and release-asset verification
+> remain open. The bounded PFI product route and two-source native PixInsight
+> parity evidence pass separately; operator acceptance and rollback remain
+> open. Version `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
 > zlib, LZ4, LZ4HC-compatible, and current PixInsight Zstandard attachment and
@@ -29,7 +31,7 @@ C++ project is already distributed under the `libXISF` name and as a Debian
 package. To avoid package, linker, search, and contributor confusion, this plan
 uses the public project/package name `mmxisf`, CMake target
 `mmxisf::mmxisf`, and C++ namespace `mmxisf`. The final public repository name
-is a release gate, not an assumption.
+is `mmxisf`.
 
 Contributions must follow [`CONTRIBUTING.md`](CONTRIBUTING.md); security reports
 follow [`SECURITY.md`](SECURITY.md). The fail-closed candidate, publication,
@@ -72,6 +74,8 @@ milestone. They remain candidates for later conformance work.
 - [M7 broader image coverage](docs/M7_STATUS.md)
 - [M7 row-delivery memory checkpoint](docs/M7_ROW_PERFORMANCE.md)
 - [M8 hardening and distribution](docs/M8_STATUS.md)
+- [RC1 release notes](docs/RELEASE_NOTES_0.1.0_RC1.md)
+- [Machine-checked production readiness](docs/production-readiness.json)
 - [Writer API](docs/WRITER.md)
 - [Manual PixInsight validation](tests/pixinsight/README.md)
 - [Bounded image-row reader](docs/ROW_READER.md)

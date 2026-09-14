@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "mmxisf.fuzz-campaign-evidence/1.0.0",
+  "recordedAtUtc": "2026-09-14T20:47:44Z",
+  "status": "PASS_FROZEN_CANDIDATE",
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "candidateRef": "v0.1.0-rc.1",
+    "commit": "fd62b5b2a0239638d2ea252912212b3fa4f92178",
+    "compiledInputsDifferFromCommit": false,
+    "archive": {
+      "name": "mmxisf-0.1.0-source-fd62b5b2a023.tar.gz",
+      "sizeBytes": 355737,
+      "sha256": "cc1d5065726ab61cf151592a29a91edc1b293d2e24554b2f57601763d90ad375",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES"
+    }
+  },
+  "host": {
+    "name": "mllse",
+    "kernel": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "dockerServer": "29.6.1"
+  },
+  "container": {
+    "base": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "imageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "imageSizeBytes": 967837114,
+    "architecture": "amd64"
+  },
+  "toolchain": {
+    "compiler": "Clang 18.1.3",
+    "sanitizers": ["AddressSanitizer", "UndefinedBehaviorSanitizer"],
+    "fuzzerRuntime": "matching Clang 18 libFuzzer runtime",
+    "externalSymbolizer": "/usr/bin/llvm-symbolizer-18 (AVAILABLE)"
+  },
+  "binary": {
+    "name": "mmxisf_fuzz_header",
+    "sizeBytes": 12911904,
+    "sha256": "869c3e228c5404c4ec6df125f2ae0ce7a2bf9633fc6d3edb1ba918081b90d3b9"
+  },
+  "campaign": {
+    "requestedDurationSeconds": 900,
+    "reportedDurationSeconds": 901,
+    "maximumInputBytes": 1048576,
+    "perInputTimeoutSeconds": 10,
+    "rssLimitMiB": 4096,
+    "initialSeedFileCount": 20,
+    "initialSeedLogicalBytes": 126374,
+    "executedUnits": 2387632,
+    "averageExecutionsPerSecond": 2649,
+    "newUnitsAdded": 4007,
+    "coveredEdges": 15738,
+    "features": 43760,
+    "effectiveCorpusUnits": 821,
+    "effectiveCorpusBytesDisplay": "1196Kb",
+    "peakRssMiB": 484,
+    "slowestUnitTimeSeconds": 0,
+    "crashArtifactCount": 0,
+    "addressSanitizerErrorCount": 0,
+    "undefinedBehaviorRuntimeErrorCount": 0,
+    "timeoutCount": 0
+  },
+  "retainedServerEvidence": {
+    "campaignLogSizeBytes": 580294,
+    "campaignLogSha256": "50504b80f203472e740fc3181082ee6ba51c3017b13ca5ed0b526ae6661e846d",
+    "corpusFileCount": 828,
+    "corpusLogicalBytes": 1242245,
+    "sortedEntryManifestSha256": "3668a7b48c4e6a70a3c50b9b50ef3d009c0812804b73f7d2b8aa39b394f907e1",
+    "manifestRecord": "sha256 logical-size relative-path, sorted by relative path",
+    "serverPath": "/home/matt/mmxisf-gates/fd62b5b2a023/work/mmxisf-0.1.0/build-linux-long-fuzz-rc1",
+    "committed": false
+  },
+  "limitations": [
+    "A successful bounded campaign is evidence for this exact parser build, seed corpus, and sanitizer toolchain, not proof that the parser is free of defects.",
+    "The campaign intentionally tests the parser and Ubuntu system dependency graph; pinned production-vcpkg validation is recorded by separate exact-candidate gates.",
+    "The evolved corpus and full log remain on the private server and are identified here by bounded inventory and hashes; they are not committed or published.",
+    "The optional viewer was not built and is outside the standalone library security claim."
+  ]
+}

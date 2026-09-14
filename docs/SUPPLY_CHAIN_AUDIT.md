@@ -1,11 +1,12 @@
 # Supply-chain and license audit
 
-- Audit date: 2026-09-14
+- Audit date: 2026-09-14 (refreshed for `v0.1.0-rc.1`)
 - Scope: source-only public-beta candidate preparation
 - Result: source/license review **CONDITIONAL PASS**; legacy local macOS
   development binaries **BLOCKED / UPGRADE REQUIRED**; isolated pinned macOS
   arm64 dependency graph **PASS**; public security intake and exact frozen-
-  candidate audit remain gated
+  candidate direct-dependency audit **PASS**; complete toolchain audit and
+  public security intake remain gated
 
 ## Reviewed controls
 
@@ -74,6 +75,17 @@ in
 [`security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.md`](security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.md).
 These add development evidence; they do not freeze a candidate or replace the
 final time-sensitive vulnerability and complete-toolchain review.
+
+The frozen `v0.1.0-rc.1` candidate now has six exact binary SBOMs from the
+viewer-free macOS arm64, Linux amd64, and Windows-target MinGW static/shared
+production-graph gates. All bind the same five versions from vcpkg commit
+`a1cae005c39be7b18ba319fced856b68d7276271`. A refreshed official-upstream
+review passes those direct dependencies and retains the LZ4 unsafe-API scope
+check in
+[`security-audits/2026-09-14-rc1-binary-advisory-review.md`](security-audits/2026-09-14-rc1-binary-advisory-review.md).
+The overall exact-binary vulnerability gate remains **LIMITED** because the
+complete compiler, SDK, linker, container package set, and native Windows/MSVC
+toolchain have not received a final disposition.
 
 The later viewer-only distribution rehearsal at exact clean source commit
 `53c4845857eaeed7bfd610c7f41a170862a633e1` embeds the exact binary SBOM,

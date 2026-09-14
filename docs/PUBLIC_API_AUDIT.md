@@ -6,7 +6,8 @@
   reference, installed-package consumer, error mapping, ownership, resource
   budgets, cancellation, and concurrency contract
 - Result: **PASS for the current pre-1.0 API surface**
-- Release authority: none; repeat the diff review on the exact frozen candidate
+- Release authority: none; the exact frozen-candidate diff review is recorded
+  separately and does not authorize publication
 
 ## Public surface
 
@@ -80,11 +81,15 @@ mutations, ThreadSanitizer 11/11, generated API documentation, and strict deep
 viewer-bundle signature verification. `mmxisf.public-api-contract` is included
 in every maintained test configuration.
 
-The final candidate gate must review the public-header and export-table diff
-from this audited commit, repeat the installed static/shared consumers and
-sanitizers on the exact frozen candidate, and confirm that release notes state
-the pre-1.0 ABI policy. This open exact-candidate check is independent of the
-current audit PASS.
+The final candidate gate reviewed the public-header and export-table diff from
+this audited commit, repeated the installed static/shared consumers and
+sanitizers on the exact frozen candidate, and confirmed that the candidate
+release notes state the pre-1.0 ABI policy. The result is retained in
+`docs/quality-runs/2026-09-14-rc1-public-api-review.json`: all nine public
+headers are byte-identical to the baseline, and the exact macOS, Linux, and
+MinGW shared builds retain the intended 39-symbol surface. Native MSVC remains
+a separate platform qualification gate; this API review does not create an ABI
+promise or authorize publication.
 
 ## Machine-enforced 0.1 header baseline
 
@@ -94,8 +99,8 @@ requires the source header set and every byte of each header to match that
 baseline. Negative contracts reject a changed hash, duplicate or missing
 header, and an invented stable-ABI policy. This turns accidental public API
 drift into a failing test while preserving the documented pre-1.0 ABI policy.
-An intentional API change requires a new review and explicit baseline update;
-the exact frozen-candidate diff review remains a separate release gate.
+An intentional API change requires a new review and explicit baseline update.
+The exact `v0.1.0-rc.1` frozen-candidate diff review now passes separately.
 
 ## Linux shared-export follow-up
 

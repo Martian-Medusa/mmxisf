@@ -33,17 +33,17 @@
     },
     {
       "id": "quality.exact-candidate-cross-platform",
-      "status": "NOT_TESTED",
+      "status": "LIMITED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate. Exact development commit 78ee6db9d62368e53b5ff1064e2f3511a3236728 passed the supplemental pinned-vcpkg MinGW/Wine Windows-target gate and its native-MSVC gate script passed parser and non-Windows host-guard checks in the digest-pinned official PowerShell image. This is current Windows-target compatibility evidence, not native MSVC execution or frozen-candidate evidence."
+      "evidence": "docs/quality-runs/2026-09-14-rc1-cross-platform.json",
+      "note": "Frozen candidate v0.1.0-rc.1 passed exact-source viewer-free pinned-vcpkg static/shared, install, relocation, embedding, export, SBOM, documentation, and reproducibility gates on macOS arm64 and Linux amd64. Exact-source system-graph ASan/UBSan 19/19, 20,000-mutation smoke, and ThreadSanitizer 19/19 also passed on both hosts. The same candidate passed Windows-target MinGW static 19/19 and shared 20/20 plus all consumers, exports, SBOMs, and reproducibility under Wine. Native Windows amd64/MSVC remains NOT_TESTED, so the cross-platform gate is LIMITED rather than PASS."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "Historical macOS and two exact-development-commit Linux amd64 long campaigns passed. The newest matching-toolchain campaign used the versioned runner, an available LLVM symbolizer, and a deterministic archive for ed594d2583ff15df0cd4d2bc34bf2d2e36569cdf; it is retained in docs/fuzz-campaigns/2026-09-14-linux-amd64-ed594d2.json. The frozen candidate campaign remains pending."
+      "evidence": "docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json",
+      "note": "The exact frozen v0.1.0-rc.1 deterministic source archive completed the versioned 900-second Linux amd64 Clang 18 ASan/UBSan/libFuzzer campaign with an available external symbolizer. It executed 2,387,632 inputs in 901 seconds, reached 15,738 covered edges and 43,760 features, and produced no crash artifact, sanitizer error, timeout, or slow input. The full log and evolved corpus remain privately retained and hash-bound."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -113,7 +113,7 @@
       "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
       "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
-      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements now exist for Apple M2 macOS arm64 and Ryzen 5 5500U Linux amd64; the host-specific Apple regression budget passed. The support profile is unfrozen, no Linux public threshold is declared, Windows remains unmeasured, and no portable SLA is claimed, so the complete supported-host review remains LIMITED."
+      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64 and Ryzen 5 5500U Linux amd64; the host-specific Apple regression budget passed. The support profile is now frozen, but no Linux public threshold is declared, Windows remains unmeasured, and no portable SLA is claimed, so the complete supported-host review remains LIMITED."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -131,10 +131,10 @@
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
-      "status": "NOT_TESTED",
+      "status": "LIMITED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-14-development-binary-advisory-review-3fd55e6.json",
-      "note": "The exact five direct dependencies in the unfrozen macOS arm64 PFI provider snapshot passed a dated official-upstream review, including an API-scoped disposition for the open LZ4 unsafe-API report. No frozen candidate exists, the complete toolchain is outside that snapshot, and the mandatory final time-sensitive audit therefore remains NOT_TESTED."
+      "evidence": "docs/security-audits/2026-09-14-rc1-binary-advisory-review.json",
+      "note": "The six exact RC1 binary SBOMs for macOS arm64, Linux amd64, and Windows-target MinGW static/shared builds bind the same five pinned dependencies. Their dated official-upstream review passes, including an API-scoped disposition for the open LZ4 unsafe-API report. The complete compiler, SDK, linker, container-package, and native Windows/MSVC toolchain audit remains incomplete, so this gate is LIMITED rather than PASS."
     },
     {
       "id": "security.private-reporting-channel",
@@ -152,10 +152,10 @@
     },
     {
       "id": "api.exact-candidate-diff-review",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/PUBLIC_API_AUDIT.md",
-      "note": "The final public-header and export-table diff review must run after the candidate commit and support profile are frozen."
+      "evidence": "docs/quality-runs/2026-09-14-rc1-public-api-review.json",
+      "note": "The frozen RC1 has no public-header path or byte changes from the audited nine-header baseline. Exact-candidate macOS arm64, Linux amd64, and Windows-target MinGW shared builds expose exactly the allowlisted 39 mmxisf symbols, installed and relocated static/shared consumers pass, and the candidate release notes explicitly state the pre-1.0 no-ABI-promise policy. Native MSVC remains a separate platform gate."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
@@ -166,10 +166,10 @@
     },
     {
       "id": "distribution.release-artifact-identity",
-      "status": "NOT_TESTED",
+      "status": "LIMITED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "No candidate source archive, final hashes, tag, or release assets have been approved."
+      "evidence": "docs/quality-runs/2026-09-14-rc1-cross-platform.json",
+      "note": "The immutable annotated v0.1.0-rc.1 tag and its remote peeled commit are verified. A deterministic local source archive, checksum, and candidate manifest are bound to that tag and independently pass candidate-ref and git-archive byte-identity verification. No GitHub Release or release asset has been authorized, uploaded, downloaded, or post-publication verified, so this gate remains LIMITED."
     },
     {
       "id": "pfi.native-operator-acceptance",

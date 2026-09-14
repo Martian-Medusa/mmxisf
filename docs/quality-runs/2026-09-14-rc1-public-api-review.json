@@ -1,0 +1,34 @@
+{
+  "schema": "mmxisf.exact-candidate-public-api-review/1.0.0",
+  "reviewedAtUtc": "2026-09-14T20:47:44Z",
+  "result": "PASS",
+  "publicationAuthorized": false,
+  "candidate": {
+    "tag": "v0.1.0-rc.1",
+    "commit": "fd62b5b2a0239638d2ea252912212b3fa4f92178"
+  },
+  "baseline": {
+    "schema": "mmxisf.public-api-baseline/1.0.0",
+    "auditedCommit": "85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f",
+    "sha256": "b1af58f9c4053c55f0fb3cb68af00f0628abe73cdea12056019ba04bd38a2199",
+    "headerCount": 9,
+    "abiPolicy": "NO_ABI_PROMISE_BEFORE_1.0"
+  },
+  "checks": {
+    "publicHeaderNameDiff": "PASS_NO_CHANGES",
+    "publicHeaderByteDiff": "PASS_NO_CHANGES",
+    "baselineValidator": "PASS_9_OF_9",
+    "macosArm64Exports": "PASS_39_OF_39_NO_UNEXPECTED_EXPORTS",
+    "linuxAmd64Exports": "PASS_39_OF_39_NO_UNEXPECTED_EXPORTS",
+    "windowsAmd64MinGWExports": "PASS_39_OF_39_NO_UNEXPECTED_EXPORTS",
+    "installedConsumers": "PASS_STATIC_SHARED_MACOS_LINUX_MINGW_WINE",
+    "relocatedConsumers": "PASS_STATIC_SHARED_MACOS_LINUX_MINGW_WINE",
+    "releaseNoteAbiPolicy": "PASS_docs/RELEASE_NOTES_0.1.0_RC1.md"
+  },
+  "reviewDisposition": "The frozen candidate does not change any installed header byte from the audited baseline. Its three executed shared-library toolchains retain the 39-symbol allowlisted surface. The pre-1.0 no-ABI-promise policy is explicit in the candidate release notes.",
+  "limitations": [
+    "Native Windows/MSVC execution remains a separate platform qualification gate.",
+    "PASS does not create an ABI promise before 1.0.",
+    "The review does not authorize publication."
+  ]
+}
