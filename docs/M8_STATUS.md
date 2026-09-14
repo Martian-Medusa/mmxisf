@@ -48,6 +48,13 @@ open; it does not turn historical evidence into exact-candidate evidence.
   named PE export surface, and requires byte-identical repeated libraries. It
   is an inexpensive compatibility signal, not a substitute for native MSVC on
   a supported Windows host.
+- A viewer-free native Windows amd64 PowerShell gate now packages the complete
+  MSVC path into one fail-closed command: exact vcpkg-baseline verification,
+  dependency floors, warnings-as-errors static/shared suites, direct and
+  relocated installed consumers, embedded consumers, SBOM checks, MSVC DLL
+  export inspection, and distinct-build binary identity. Its parser has
+  positive, unexpected-export, and empty-export contracts on every host; the
+  native gate itself remains NOT_TESTED until a Windows amd64 host runs it.
 - Installed packages include Apache-2.0 `LICENSE`, `NOTICE`, `SECURITY.md`, and
   `THIRD_PARTY_NOTICES.md`.
 - A checked SPDX 2.3 source-dependency SBOM names all five direct libraries,

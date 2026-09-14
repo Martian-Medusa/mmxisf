@@ -283,6 +283,20 @@ consumers under 64-bit Wine, validates DLL exports and SBOMs, and compares
 independent rebuilds byte-for-byte. This gate does not replace the native MSVC
 candidate run required for a Windows support claim.
 
+On a native Windows amd64 host with Visual Studio 2022 and a dedicated,
+bootstrapped vcpkg checkout at the manifest baseline, run the corresponding
+MSVC gate from PowerShell:
+
+```powershell
+.\tools\run_vcpkg_windows_amd64_gate.ps1 -VcpkgRoot C:\src\vcpkg
+```
+
+It is viewer-free and applies the production dependency floors, warning-as-
+error tests, installed and relocated package consumers, embedded consumers,
+native DLL export inspection, SBOM checks, and distinct-build byte-identity
+checks. Its output becomes support evidence only when executed on the exact
+frozen candidate and recorded with the native host and toolchain identity.
+
 The pre-release `Writer::write_file` API emits one or more attached little-
 endian Planar Gray or RGB images using UInt8, UInt16, UInt32, Float32, or
 Float64 samples. Floating-point images require explicit finite bounds; all

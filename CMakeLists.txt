@@ -299,7 +299,15 @@ if(MMXISF_BUILD_TESTS)
       -DMMXISF_PACKAGE_VERSION_FILE=${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfigVersion.cmake
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidatePackageVersion.cmake
   )
-  if(BUILD_SHARED_LIBS AND (UNIX OR MINGW))
+  add_test(
+    NAME mmxisf.shared-export-validator-contract
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_VALIDATOR=${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSharedExports.cmake
+      -DMMXISF_CONTRACT_DIRECTORY=${CMAKE_CURRENT_BINARY_DIR}/shared-export-validator-contract
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSharedExportsContract.cmake
+  )
+  if(BUILD_SHARED_LIBS AND (UNIX OR WIN32))
     add_test(
       NAME mmxisf.shared-export-surface
       COMMAND
@@ -307,6 +315,8 @@ if(MMXISF_BUILD_TESTS)
         -DMMXISF_SHARED_LIBRARY=$<TARGET_FILE:mmxisf>
         -DMMXISF_NM=${CMAKE_NM}
         -DMMXISF_OBJDUMP=${CMAKE_OBJDUMP}
+        -DMMXISF_LINKER=${CMAKE_LINKER}
+        -DMMXISF_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}
         -DMMXISF_PLATFORM=${CMAKE_SYSTEM_NAME}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ValidateSharedExports.cmake
     )
