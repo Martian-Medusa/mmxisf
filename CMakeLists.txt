@@ -12,6 +12,10 @@ include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 set(MMXISF_INSTALL_SBOM_DIR "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom")
+set(
+  MMXISF_INSTALL_CONFORMANCE_DIR
+  "${CMAKE_INSTALL_DATADIR}/mmxisf/conformance"
+)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -277,7 +281,9 @@ configure_package_config_file(
   cmake/mmxisfConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
-  PATH_VARS MMXISF_INSTALL_SBOM_DIR
+  PATH_VARS
+    MMXISF_INSTALL_SBOM_DIR
+    MMXISF_INSTALL_CONFORMANCE_DIR
 )
 
 write_basic_package_version_file(
@@ -306,6 +312,13 @@ install(
     sbom/source-dependencies.spdx.json
     "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
   DESTINATION "${MMXISF_INSTALL_SBOM_DIR}"
+)
+install(
+  FILES
+    docs/support-profile-0.1.0.json
+    docs/conformance/xisf-1.0-matrix.json
+    docs/specification-baseline.json
+  DESTINATION "${MMXISF_INSTALL_CONFORMANCE_DIR}"
 )
 if(MMXISF_BUILD_DOCS)
   install(

@@ -14,4 +14,16 @@ set_and_check(
   mmxisf_BINARY_SBOM
   "@PACKAGE_MMXISF_INSTALL_SBOM_DIR@/binary-dependencies.spdx.json"
 )
+set_and_check(
+  mmxisf_SUPPORT_PROFILE
+  "@PACKAGE_MMXISF_INSTALL_CONFORMANCE_DIR@/support-profile-0.1.0.json"
+)
+set_and_check(
+  mmxisf_CONFORMANCE_MATRIX
+  "@PACKAGE_MMXISF_INSTALL_CONFORMANCE_DIR@/xisf-1.0-matrix.json"
+)
+set_and_check(
+  mmxisf_SPECIFICATION_BASELINE
+  "@PACKAGE_MMXISF_INSTALL_CONFORMANCE_DIR@/specification-baseline.json"
+)
 check_required_components(mmxisf)

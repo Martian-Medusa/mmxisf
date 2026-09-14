@@ -58,6 +58,7 @@ milestone. They remain candidates for later conformance work.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap and estimates](docs/ROADMAP.md)
 - [PFI integration](docs/PFI_INTEGRATION.md)
+- [Standalone support profile](docs/support-profile-0.1.0.json)
 - [Conformance matrix](docs/conformance/xisf-1.0-matrix.json)
 - [Threat model](docs/THREAT_MODEL.md)
 - [Resource limits](docs/RESOURCE_LIMITS.md)
@@ -145,7 +146,12 @@ library. Public functions/classes use explicit import/export annotations, and
 the installed CMake target propagates `MMXISF_STATIC_DEFINE` only for static
 consumers. Both forms install the Apache-2.0 license, notices, security policy,
 dependency notices, and the validated SPDX 2.3 source-dependency SBOM under
-`share/mmxisf`. Each configured build also generates and installs a binary
+`share/mmxisf`. The same install tree carries the standalone support profile,
+the exact conformance matrix it hashes, and the pinned specification
+provenance. Their relocatable paths are exported as
+`mmxisf_SUPPORT_PROFILE`, `mmxisf_CONFORMANCE_MATRIX`, and
+`mmxisf_SPECIFICATION_BASELINE` by `find_package(mmxisf CONFIG)`. Each
+configured build also generates and installs a binary
 dependency SBOM containing the exact versions resolved from the dependency
 headers, the target platform, compiler, build configuration, and static/shared
 linkage. Missing or malformed version macros fail configuration rather than

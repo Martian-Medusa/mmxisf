@@ -59,6 +59,11 @@ The intended release assets are:
 - release notes with supported/unsupported conformance rows and security fixes;
 - a separately signed/notarized macOS viewer bundle when the viewer is included.
 
+The installed CMake package carries the support profile, conformance matrix,
+and pinned specification provenance in addition to the license/notice files and
+SBOMs. Its package-consumer gate verifies that these files are relocatable,
+mutually bound by SHA-256, and keep the viewer outside the library contract.
+
 The viewer PoC is not silently promoted to a library support claim. Unsigned or
 ad-hoc-signed local bundles remain development artifacts.
 
