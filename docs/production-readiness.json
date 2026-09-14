@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
-      "note": "Exact development commit 1489bc13f07a4db0b0077a9dc9b4abd62ea293ef passed an extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static/shared 12/12, installed consumers 1/1, dependency floors, documentation, and binary SBOM checks. The earlier 8c33a65 gate separately proved cache population/restoration and byte-identical libraries; the broader Clang sanitizer gate remains recorded for 392ebd3."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json",
+      "note": "Exact development commit 436a9b443bab67a043842dcbda9168e502cf3c56 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 13/13, shared 14/14, installed consumers 1/1 each, dependency floors, documentation, and binary SBOM checks. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json",
-      "note": "Exact development commit 1489bc13f07a4db0b0077a9dc9b4abd62ea293ef produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static/shared 12/12 suites, installed consumers 1/1, binary SBOM, and documentation on Linux amd64. Earlier macOS arm64 clean-room evidence additionally covers system-only viewer linkage and strict ad-hoc signing."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json",
+      "note": "Exact development commit 436a9b443bab67a043842dcbda9168e502cf3c56 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 13/13 and shared 14/14 suites, installed consumers 1/1 each, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",

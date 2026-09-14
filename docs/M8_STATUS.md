@@ -6,6 +6,7 @@
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
+  EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
@@ -367,6 +368,18 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/quality-runs/2026-09-14-macos-arm64-aac94f8.json`. The system dependency
   graph is not promoted to production-baseline evidence, and the ancillary
   viewer result does not contribute to the library claim.
+- Exact development commit `436a9b443bab67a043842dcbda9168e502cf3c56`
+  passed the deterministic extracted-source Linux amd64 production-dependency
+  gate on `mllse`: warnings-as-errors static 13/13, shared 14/14, installed
+  consumers 1/1 each, dependency floors, SBOM, and API documentation. The new
+  shared-export contract reports exactly 39 `mmxisf` symbols out of 39 dynamic
+  exports. This corrects the 8,239-symbol dependency leak detected at `5ee4646`
+  and the remaining 18 weak standard-library exports detected at `f5cf404`;
+  those failed checks remain diagnosis rather than PASS evidence. Exact source,
+  environment, artifact, and defect-history evidence is retained in
+  `docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json`. The viewer was not
+  built and does not contribute to this standalone-library gate. Windows and a
+  frozen exact candidate remain open.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit

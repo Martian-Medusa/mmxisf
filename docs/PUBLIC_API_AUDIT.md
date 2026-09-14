@@ -85,3 +85,24 @@ from this audited commit, repeat the installed static/shared consumers and
 sanitizers on the exact frozen candidate, and confirm that release notes state
 the pre-1.0 ABI policy. This open exact-candidate check is independent of the
 current audit PASS.
+
+## Linux shared-export follow-up
+
+The production-dependency Linux build exposed a packaging defect after the
+original source-level audit. Exact development commit
+`5ee46464903cc5f9fb11ba3f9f04d1e51ba701b3` exported 8,239 dynamic symbols,
+including entry points from statically linked dependencies. The first archive-
+exclusion fix at `f5cf40403284171733589cc1853d8a2a364acb79` still exposed 18 weak
+libstdc++ template symbols and failed its new shared-export test; that result is
+retained as diagnosis, not passing evidence.
+
+Exact development commit `436a9b443bab67a043842dcbda9168e502cf3c56`
+adds a deny-by-default Linux version script restricted to the public `mmxisf`
+namespace, keeps static dependency archives hidden, and makes the export audit
+a CTest contract. Its deterministic extracted-source production-graph gate on
+Linux amd64 passed static 13/13, shared 14/14, installed consumers 1/1 each,
+and reported exactly 39 `mmxisf` symbols out of 39 dynamic exports. Full
+evidence is retained in
+`docs/quality-runs/2026-09-14-linux-amd64-436a9b4.json`. This closes the current
+Linux dependency-export defect without changing the pre-1.0 ABI policy or the
+still-open exact frozen-candidate diff review.
