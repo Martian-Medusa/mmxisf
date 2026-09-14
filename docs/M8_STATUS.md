@@ -93,6 +93,14 @@
   account-level billing/spending-limit annotation for all eight jobs before any
   runner step. This independently confirms that the current CI blocker remains
   external to repository code.
+- Exact-head run
+  [`34802246968`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34802246968)
+  repeated the same result on commit
+  `1bf816ecc1c2351f23c50bbdfd791a4ee15f1912`: all eight jobs received the
+  account payment/spending-limit annotation and created no build step. The
+  exclusive temporary-file creation fix is therefore validated locally but
+  remains pending cross-platform exact-head CI after the account block is
+  resolved.
 
 ## Still required for public beta
 
