@@ -65,6 +65,17 @@
 
 ## Evidence available now
 
+- Exact commit `d5a81ed566d02b1222e9e2baf51ecf2faffbef24` passed the complete
+  maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
+  installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
+  20,000-case mutation smoke, ThreadSanitizer 8/8, generated API documentation,
+  and strict deep viewer-bundle signature verification. The same commit adds a
+  checked, independently decoded native-writer property fixture whose exact
+  compiled bytes validate as a 2x2 UInt16 Gray image with a compressed,
+  shuffled, SHA-256-protected F64 matrix property, a UI16 vector property, and
+  a string property. The source-bound PixInsight validation script and fixture
+  are prepared, but native PixInsight execution remains **NOT_TESTED** and is
+  not implied by this local gate.
 - Exact commit `88f12a7611c4897e82238b734648b32306d2b74d` passed the complete
   maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
   installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
