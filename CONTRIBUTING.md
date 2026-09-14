@@ -56,6 +56,11 @@ and fuzz targets use Clang. Both compilers retain warnings as errors; the Linux
 gate disables only `-Wmissing-field-initializers` because the public test
 records intentionally exercise C++20 aggregate defaults.
 
+The gate disables Docker's default seccomp profile for this one unprivileged
+build container because LLVM ThreadSanitizer must call `personality()` before
+the test process enters project code. No host devices, Docker socket, network
+service data, or application-service volumes are mounted into the container.
+
 Do not treat an incremental successful compile alone as equivalent to this
 static/shared/install/sanitizer/documentation/viewer gate.
 

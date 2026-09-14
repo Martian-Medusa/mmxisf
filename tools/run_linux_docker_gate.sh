@@ -22,6 +22,7 @@ docker build \
   "$repository_root"
 
 docker run --rm --init --platform linux/amd64 \
+  --security-opt seccomp=unconfined \
   --volume "$repository_root:/work" \
   --workdir /work \
   --env "MMXISF_LOCAL_GATE_ROOT=/work/$gate_directory_name" \
