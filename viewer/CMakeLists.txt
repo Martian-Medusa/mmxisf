@@ -1,8 +1,21 @@
 add_executable(mmxisf_viewer MACOSX_BUNDLE Viewer.mm)
-target_sources(mmxisf_viewer PRIVATE "${PROJECT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md")
-set_source_files_properties(
+set(
+  MMXISF_VIEWER_RESOURCE_FILES
+  "${PROJECT_SOURCE_DIR}/LICENSE"
+  "${PROJECT_SOURCE_DIR}/NOTICE"
+  "${PROJECT_SOURCE_DIR}/SECURITY.md"
+  "${PROJECT_SOURCE_DIR}/CONTRIBUTING.md"
   "${PROJECT_SOURCE_DIR}/THIRD_PARTY_NOTICES.md"
+  "${PROJECT_BINARY_DIR}/binary-dependencies.spdx.json"
+)
+target_sources(mmxisf_viewer PRIVATE ${MMXISF_VIEWER_RESOURCE_FILES})
+set_source_files_properties(
+  ${MMXISF_VIEWER_RESOURCE_FILES}
   PROPERTIES MACOSX_PACKAGE_LOCATION Resources
+)
+set_source_files_properties(
+  "${PROJECT_BINARY_DIR}/binary-dependencies.spdx.json"
+  PROPERTIES GENERATED TRUE
 )
 target_compile_features(mmxisf_viewer PRIVATE cxx_std_20)
 target_compile_options(mmxisf_viewer PRIVATE -fobjc-arc)
@@ -234,3 +247,14 @@ set_target_properties(
     MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
 )
+
+if(BUILD_TESTING AND MMXISF_BUILD_TESTS)
+  add_test(
+    NAME mmxisf.viewer-bundle
+    COMMAND
+      ${CMAKE_COMMAND}
+      -DMMXISF_VIEWER_BUNDLE=$<TARGET_BUNDLE_DIR:mmxisf_viewer>
+      -DMMXISF_PROJECT_VERSION=${PROJECT_VERSION}
+      -P ${PROJECT_SOURCE_DIR}/cmake/ValidateViewerBundle.cmake
+  )
+endif()
