@@ -11,6 +11,8 @@ include(CTest)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
+set(MMXISF_INSTALL_SBOM_DIR "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(MMXISF_BUILD_TESTS "Build mmxisf tests" ${BUILD_TESTING})
@@ -260,6 +262,7 @@ configure_package_config_file(
   cmake/mmxisfConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/mmxisfConfig.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/mmxisf"
+  PATH_VARS MMXISF_INSTALL_SBOM_DIR
 )
 
 write_basic_package_version_file(
@@ -287,7 +290,7 @@ install(
   FILES
     sbom/source-dependencies.spdx.json
     "${CMAKE_CURRENT_BINARY_DIR}/binary-dependencies.spdx.json"
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/mmxisf/sbom"
+  DESTINATION "${MMXISF_INSTALL_SBOM_DIR}"
 )
 if(MMXISF_BUILD_DOCS)
   install(
