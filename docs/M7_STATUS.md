@@ -1,6 +1,6 @@
 # M7 progress: broader image sample coverage
 
-- Status: EXTENDED_SAMPLE_AND_CORE_INSPECTION_IMPLEMENTED;
+- Status: EXTENDED_SAMPLE_CORE_INSPECTION_AND_ROW_STREAMING_IMPLEMENTED;
   EXTERNAL_SAMPLE_ORACLE_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 11.5.1
@@ -45,6 +45,10 @@
   structural/type-form/cardinality validation under dedicated limits.
 - Table Cell block payloads remain inspect-only: no external resolution,
   decoding, integrity claim, or typed numeric convenience API is implied.
+- Bounded `ImageRowSink` delivery emits ephemeral planar channel rows from
+  Planar or Normal sources without retaining a decoded frame. A declared
+  checksum is verified before the first callback; row and compression-subblock
+  staging have independent caller-selected limits.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -90,6 +94,19 @@ scientific contract.
   direct/referenced image associations, scalar/String/TimePoint/vector forms,
   declared/actual shape agreement, field uniqueness, invalid references and
   children, and every dedicated resource limit.
+- Synthetic row-delivery tests cover uncompressed Planar, Normal-to-planar,
+  embedded and attached compressed data, Zlib/LZ4/LZ4HC/Zstandard, byte shuffle,
+  native endian including complex-component swapping, row assembly across
+  shuffled and unshuffled subblocks, all checksum algorithms, pre-cancellation,
+  source mutation between integrity and delivery passes, sink failure, and
+  row/subblock resource limits. Warning-as-error and ASan/UBSan tests pass
+  locally; cross-platform CI revalidation remains externally blocked by the
+  GitHub Actions account billing/spending limit before runner allocation.
+- On the deterministic 6064x4040 UInt8 RGB Zstandard+shuffle+SHA-256 profile,
+  12,120 delivered rows reproduced the exact complete pixel hash. One local
+  warm-cache measurement observed 64,028,672 bytes maximum RSS versus
+  144,031,744 bytes for the owning path, a 55.55% reduction. See
+  `M7_ROW_PERFORMANCE.md`; this is not a portable SLA.
 
 ## Still required for M7
 

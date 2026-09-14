@@ -69,8 +69,10 @@ milestone. They remain candidates for later conformance work.
 - [M4 progress](docs/M4_STATUS.md)
 - [M6 writer progress](docs/M6_STATUS.md)
 - [M7 broader image coverage](docs/M7_STATUS.md)
+- [M7 row-delivery memory checkpoint](docs/M7_ROW_PERFORMANCE.md)
 - [M8 hardening and distribution](docs/M8_STATUS.md)
 - [Writer API](docs/WRITER.md)
+- [Bounded image-row reader](docs/ROW_READER.md)
 - [Generated API reference overview](docs/API.md)
 - [Fuzzing policy](docs/FUZZING.md)
 - [Supply-chain and license audit](docs/SUPPLY_CHAIN_AUDIT.md)
@@ -88,6 +90,7 @@ build/mmxisf-inspect --decode-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-properties-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-icc-sha256 path/to/image.xisf
 build/mmxisf-inspect --decode-thumbnails-sha256 path/to/image.xisf
+build/mmxisf-inspect --decode-rows path/to/image.xisf
 ```
 
 Normal configuration requires installed Expat, zlib, LZ4, Zstandard, and
@@ -171,6 +174,13 @@ interoperability extension to the
 pinned 2017 XISF 1.0 baseline. Failed checksums stop processing before any
 compressed bytes reach a codec.
 
+`Reader::read_image_rows` provides a low-copy alternative for analysis:
+caller-owned callbacks receive ephemeral planar channel rows with exact channel
+and row indices. Uncompressed input uses row-sized staging, compressed input is
+decoded one bounded declared subblock at a time, and a declared checksum is
+verified in a bounded first pass before any row is delivered. The complete
+contract and example are in [`docs/ROW_READER.md`](docs/ROW_READER.md).
+
 `Reader::read_property_block(metadata_index, options, stop_token)` returns the
 exact bytes of a block-backed String, vector, or matrix Property. It supports
 attachment and `inline:base64`/`inline:hex` locations, all declared standard
@@ -225,6 +235,11 @@ for every block-backed Property without decoding image pixels.
 and hash for every locally readable ICC profile.
 `--decode-thumbnails-sha256` performs the bounded thumbnail decode and exact
 source-representation pixel hash.
+`--decode-rows` exercises the low-copy callback path and reports exact planar
+row and decoded-byte counts plus the checksum state without retaining a full
+decoded frame. Its incremental SHA-256 covers callback order; it equals the
+source-representation pixel hash for Planar source/native-order output, while
+Normal sources intentionally have a different row/channel delivery order.
 The normal inspector output also lists the bounded semantic inventory of
 non-XISF XML extension elements and their namespace-aware attributes; this is
 inspection data, not a byte-identical XML round-trip representation.

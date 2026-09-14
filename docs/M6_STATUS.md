@@ -1,6 +1,7 @@
 # M6 progress: deterministic monolithic writer
 
-- Status: BLOCK_PROPERTIES_IMPLEMENTED; EXTERNAL_ORACLE_PASS; CROSS_PLATFORM_PENDING
+- Status: BYTE_SINK_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
+  CI_REVALIDATION_BLOCKED_ACCOUNT_BILLING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
 - Publication status: private repository; no tag or release
@@ -133,7 +134,10 @@
 
 ## Still required for M6
 
-- Complete Linux/macOS/Windows, sanitizer, fuzz, and installed-package gates.
+- Restore the GitHub Actions account billing/spending limit and complete the
+  exact-head Linux/macOS/Windows, fuzz, and installed-package matrix. The
+  immediately preceding static/shared platform matrix passed; the latest
+  attempted pushed head created no runner because of the account-level block.
 - Validate writer-produced vector/matrix Properties natively in PixInsight.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.

@@ -11,9 +11,10 @@ first public release, while ABI stability is not promised before 1.0.
 2. Inspect the immutable `mmxisf::Document` without decoding pixels.
    `Document::extension_elements()` exposes a bounded, namespace-aware semantic
    inventory of non-core XML extensions.
-3. Read an image into an owning `mmxisf::RawImage` or a correctly sized
-   caller-owned span. Use `mmxisf::ImageReadOptions` when native byte order or a
-   specific Planar/Normal layout is required.
+3. Read an image into an owning `mmxisf::RawImage`, a correctly sized
+   caller-owned span, or a caller-owned `mmxisf::ImageRowSink`. Use
+   `mmxisf::ImageReadOptions` when a specific Planar/Normal layout is required;
+   row delivery is always planar and can preserve source or native byte order.
 4. Read block-backed metadata with `mmxisf::Reader::read_property_block` and
    ICC profile bytes with `mmxisf::Reader::read_icc_profile`, or a producer
    thumbnail with `mmxisf::Reader::read_thumbnail`.
@@ -36,6 +37,9 @@ and do not silently manufacture a fallback value.
   `mmxisf::RawIccProfile` own their returned bytes.
 - `Reader::read_image_into` writes only to the supplied span and reports the
   exact decoded byte count.
+- `Reader::read_image_rows` borrows each `ImageRowView::bytes` span only for the
+  synchronous callback. The sink copies any row data it needs to retain and
+  owns rollback after partial delivery.
 - Writer image and Property spans are borrowed only for the duration of the
   synchronous `Writer::write_file` or `Writer::write_to` call. A `ByteSink`
   remains caller-owned and is neither closed nor rolled back by the library.
@@ -52,6 +56,14 @@ native-endian conversion swaps the real and imaginary components independently
 without interpreting their numeric values.
 Display orientation is descriptive and is not applied to scientific pixels.
 Checksums are verified before compressed bytes are passed to a decoder.
+
+Row delivery emits one complete planar channel row per callback. Planar sources
+arrive channel-major; Normal sources arrive source-row-major and are split into
+channel rows. A declared checksum is verified with bounded staging before the
+first callback and the delivery pass is hashed again before success. Later
+codec/source/mutation/cancellation/sink failure may leave rows already accepted
+by the caller, so consumers needing atomic state must stage or roll back their
+own results.
 
 The writer accepts a deliberately bounded profile documented in
 `docs/WRITER.md`. It rejects unsupported layouts and does not overwrite an
@@ -72,6 +84,11 @@ contract, not performance hints. Applications may tighten them for their own
 workloads. A resource-limit failure, checksum mismatch, unsupported feature,
 or malformed structure is reported explicitly and yields no trusted pixels.
 External paths and URLs are not resolved by the current profile.
+
+`ImageRowReadOptions` separately bounds source/output row staging and each
+compressed or decoded subblock buffer. Byte-shuffled delivery can require more
+than one independently bounded buffer; the configured value is not a total
+peak-memory limit.
 
 Extension records preserve namespace/local names, normalized attributes,
 direct character data, parent association, and containing-image association.
@@ -128,5 +145,6 @@ contract.
 - `docs/RESOURCE_LIMITS.md` defines the limit model.
 - `docs/THREAT_MODEL.md` defines the security boundary.
 - `docs/PFI_INTEGRATION.md` defines the narrow PFI adapter contract.
+- `docs/ROW_READER.md` defines bounded row delivery and partial-result rules.
 - `docs/WRITER.md` defines the current writer profile.
 - `docs/conformance/xisf-1.0-matrix.json` is the versioned conformance matrix.

@@ -36,6 +36,14 @@ these values as provenance. It must not apply the optional display transform to
 PFI's scientific pixel plane. A returned owning image reports whether a
 declared checksum was verified; checksum failure never returns pixels.
 
+For large frames the adapter should prefer `Reader::read_image_rows`. Each
+callback is one ephemeral planar channel row with explicit zero-based channel
+and row indices; it can be copied into PFI-owned storage or consumed directly by
+a row-capable analysis stage. A declared checksum is verified before the first
+callback and rechecked over delivery bytes before success. Any later failure
+leaves rollback of previously consumed rows to the adapter, so it must not
+publish a partial frame as valid input.
+
 ## Adoption sequence
 
 1. Add an interface in PFI that both the existing PixInsight host reader and a

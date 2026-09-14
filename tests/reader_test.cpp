@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <span>
 #include <stop_token>
@@ -75,6 +76,73 @@ private:
   std::size_t max_read_{0};
   std::stop_source *stop_source_{nullptr};
   std::size_t stop_after_read_{0};
+};
+
+class MutatingAttachmentSource final : public mmxisf::ByteSource {
+public:
+  MutatingAttachmentSource(std::vector<std::byte> bytes,
+                           std::uint64_t attachment_offset)
+      : bytes_(std::move(bytes)), attachment_offset_(attachment_offset) {}
+
+  mmxisf::Result<std::uint64_t> size() const override {
+    return static_cast<std::uint64_t>(bytes_.size());
+  }
+
+  mmxisf::Result<std::size_t>
+  read_at(std::uint64_t offset,
+          std::span<std::byte> destination) const override {
+    if (offset > bytes_.size()) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::io_error,
+                           .message = "mutating source range error"};
+    }
+    const auto available = bytes_.size() - static_cast<std::size_t>(offset);
+    const auto count = std::min(available, destination.size());
+    std::copy_n(bytes_.data() + static_cast<std::size_t>(offset), count,
+                destination.data());
+    if (offset >= attachment_offset_ && count > 0) {
+      if (attachment_reads_ > 0) {
+        destination[0] ^= std::byte{1};
+      }
+      ++attachment_reads_;
+    }
+    return count;
+  }
+
+private:
+  std::vector<std::byte> bytes_;
+  std::uint64_t attachment_offset_{0};
+  mutable std::size_t attachment_reads_{0};
+};
+
+struct CollectedRow {
+  std::uint64_t channel_index{0};
+  std::uint64_t row_index{0};
+  mmxisf::ByteOrder byte_order{mmxisf::ByteOrder::little};
+  std::vector<std::byte> bytes;
+};
+
+class CollectingRowSink final : public mmxisf::ImageRowSink {
+public:
+  explicit CollectingRowSink(
+      std::size_t fail_after = std::numeric_limits<std::size_t>::max())
+      : fail_after_(fail_after) {}
+
+  mmxisf::Result<void> consume(const mmxisf::ImageRowView &row) override {
+    if (rows.size() >= fail_after_) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::io_error,
+                           .message = "test row sink failure"};
+    }
+    rows.push_back(CollectedRow{.channel_index = row.channel_index,
+                                .row_index = row.row_index,
+                                .byte_order = row.byte_order,
+                                .bytes = {row.bytes.begin(), row.bytes.end()}});
+    return {};
+  }
+
+  std::vector<CollectedRow> rows;
+
+private:
+  std::size_t fail_after_;
 };
 
 void expect(bool condition, const char *message) {
@@ -208,11 +276,66 @@ int main() {
     expect(!short_destination && short_destination.error().code ==
                                      mmxisf::ErrorCode::invalid_argument,
            "short caller buffer is rejected");
+
+    CollectingRowSink row_sink;
+    auto rows = reader.read_image_rows(0, row_sink);
+    expect(rows && rows.value().rows_delivered == 2 &&
+               rows.value().bytes_delivered == pixels.size() &&
+               rows.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::not_declared &&
+               row_sink.rows.size() == 2 &&
+               row_sink.rows[0].channel_index == 0 &&
+               row_sink.rows[0].row_index == 0 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>{std::byte{0x01}, std::byte{0x00},
+                                          std::byte{0x02}, std::byte{0x00}} &&
+               row_sink.rows[1].row_index == 1 &&
+               row_sink.rows[1].bytes ==
+                   std::vector<std::byte>{std::byte{0x03}, std::byte{0x00},
+                                          std::byte{0x04}, std::byte{0x00}},
+           "uncompressed image rows remain exact and bounded");
+
+    CollectingRowSink failing_row_sink(1);
+    auto failed_rows = reader.read_image_rows(0, failing_row_sink);
+    expect(!failed_rows &&
+               failed_rows.error().code == mmxisf::ErrorCode::io_error &&
+               failing_row_sink.rows.size() == 1,
+           "row sink failure preserves the explicit partial-delivery boundary");
+
+    mmxisf::ImageRowReadOptions tiny_row_options;
+    tiny_row_options.max_row_bytes = 3;
+    CollectingRowSink tiny_row_sink;
+    auto oversized_row =
+        reader.read_image_rows(0, tiny_row_sink, tiny_row_options);
+    expect(!oversized_row &&
+               oversized_row.error().code ==
+                   mmxisf::ErrorCode::resource_limit &&
+               tiny_row_sink.rows.empty(),
+           "row staging limit fails before delivery");
+
+    mmxisf::ImageRowReadOptions zero_staging_options;
+    zero_staging_options.max_subblock_bytes = 0;
+    CollectingRowSink zero_staging_sink;
+    auto invalid_staging =
+        reader.read_image_rows(0, zero_staging_sink, zero_staging_options);
+    expect(!invalid_staging &&
+               invalid_staging.error().code ==
+                   mmxisf::ErrorCode::invalid_argument &&
+               zero_staging_sink.rows.empty(),
+           "zero row staging option fails before delivery");
+
     std::stop_source stop_source;
     stop_source.request_stop();
     auto cancelled = reader.read_image(0, stop_source.get_token());
     expect(!cancelled && cancelled.error().code == mmxisf::ErrorCode::cancelled,
            "pre-cancelled image read is rejected at a safe boundary");
+    CollectingRowSink cancelled_row_sink;
+    auto cancelled_rows = reader.read_image_rows(0, cancelled_row_sink, {},
+                                                 stop_source.get_token());
+    expect(!cancelled_rows &&
+               cancelled_rows.error().code == mmxisf::ErrorCode::cancelled &&
+               cancelled_row_sink.rows.empty(),
+           "pre-cancelled row read emits no rows");
   }
 
   const auto metadata_fidelity_path = write_fixture(
@@ -337,6 +460,24 @@ int main() {
         0, destination, mid_read_stop.get_token());
     expect(!cancelled && cancelled.error().code == mmxisf::ErrorCode::cancelled,
            "cancellation is observed between partial source reads");
+  }
+
+  auto cancelling_row_source =
+      std::make_shared<MemoryByteSource>(read_bytes(valid_path));
+  auto cancelling_row_reader =
+      mmxisf::Reader::open_source(cancelling_row_source);
+  expect(cancelling_row_reader.has_value(),
+         "row cancellation test ByteSource opens");
+  if (cancelling_row_reader) {
+    std::stop_source mid_row_stop;
+    cancelling_row_source->request_stop_after(mid_row_stop, 1);
+    CollectingRowSink row_sink;
+    auto cancelled = cancelling_row_reader.value().read_image_rows(
+        0, row_sink, {}, mid_row_stop.get_token());
+    expect(!cancelled &&
+               cancelled.error().code == mmxisf::ErrorCode::cancelled &&
+               row_sink.rows.empty(),
+           "row cancellation is observed before a partial row is exposed");
   }
 
   auto null_source = mmxisf::Reader::open_source(nullptr);
@@ -756,6 +897,18 @@ int main() {
             : std::vector<std::byte>{std::byte{0x12}, std::byte{0x34}};
     expect(image && image.value().pixels == expected,
            "native-endian conversion works without a layout transform");
+    mmxisf::ImageRowReadOptions row_options;
+    row_options.byte_order = mmxisf::ByteOrderOutput::native;
+    CollectingRowSink row_sink;
+    auto rows =
+        native_endian_reader.value().read_image_rows(0, row_sink, row_options);
+    expect(rows && row_sink.rows.size() == 1 &&
+               row_sink.rows[0].bytes == expected &&
+               row_sink.rows[0].byte_order ==
+                   (std::endian::native == std::endian::little
+                        ? mmxisf::ByteOrder::little
+                        : mmxisf::ByteOrder::big),
+           "row delivery applies native endian conversion per component");
   }
 
   const auto normal_to_planar_path = write_fixture(
@@ -780,6 +933,22 @@ int main() {
                                   std::byte{40}, std::byte{50}, std::byte{60}},
            "Normal UInt8 RGB transforms to Planar without channel loss");
 
+    CollectingRowSink row_sink;
+    auto rows = normal_to_planar.value().read_image_rows(0, row_sink);
+    expect(rows && rows.value().rows_delivered == 3 &&
+               rows.value().bytes_delivered == 6 && row_sink.rows.size() == 3 &&
+               row_sink.rows[0].channel_index == 0 &&
+               row_sink.rows[0].row_index == 0 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>{std::byte{10}, std::byte{20}} &&
+               row_sink.rows[1].channel_index == 1 &&
+               row_sink.rows[1].bytes ==
+                   std::vector<std::byte>{std::byte{30}, std::byte{40}} &&
+               row_sink.rows[2].channel_index == 2 &&
+               row_sink.rows[2].bytes ==
+                   std::vector<std::byte>{std::byte{50}, std::byte{60}},
+           "Normal RGB rows split into exact planar channel rows");
+
     options.pixel_storage = static_cast<mmxisf::PixelStorageOutput>(0xffU);
     auto invalid_options = normal_to_planar.value().read_image(0, options);
     expect(!invalid_options && invalid_options.error().code ==
@@ -800,7 +969,7 @@ int main() {
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
           "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
-          "colorSpace=\"RGB\" compression=\"zlib:6\" "
+          "colorSpace=\"RGB\" pixelStorage=\"Normal\" compression=\"zlib:6\" "
           "location=\"attachment:1024:14\"/>") +
           valid_metadata() + "</xisf>",
       zlib_rgb_compressed);
@@ -810,6 +979,16 @@ int main() {
     auto image = zlib_attachment.value().read_image(0);
     expect(image && image.value().pixels == zlib_rgb_pixels,
            "zlib attachment decompresses to exact RGB bytes");
+    CollectingRowSink row_sink;
+    auto rows = zlib_attachment.value().read_image_rows(0, row_sink);
+    expect(rows && row_sink.rows.size() == 3 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>{std::byte{1}, std::byte{4}} &&
+               row_sink.rows[1].bytes ==
+                   std::vector<std::byte>{std::byte{2}, std::byte{5}} &&
+               row_sink.rows[2].bytes ==
+                   std::vector<std::byte>{std::byte{3}, std::byte{6}},
+           "compressed Normal RGB splits into exact planar rows");
   }
 
   const auto zlib_embedded_path = write_fixture(
@@ -831,6 +1010,19 @@ int main() {
     auto image = zlib_embedded.value().read_image(0);
     expect(image && image.value().pixels == zlib_rgb_pixels,
            "zlib embedded block decompresses after Base64 decoding");
+    CollectingRowSink row_sink;
+    auto rows = zlib_embedded.value().read_image_rows(0, row_sink);
+    expect(rows &&
+               rows.value().checksum_verification ==
+                   mmxisf::ChecksumVerification::verified &&
+               row_sink.rows.size() == 3 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>{std::byte{1}, std::byte{2}} &&
+               row_sink.rows[1].bytes ==
+                   std::vector<std::byte>{std::byte{3}, std::byte{4}} &&
+               row_sink.rows[2].bytes ==
+                   std::vector<std::byte>{std::byte{5}, std::byte{6}},
+           "embedded compressed RGB streams as exact planar rows");
   }
 
   const auto embedded_inline_property_path = write_fixture(
@@ -1053,6 +1245,33 @@ int main() {
     }
     expect(transformed && transformed.value().pixels == expected,
            "compressed RGB supports layout and endian output transforms");
+
+    mmxisf::ImageRowReadOptions row_options;
+    row_options.byte_order = mmxisf::ByteOrderOutput::native;
+    CollectingRowSink row_sink;
+    auto rows = shuffled_zlib.value().read_image_rows(0, row_sink, row_options);
+    auto expected_rows = source_order;
+    if constexpr (std::endian::native == std::endian::little) {
+      for (std::size_t offset = 0; offset < expected_rows.size(); offset += 2) {
+        std::swap(expected_rows[offset], expected_rows[offset + 1]);
+      }
+    }
+    expect(rows && rows.value().rows_delivered == 3 &&
+               rows.value().bytes_delivered == source_order.size() &&
+               row_sink.rows.size() == 3 &&
+               row_sink.rows[0].channel_index == 0 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>(expected_rows.begin(),
+                                          expected_rows.begin() + 4) &&
+               row_sink.rows[1].channel_index == 1 &&
+               row_sink.rows[1].bytes ==
+                   std::vector<std::byte>(expected_rows.begin() + 4,
+                                          expected_rows.begin() + 8) &&
+               row_sink.rows[2].channel_index == 2 &&
+               row_sink.rows[2].bytes ==
+                   std::vector<std::byte>(expected_rows.begin() + 8,
+                                          expected_rows.end()),
+           "compressed shuffled RGB rows preserve channels and native endian");
   }
 
   const std::vector<std::byte> complex32_shuffled_zlib_compressed{
@@ -1099,6 +1318,14 @@ int main() {
     }
     expect(native_image && native_image.value().pixels == expected,
            "compressed Complex32 endian conversion preserves component order");
+    mmxisf::ImageRowReadOptions row_options;
+    row_options.byte_order = mmxisf::ByteOrderOutput::native;
+    CollectingRowSink row_sink;
+    auto rows = complex32_shuffled_zlib.value().read_image_rows(0, row_sink,
+                                                                row_options);
+    expect(rows && row_sink.rows.size() == 1 &&
+               row_sink.rows[0].bytes == expected,
+           "complex row endian conversion preserves component boundaries");
   }
 
   const std::vector<std::byte> zlib_subblocks{
@@ -1127,6 +1354,59 @@ int main() {
                                                std::byte{5}, std::byte{6},
                                                std::byte{7}, std::byte{8}},
            "zlib subblocks concatenate exact decoded bytes");
+
+    CollectingRowSink row_sink;
+    auto rows = zlib_subblock_reader.value().read_image_rows(0, row_sink);
+    expect(
+        rows && rows.value().rows_delivered == 1 && row_sink.rows.size() == 1 &&
+            row_sink.rows[0].bytes ==
+                std::vector<std::byte>{std::byte{1}, std::byte{2}, std::byte{3},
+                                       std::byte{4}, std::byte{5}, std::byte{6},
+                                       std::byte{7}, std::byte{8}},
+        "row delivery assembles a row across compressed subblocks");
+
+    mmxisf::ImageRowReadOptions tiny_subblock_options;
+    tiny_subblock_options.max_subblock_bytes = 11;
+    CollectingRowSink tiny_subblock_sink;
+    auto oversized_subblock = zlib_subblock_reader.value().read_image_rows(
+        0, tiny_subblock_sink, tiny_subblock_options);
+    expect(!oversized_subblock &&
+               oversized_subblock.error().code ==
+                   mmxisf::ErrorCode::resource_limit &&
+               tiny_subblock_sink.rows.empty(),
+           "compressed subblock staging limit fails before delivery");
+  }
+
+  const std::vector<std::byte> shuffled_zlib_subblocks{
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
+      std::byte{0x66}, std::byte{0x62}, std::byte{0x01}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x19}, std::byte{0x00}, std::byte{0x0b},
+      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x65},
+      std::byte{0x67}, std::byte{0xe3}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x41}, std::byte{0x00}, std::byte{0x1b}};
+  const auto shuffled_zlib_subblocks_path = write_fixture(
+      "mmxisf-m3-zlib-shuffled-subblocks.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"4:1:1\" sampleFormat=\"UInt16\" "
+          "compression=\"zlib+sh:8:2\" subblocks=\"12,4:12,4\" "
+          "location=\"attachment:1024:24\"/>") +
+          valid_metadata() + "</xisf>",
+      shuffled_zlib_subblocks);
+  auto shuffled_zlib_subblock_reader =
+      mmxisf::Reader::open_file(shuffled_zlib_subblocks_path);
+  expect(shuffled_zlib_subblock_reader.has_value(),
+         "shuffled zlib subblock fixture opens");
+  if (shuffled_zlib_subblock_reader) {
+    const std::vector<std::byte> expected{
+        std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4},
+        std::byte{5}, std::byte{6}, std::byte{7}, std::byte{8}};
+    CollectingRowSink row_sink;
+    auto rows =
+        shuffled_zlib_subblock_reader.value().read_image_rows(0, row_sink);
+    expect(rows && row_sink.rows.size() == 1 &&
+               row_sink.rows[0].bytes == expected,
+           "shuffled subblocks assemble one exact planar row");
   }
 
   struct Lz4CodecCase {
@@ -1153,6 +1433,16 @@ int main() {
     if (reader) {
       auto image = reader.value().read_image(0);
       expect(image && image.value().pixels == zlib_rgb_pixels, test.name);
+      CollectingRowSink row_sink;
+      auto rows = reader.value().read_image_rows(0, row_sink);
+      expect(rows && row_sink.rows.size() == 3 &&
+                 row_sink.rows[0].bytes ==
+                     std::vector<std::byte>{std::byte{1}, std::byte{2}} &&
+                 row_sink.rows[1].bytes ==
+                     std::vector<std::byte>{std::byte{3}, std::byte{4}} &&
+                 row_sink.rows[2].bytes ==
+                     std::vector<std::byte>{std::byte{5}, std::byte{6}},
+             "LZ4-compatible codec streams exact planar rows");
     }
   }
 
@@ -1177,6 +1467,14 @@ int main() {
     auto image = zstd_reader.value().read_image(0);
     expect(image && image.value().pixels == zlib_rgb_pixels,
            "Zstandard attachment decompresses to exact RGB bytes");
+    CollectingRowSink row_sink;
+    auto rows = zstd_reader.value().read_image_rows(0, row_sink);
+    expect(rows && row_sink.rows.size() == 3 &&
+               row_sink.rows[0].bytes ==
+                   std::vector<std::byte>{std::byte{1}, std::byte{2}} &&
+               row_sink.rows[2].bytes ==
+                   std::vector<std::byte>{std::byte{5}, std::byte{6}},
+           "Zstandard attachment streams exact planar rows");
   }
   mmxisf::ReaderOptions invalid_zstd_window_options;
   invalid_zstd_window_options.max_zstd_window_bytes = 1000;
@@ -1393,7 +1691,39 @@ int main() {
                    mmxisf::ChecksumVerification::verified,
                "successful declared checksum is explicit");
       }
+      CollectingRowSink row_sink;
+      auto rows = reader.value().read_image_rows(0, row_sink);
+      expect(rows &&
+                 rows.value().checksum_verification ==
+                     mmxisf::ChecksumVerification::verified &&
+                 rows.value().rows_delivered == 3 &&
+                 rows.value().bytes_delivered == zlib_rgb_pixels.size() &&
+                 row_sink.rows.size() == 3,
+             "row delivery verifies every supported checksum before callback");
     }
+  }
+
+  const auto mutating_checksum_path = write_fixture(
+      "mmxisf-row-mutating-checksum.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"2:1:3\" sampleFormat=\"UInt8\" "
+          "colorSpace=\"RGB\" "
+          "checksum=\"sha-256:"
+          "7192385c3c0605de55bb9476ce1d90748190ecb32a8eed7f5207b30cf6a1fe89"
+          "\" location=\"attachment:1024:6\"/>") +
+          valid_metadata() + "</xisf>",
+      zlib_rgb_pixels);
+  auto mutating_source = std::make_shared<MutatingAttachmentSource>(
+      read_bytes(mutating_checksum_path), 1024);
+  auto mutating_reader = mmxisf::Reader::open_source(mutating_source);
+  expect(mutating_reader.has_value(), "mutating checksum source opens");
+  if (mutating_reader) {
+    CollectingRowSink row_sink;
+    auto rows = mutating_reader.value().read_image_rows(0, row_sink);
+    expect(!rows && rows.error().code == mmxisf::ErrorCode::checksum_mismatch &&
+               row_sink.rows.size() == 3,
+           "row success is withheld when source bytes change after precheck");
   }
 
   const auto checksum_before_codec_path = write_fixture(
@@ -1414,6 +1744,11 @@ int main() {
     auto image = checksum_before_codec.value().read_image(0);
     expect(!image && image.error().code == mmxisf::ErrorCode::checksum_mismatch,
            "failed checksum prevents invalid compressed bytes reaching codec");
+    CollectingRowSink row_sink;
+    auto rows = checksum_before_codec.value().read_image_rows(0, row_sink);
+    expect(!rows && rows.error().code == mmxisf::ErrorCode::checksum_mismatch &&
+               row_sink.rows.empty(),
+           "streaming checksum failure prevents every row callback");
   }
 
   struct InvalidChecksumCase {
@@ -1452,6 +1787,11 @@ int main() {
     if (reader) {
       auto image = reader.value().read_image(0);
       expect(!image && image.error().code == test.expected_error, test.name);
+      CollectingRowSink row_sink;
+      auto rows = reader.value().read_image_rows(0, row_sink);
+      expect(!rows && rows.error().code == test.expected_error &&
+                 row_sink.rows.empty(),
+             "invalid checksum emits no image rows");
     }
   }
 

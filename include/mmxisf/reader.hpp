@@ -94,6 +94,37 @@ struct ImageReadOptions {
   ByteOrderOutput byte_order{ByteOrderOutput::source};
 };
 
+// Ephemeral planar row view. bytes remains valid only for the duration of the
+// ImageRowSink::consume() call.
+struct ImageRowView {
+  std::uint64_t channel_index{0};
+  std::uint64_t row_index{0};
+  ByteOrder byte_order{ByteOrder::little};
+  std::span<const std::byte> bytes;
+};
+
+class ImageRowSink {
+public:
+  virtual ~ImageRowSink() = default;
+  [[nodiscard]] virtual Result<void> consume(const ImageRowView &row) = 0;
+};
+
+struct ImageRowReadOptions {
+  ByteOrderOutput byte_order{ByteOrderOutput::source};
+  // Maximum source row and output plane-row staging allocation.
+  std::uint64_t max_row_bytes{64ULL * 1024ULL * 1024ULL};
+  // Maximum compressed or decoded subblock staging allocation. Byte-shuffled
+  // input can require multiple independently bounded buffers of this size.
+  std::uint64_t max_subblock_bytes{64ULL * 1024ULL * 1024ULL};
+};
+
+struct ImageRowReadSummary {
+  std::uint64_t rows_delivered{0};
+  std::uint64_t bytes_delivered{0};
+  ChecksumVerification checksum_verification{
+      ChecksumVerification::not_declared};
+};
+
 struct RawPropertyBlock {
   ByteOrder byte_order{ByteOrder::little};
   ChecksumVerification checksum_verification{
@@ -142,6 +173,16 @@ public:
   [[nodiscard]] Result<std::size_t>
   read_image_into(std::size_t image_index, std::span<std::byte> destination,
                   ImageReadOptions read_options,
+                  std::stop_token stop_token = {}) const;
+  // Delivers planar rows without allocating the complete decoded image.
+  // Planar sources are visited channel-major; Normal sources are visited
+  // row-major and split into channel rows. A declared checksum is verified
+  // before the first callback and rechecked over delivery bytes before
+  // success. On later failure, the sink may retain rows already consumed and
+  // owns any rollback.
+  [[nodiscard]] Result<ImageRowReadSummary>
+  read_image_rows(std::size_t image_index, ImageRowSink &destination,
+                  ImageRowReadOptions read_options = {},
                   std::stop_token stop_token = {}) const;
   [[nodiscard]] Result<RawPropertyBlock>
   read_property_block(std::size_t metadata_index,

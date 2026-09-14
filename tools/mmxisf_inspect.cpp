@@ -3,9 +3,11 @@
 #include "mmxisf/reader.hpp"
 
 #include <array>
+#include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <openssl/evp.h>
 #include <span>
 #include <sstream>
@@ -29,6 +31,50 @@ std::string sha256(std::span<const std::byte> bytes) {
   return encoded.str();
 }
 
+class HashingRowSink final : public mmxisf::ImageRowSink {
+public:
+  HashingRowSink() : context_(EVP_MD_CTX_new(), &EVP_MD_CTX_free) {
+    ready_ = context_ != nullptr &&
+             EVP_DigestInit_ex(context_.get(), EVP_sha256(), nullptr) == 1;
+  }
+
+  mmxisf::Result<void> consume(const mmxisf::ImageRowView &row) override {
+    if (!ready_ || EVP_DigestUpdate(context_.get(), row.bytes.data(),
+                                    row.bytes.size()) != 1) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::internal_error,
+                           .message = "Unable to hash streamed image row"};
+    }
+    ++rows;
+    bytes += row.bytes.size();
+    return {};
+  }
+
+  mmxisf::Result<std::string> finish() {
+    std::array<unsigned char, EVP_MAX_MD_SIZE> digest{};
+    unsigned int digest_size = 0;
+    if (!ready_ ||
+        EVP_DigestFinal_ex(context_.get(), digest.data(), &digest_size) != 1 ||
+        digest_size != 32) {
+      return mmxisf::Error{.code = mmxisf::ErrorCode::internal_error,
+                           .message = "Unable to finish streamed row hash"};
+    }
+    ready_ = false;
+    std::ostringstream encoded;
+    encoded << std::hex << std::setfill('0');
+    for (unsigned int index = 0; index < digest_size; ++index) {
+      encoded << std::setw(2) << static_cast<unsigned int>(digest[index]);
+    }
+    return encoded.str();
+  }
+
+  std::uint64_t rows{0};
+  std::uint64_t bytes{0};
+
+private:
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context_;
+  bool ready_{false};
+};
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -38,16 +84,18 @@ int main(int argc, char **argv) {
       argc == 3 && std::string(argv[1]) == "--decode-icc-sha256";
   const bool decode_thumbnails =
       argc == 3 && std::string(argv[1]) == "--decode-thumbnails-sha256";
+  const bool decode_rows = argc == 3 && std::string(argv[1]) == "--decode-rows";
   const bool decode = argc == 3 && (std::string(argv[1]) == "--decode" ||
                                     std::string(argv[1]) == "--decode-sha256");
   const bool decode_sha256 =
       decode && std::string(argv[1]) == "--decode-sha256";
-  const bool has_option =
-      decode || decode_properties || decode_icc || decode_thumbnails;
+  const bool has_option = decode || decode_properties || decode_icc ||
+                          decode_thumbnails || decode_rows;
   if ((!has_option && argc != 2) || (argc == 3 && !has_option)) {
     std::cerr << "Usage: mmxisf-inspect "
                  "[--decode|--decode-sha256|--decode-properties-sha256|"
-                 "--decode-icc-sha256|--decode-thumbnails-sha256] "
+                 "--decode-icc-sha256|--decode-thumbnails-sha256|"
+                 "--decode-rows] "
                  "<file.xisf>\n";
     return EXIT_FAILURE;
   }
@@ -128,6 +176,36 @@ int main(int argc, char **argv) {
         std::cout << " pixel-sha256: " << digest;
       }
       std::cout << '\n';
+    }
+    if (decode_rows) {
+      HashingRowSink sink;
+      auto streamed = result.value().read_image_rows(index, sink);
+      if (!streamed) {
+        std::cerr << "image[" << index << "] row-decode: "
+                  << mmxisf::to_string(streamed.error().code) << ": "
+                  << streamed.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      std::cout << "image[" << index
+                << "] planar-rows: " << streamed.value().rows_delivered
+                << " decoded-bytes: " << streamed.value().bytes_delivered
+                << " checksum: "
+                << mmxisf::to_string(streamed.value().checksum_verification)
+                << '\n';
+      if (sink.rows != streamed.value().rows_delivered ||
+          sink.bytes != streamed.value().bytes_delivered) {
+        std::cerr << "image[" << index
+                  << "] row-decode: sink accounting mismatch\n";
+        return EXIT_FAILURE;
+      }
+      auto digest = sink.finish();
+      if (!digest) {
+        std::cerr << "image[" << index
+                  << "] row-decode: " << digest.error().message << '\n';
+        return EXIT_FAILURE;
+      }
+      std::cout << "image[" << index
+                << "] row-stream-sha256: " << digest.value() << '\n';
     }
   }
   for (std::size_t metadata_index = 0;

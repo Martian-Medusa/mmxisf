@@ -1,7 +1,7 @@
 # M8 progress: hardening and distribution
 
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
-  SUPPLY_CHAIN_CI_PENDING;
+  CI_REVALIDATION_BLOCKED_ACCOUNT_BILLING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
 - Publication status: private repository; no tag or release
@@ -79,11 +79,20 @@
 - The source/license/supply-chain review is recorded in
   `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. Binary
   vulnerability review and the public security intake remain release gates.
+- Exact-head run
+  [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
+  created no runner or build steps for commit
+  `3bd2ef2f37d464cece5d4d88f9375ccaaf007ab8`. Every job received GitHub's
+  account-level annotation that recent payments failed or the Actions spending
+  limit must be increased. This is an external billing block, not a code,
+  workflow, action-pin, or test failure. The official `v7.0.1` tags resolve to
+  the exact checkout and upload-artifact commits configured in the workflow.
 
 ## Still required for public beta
 
-- Complete the first exact-head matrix with the upgraded immutable action pins,
-  retained binary SBOMs, and sequential writer-sink API.
+- Resolve the GitHub Actions billing/spending-limit block, then rerun and
+  complete the first exact-head matrix with the upgraded immutable action pins,
+  retained binary SBOMs, sequential writer-sink API, and row-delivery API.
 - Repeat the long campaign on the exact release candidate and preserve/promote
   any minimized regressions; the first retained campaign is complete.
 - Enable a private vulnerability-reporting channel before publication.

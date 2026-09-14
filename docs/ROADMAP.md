@@ -184,7 +184,20 @@ direct String/TimePoint Properties and FITS keywords with independent-consumer
 evidence. A third slice adds all four reader codecs, byte shuffle, and
 SHA-1/256/512 with exact self-round-trips and an independent-consumer oracle.
 Numeric/block metadata, writer performance evidence, and SHA3-256/512 integrity
-are implemented. The sink abstraction remains open.
+are implemented. The writer now also exposes byte-identical sequential output
+through a caller-owned `ByteSink`, with explicit partial-output, scratch,
+flush, cancellation, and rollback ownership. The reader's remaining low-copy
+API gap is closed by bounded planar row callbacks for Planar and Normal sources,
+including subblock-at-a-time decompression and checksum-before-callback plus
+delivery-pass revalidation.
+
+The first complete static/shared Linux, macOS, and Windows matrix passed at
+`cd78b31` in CI run `34797999205`. The later exact-head run containing immutable
+action pins, retained binary SBOMs, and the sink API was rejected before any
+runner started by the GitHub account billing/spending limit. That external
+block pauses cross-platform evidence only; local warning-as-error,
+ASan/UBSan, installed static/shared consumers, documentation, deterministic
+fuzz smoke, and bundle-signature gates continue autonomously.
 
 These windows are recalibrated after every milestone using actual elapsed time,
 defect/rework rate, conformance rows closed, tests added, and uncovered external

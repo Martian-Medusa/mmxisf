@@ -47,6 +47,8 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | encoded inline/embedded bytes | 256 MiB per block | Avoid huge XML-resident payloads; the lower XML-header limit is also authoritative |
 | validated unused file space | 64 MiB cumulative | Bound zero-padding scans during open |
 | compressed subblocks | 65,536 | Supports large data while bounding descriptors/tasks |
+| streamed source/output row | 64 MiB per buffer | Bounds low-copy row assembly and Normal-to-planar splitting |
+| streamed compression subblock | 64 MiB per compressed or decoded buffer | Prevents one declared subblock from defeating row-delivery memory bounds |
 | writer compression subblock bytes | 16 MiB | Bounds codec and byte-shuffle scratch independently of full image size |
 | writer Property bytes | 256 MiB per block / 512 MiB cumulative, decoded and serialized independently | Bounds caller-provided and compressed typed vector/matrix attachments independently of images |
 | decompression ratio | 65,536:1 | Measured current-producer sparse embedded RGB requires about 32,506:1; absolute decoded-byte and sample caps remain authoritative |
@@ -100,6 +102,14 @@ Property metadata limits. General XML header/node/depth/attribute caps remain
 authoritative. Inline Cell block text is retained only for inspection and is
 charged to the table text budget; no Table Cell block is decoded or resolved by
 the current profile.
+
+Row-read limits are per call and checked before the first callback. The row
+limit covers both a serialized source row and one planar output row. The
+subblock limit applies independently to compressed and decoded staging;
+byte-shuffled input can additionally require a shuffle buffer of the same
+bounded size. These values are not a single total peak-memory budget. A
+declared checksum is verified with a separate fixed 8 MiB maximum hash buffer
+before delivery.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

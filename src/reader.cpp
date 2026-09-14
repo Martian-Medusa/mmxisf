@@ -4163,6 +4163,61 @@ Result<bool> verify_checksum(const ChecksumPlan &plan,
   return true;
 }
 
+Result<bool> verify_image_checksum_streaming(const ByteSource &source,
+                                             const ImageReadPlan &image,
+                                             std::stop_token stop_token,
+                                             std::size_t image_index) {
+  if (image.checksum.algorithm == ChecksumAlgorithm::none) {
+    return true;
+  }
+  const auto *digest = checksum_digest(image.checksum.algorithm);
+  if (digest == nullptr) {
+    return make_error(ErrorCode::internal_error,
+                      "Unable to resolve checksum implementation");
+  }
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context(
+      EVP_MD_CTX_new(), &EVP_MD_CTX_free);
+  if (!context || EVP_DigestInit_ex(context.get(), digest, nullptr) != 1) {
+    return make_error(ErrorCode::internal_error,
+                      "Unable to initialize checksum computation");
+  }
+  constexpr std::size_t kHashChunkBytes = 8U * 1024U * 1024U;
+  std::vector<std::byte> buffer(std::min<std::size_t>(
+      kHashChunkBytes, static_cast<std::size_t>(image.serialized_bytes)));
+  std::size_t offset = 0;
+  while (offset < static_cast<std::size_t>(image.serialized_bytes)) {
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    const auto count =
+        std::min(buffer.size(),
+                 static_cast<std::size_t>(image.serialized_bytes) - offset);
+    auto read = read_serialized_chunk(source, image, offset,
+                                      std::span(buffer).first(count),
+                                      stop_token, image_index);
+    if (!read) {
+      return read.error();
+    }
+    if (EVP_DigestUpdate(context.get(), buffer.data(), count) != 1) {
+      return make_error(ErrorCode::internal_error,
+                        "Checksum computation failed");
+    }
+    offset += count;
+  }
+  std::array<unsigned char, EVP_MAX_MD_SIZE> actual{};
+  unsigned int actual_size = 0;
+  if (EVP_DigestFinal_ex(context.get(), actual.data(), &actual_size) != 1) {
+    return make_error(ErrorCode::internal_error, "Checksum computation failed");
+  }
+  if (actual_size != image.checksum.expected_digest.size() ||
+      !std::equal(actual.begin(), actual.begin() + actual_size,
+                  image.checksum.expected_digest.begin())) {
+    return make_error(ErrorCode::checksum_mismatch,
+                      "Block checksum verification failed");
+  }
+  return true;
+}
+
 Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
                                     std::span<std::byte> output,
                                     std::size_t item_size,
@@ -4725,6 +4780,290 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
   } catch (const std::exception &exception) {
     return make_error(ErrorCode::internal_error,
                       std::string("Unexpected image buffer read failure: ") +
+                          exception.what());
+  }
+}
+
+Result<ImageRowReadSummary>
+Reader::read_image_rows(std::size_t image_index, ImageRowSink &destination,
+                        ImageRowReadOptions read_options,
+                        std::stop_token stop_token) const {
+  try {
+    auto plan = plan_image_read(impl_->document, impl_->options,
+                                impl_->embedded_blocks, image_index);
+    if (!plan) {
+      return plan.error();
+    }
+    if (read_options.max_row_bytes == 0 ||
+        read_options.max_subblock_bytes == 0) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Image row staging limits must be nonzero");
+    }
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    auto output_byte_order = resolve_byte_order(plan.value().image->byte_order,
+                                                read_options.byte_order);
+    if (!output_byte_order) {
+      return output_byte_order.error();
+    }
+
+    const auto width = plan.value().image->geometry[0];
+    const auto height = plan.value().image->geometry[1];
+    if (width == 0 || height == 0 || plan.value().channels == 0) {
+      return make_error(ErrorCode::invalid_block,
+                        "Image row geometry must be nonzero");
+    }
+    std::uint64_t planar_row_count = 0;
+    if (!checked_multiply(height, plan.value().channels, planar_row_count)) {
+      return make_error(ErrorCode::overflow, "Image plane-row count overflows");
+    }
+    const auto source_row_count =
+        plan.value().image->pixel_storage == PixelStorage::planar
+            ? planar_row_count
+            : height;
+    std::uint64_t plane_row_bytes = 0;
+    if (!checked_multiply(width, plan.value().sample_size, plane_row_bytes)) {
+      return make_error(ErrorCode::overflow,
+                        "Image plane-row byte size overflows");
+    }
+    std::uint64_t source_row_bytes = plane_row_bytes;
+    if (plan.value().image->pixel_storage == PixelStorage::normal &&
+        !checked_multiply(source_row_bytes, plan.value().channels,
+                          source_row_bytes)) {
+      return make_error(ErrorCode::overflow,
+                        "Image source-row byte size overflows");
+    }
+    if (plane_row_bytes > read_options.max_row_bytes ||
+        source_row_bytes > read_options.max_row_bytes ||
+        source_row_bytes > std::numeric_limits<std::size_t>::max() ||
+        plane_row_bytes > std::numeric_limits<std::size_t>::max()) {
+      return make_error(ErrorCode::resource_limit,
+                        "Image row exceeds the configured staging limit");
+    }
+    if (plan.value().compression.codec != CompressionCodec::none) {
+      for (const auto &subblock : plan.value().compression.subblocks) {
+        if (subblock.compressed_size > read_options.max_subblock_bytes ||
+            subblock.uncompressed_size > read_options.max_subblock_bytes) {
+          return make_error(
+              ErrorCode::resource_limit,
+              "Compressed image subblock exceeds the staging limit");
+        }
+      }
+    }
+
+    auto verified = verify_image_checksum_streaming(
+        *impl_->source, plan.value(), stop_token, image_index);
+    if (!verified) {
+      return verified.error();
+    }
+
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)>
+        delivered_checksum_context(nullptr, &EVP_MD_CTX_free);
+    if (plan.value().checksum.algorithm != ChecksumAlgorithm::none) {
+      delivered_checksum_context.reset(EVP_MD_CTX_new());
+      const auto *digest = checksum_digest(plan.value().checksum.algorithm);
+      if (!delivered_checksum_context || digest == nullptr ||
+          EVP_DigestInit_ex(delivered_checksum_context.get(), digest,
+                            nullptr) != 1) {
+        return make_error(ErrorCode::internal_error,
+                          "Unable to initialize checksum computation");
+      }
+    }
+    const auto hash_delivered_serialized =
+        [&](std::span<const std::byte> bytes) -> Result<void> {
+      if (delivered_checksum_context &&
+          EVP_DigestUpdate(delivered_checksum_context.get(), bytes.data(),
+                           bytes.size()) != 1) {
+        return make_error(ErrorCode::internal_error,
+                          "Checksum computation failed");
+      }
+      return {};
+    };
+
+    ImageRowReadSummary summary;
+    if (plan.value().checksum.algorithm != ChecksumAlgorithm::none) {
+      summary.checksum_verification = ChecksumVerification::verified;
+    }
+    std::vector<std::byte> source_row(
+        static_cast<std::size_t>(source_row_bytes));
+    std::vector<std::byte> plane_row;
+    if (plan.value().image->pixel_storage == PixelStorage::normal) {
+      plane_row.resize(static_cast<std::size_t>(plane_row_bytes));
+    }
+    std::uint64_t source_row_ordinal = 0;
+    const auto sample_size = static_cast<std::size_t>(plan.value().sample_size);
+    const auto component_size =
+        static_cast<std::size_t>(plan.value().endian_component_size);
+    const auto emit_plane_row =
+        [&](std::uint64_t channel_index, std::uint64_t row_index,
+            std::span<std::byte> bytes) -> Result<void> {
+      if (stop_token.stop_requested()) {
+        return make_error(ErrorCode::cancelled, "Image read was cancelled");
+      }
+      if (output_byte_order.value() != plan.value().image->byte_order) {
+        auto swapped =
+            swap_byte_order_in_place(bytes, component_size, stop_token);
+        if (!swapped) {
+          return swapped.error();
+        }
+      }
+      const ImageRowView view{.channel_index = channel_index,
+                              .row_index = row_index,
+                              .byte_order = output_byte_order.value(),
+                              .bytes = bytes};
+      auto consumed = destination.consume(view);
+      if (!consumed) {
+        return consumed.error();
+      }
+      ++summary.rows_delivered;
+      summary.bytes_delivered += bytes.size();
+      return {};
+    };
+    const auto emit_source_row =
+        [&](std::span<std::byte> bytes) -> Result<void> {
+      if (plan.value().image->pixel_storage == PixelStorage::planar) {
+        const auto channel_index = source_row_ordinal / height;
+        const auto row_index = source_row_ordinal % height;
+        auto emitted = emit_plane_row(channel_index, row_index, bytes);
+        if (!emitted) {
+          return emitted.error();
+        }
+      } else {
+        for (std::uint64_t channel = 0; channel < plan.value().channels;
+             ++channel) {
+          for (std::uint64_t pixel = 0; pixel < width; ++pixel) {
+            const auto source_offset = static_cast<std::size_t>(
+                (pixel * plan.value().channels + channel) *
+                plan.value().sample_size);
+            const auto output_offset =
+                static_cast<std::size_t>(pixel * plan.value().sample_size);
+            std::copy_n(bytes.data() + source_offset, sample_size,
+                        plane_row.data() + output_offset);
+          }
+          auto emitted = emit_plane_row(channel, source_row_ordinal, plane_row);
+          if (!emitted) {
+            return emitted.error();
+          }
+        }
+      }
+      ++source_row_ordinal;
+      return {};
+    };
+
+    if (plan.value().compression.codec == CompressionCodec::none) {
+      for (std::uint64_t row = 0; row < source_row_count; ++row) {
+        auto read = read_serialized_chunk(
+            *impl_->source, plan.value(),
+            static_cast<std::size_t>(row * source_row_bytes), source_row,
+            stop_token, image_index);
+        if (!read) {
+          return read.error();
+        }
+        auto hashed = hash_delivered_serialized(source_row);
+        if (!hashed) {
+          return hashed.error();
+        }
+        auto emitted = emit_source_row(source_row);
+        if (!emitted) {
+          return emitted.error();
+        }
+      }
+    } else {
+      std::size_t row_fill = 0;
+      const auto feed_decoded =
+          [&](std::span<const std::byte> decoded) -> Result<void> {
+        std::size_t offset = 0;
+        while (offset < decoded.size()) {
+          const auto count =
+              std::min(source_row.size() - row_fill, decoded.size() - offset);
+          std::copy_n(decoded.data() + offset, count,
+                      source_row.data() + row_fill);
+          row_fill += count;
+          offset += count;
+          if (row_fill == source_row.size()) {
+            auto emitted = emit_source_row(source_row);
+            if (!emitted) {
+              return emitted.error();
+            }
+            row_fill = 0;
+          }
+        }
+        return {};
+      };
+
+      std::size_t serialized_offset = 0;
+      for (const auto &subblock : plan.value().compression.subblocks) {
+        std::vector<std::byte> serialized(
+            static_cast<std::size_t>(subblock.compressed_size));
+        auto read = read_serialized_chunk(*impl_->source, plan.value(),
+                                          serialized_offset, serialized,
+                                          stop_token, image_index);
+        if (!read) {
+          return read.error();
+        }
+        auto hashed = hash_delivered_serialized(serialized);
+        if (!hashed) {
+          return hashed.error();
+        }
+        std::vector<std::byte> decoded(
+            static_cast<std::size_t>(subblock.uncompressed_size));
+        CompressionPlan one_subblock;
+        one_subblock.codec = plan.value().compression.codec;
+        one_subblock.byte_shuffled = plan.value().compression.byte_shuffled;
+        one_subblock.uncompressed_size = subblock.uncompressed_size;
+        one_subblock.item_size = plan.value().compression.item_size;
+        one_subblock.max_zstd_window_bytes =
+            plan.value().compression.max_zstd_window_bytes;
+        one_subblock.subblocks.push_back(subblock);
+        auto decompressed = decode_compressed_block(serialized, one_subblock,
+                                                    decoded, stop_token);
+        if (!decompressed) {
+          return decompressed.error();
+        }
+        auto fed = feed_decoded(decoded);
+        if (!fed) {
+          return fed.error();
+        }
+        serialized_offset += serialized.size();
+      }
+      if (row_fill != 0) {
+        return make_error(ErrorCode::invalid_block,
+                          "Decoded image ends with an incomplete source row");
+      }
+    }
+
+    if (source_row_ordinal != source_row_count ||
+        summary.rows_delivered != planar_row_count ||
+        summary.bytes_delivered != plan.value().expected_bytes) {
+      return make_error(ErrorCode::invalid_block,
+                        "Decoded image row extent does not match geometry");
+    }
+    if (stop_token.stop_requested()) {
+      return make_error(ErrorCode::cancelled, "Image read was cancelled");
+    }
+    if (delivered_checksum_context) {
+      std::array<unsigned char, EVP_MAX_MD_SIZE> actual{};
+      unsigned int actual_size = 0;
+      if (EVP_DigestFinal_ex(delivered_checksum_context.get(), actual.data(),
+                             &actual_size) != 1) {
+        return make_error(ErrorCode::internal_error,
+                          "Checksum computation failed");
+      }
+      if (actual_size != plan.value().checksum.expected_digest.size() ||
+          !std::equal(actual.begin(), actual.begin() + actual_size,
+                      plan.value().checksum.expected_digest.begin())) {
+        return make_error(ErrorCode::checksum_mismatch,
+                          "Block checksum changed during row delivery");
+      }
+    }
+    return summary;
+  } catch (const std::bad_alloc &) {
+    return make_error(ErrorCode::resource_limit,
+                      "Memory allocation failed while streaming image rows");
+  } catch (const std::exception &exception) {
+    return make_error(ErrorCode::internal_error,
+                      std::string("Unexpected image row read failure: ") +
                           exception.what());
   }
 }

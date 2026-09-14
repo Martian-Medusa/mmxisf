@@ -42,6 +42,9 @@ The M1 pre-release API now supports:
 - an injectable seekable `ByteSource` with stable lifetime;
 - `Reader::read_image_into(index, destination, stop_token)` for caller-owned
   memory and a convenience owning `read_image` path;
+- `Reader::read_image_rows(index, sink, options, stop_token)` for ephemeral
+  planar channel rows with explicit channel/row coordinates, row/subblock
+  staging limits, checksum-before-callback, and caller-owned rollback;
 - explicit `ImageReadOptions` for source-preserving or native-endian output and
   source/Planar/Normal layout, without sample-type conversion;
 - `Reader::read_property_block(metadata_index, options, stop_token)` for
@@ -80,10 +83,6 @@ The pre-release writer now provides:
 - byte-identical sequential output through a caller-owned `ByteSink`, including
   partial-write handling and explicit flush errors; generic sinks retain
   caller-owned rollback semantics while `write_file` keeps the atomic contract.
-
-Later milestones still need:
-
-- a bounded row/tile decode callback for low-copy analysis.
 
 Remote locations must not trigger network access. A future network resolver is
 an explicit opt-in consumer capability with scheme allowlists, budgets, cache,
@@ -124,12 +123,20 @@ standalone Structure references, verifies exact row/column cardinality and
 field types, and leaves cell block payloads inspect-only. This keeps hostile
 tables from bypassing general XML limits or causing file/network access.
 
-Compressed input is staged once so its checksum can be verified before any
-codec call. Unshuffled codec output is written directly to the caller's buffer.
-For shuffled data, scratch memory is limited to one declared compression
-subblock. A requested storage-layout transformation of compressed data still
-requires one decoded source-representation buffer in the current M3 slice;
-streaming that transform is a later optimization, not a hidden low-memory claim.
+Owning/caller-buffer reads stage compressed input once so its checksum can be
+verified before any codec call. Unshuffled codec output is written directly to
+the caller's buffer. For shuffled data, scratch memory is limited to one
+declared compression subblock. A requested complete-buffer storage-layout
+transformation of compressed data still requires one decoded source-
+representation buffer.
+
+The row API instead verifies a declared checksum through a bounded first pass,
+then decodes one declared subblock at a time and assembles complete planar
+channel rows. It hashes the exact delivery pass again before returning success,
+so a source change cannot silently detach the summary from delivered bytes.
+Normal source rows are split by channel without a full-frame layout buffer. Its
+row and subblock buffers are independently bounded; shuffled input can require
+multiple buffers and does not imply a total-memory ceiling.
 
 ## Concurrency
 

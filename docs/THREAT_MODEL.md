@@ -29,6 +29,7 @@ be bounded, structured, and safe for unattended PFI batch processing.
 | Aliased/overlapping blocks | Permit only when semantics allow identical ranges; otherwise diagnose before reads | overlap matrix tests |
 | Compression bomb | Declared output-size cap, cumulative decoded-byte cap, codec output bound, cancellation | adversarial compressed corpus |
 | Corrupt compressed input | Verify checksum on serialized compressed bytes before codec invocation when present | order-of-operation test |
+| Streaming consumer treats a partial image as valid | Check declared checksum before callbacks; make row spans ephemeral; return success summary only after exact full geometry; require caller rollback on any error | checksum, sink-failure, cancellation, subblock, and extent tests |
 | Malicious byte-shuffle parameters | Validate item size, divisibility, subblock totals and output length | fuzz target |
 | Deep/wide XML | Header, depth, node, per-element attribute, metadata text, and cumulative extension record/string budgets | limit tests |
 | DTD/entity expansion or XXE | Reject DOCTYPE; no external entity resolver; no network-capable XML callbacks | hostile XML corpus |
@@ -54,8 +55,12 @@ be bounded, structured, and safe for unattended PFI batch processing.
    profile.
 4. Unsupported constructs remain observable and are rejected explicitly; they
    are never treated as empty or zero.
-5. Pixels are exposed only after geometry, storage model, sample format, byte
-   order, block length, decompression, unshuffle and checksum requirements agree.
+5. Owning reads expose pixels only after the complete geometry, storage model,
+   sample format, byte order, block length, decompression, unshuffle, and
+   checksum requirements agree. Streaming rows are provisional: each emitted
+   row has passed its local decode/transform checks and any declared checksum
+   has passed globally, but the image becomes trusted only when the final
+   `ImageRowReadSummary` is returned successfully.
 
 ## Deferred security work
 

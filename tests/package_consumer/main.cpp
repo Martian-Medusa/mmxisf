@@ -7,9 +7,26 @@
 
 #include <string_view>
 
+namespace {
+
+class PackageRowSink final : public mmxisf::ImageRowSink {
+public:
+  mmxisf::Result<void> consume(const mmxisf::ImageRowView &row) override {
+    bytes_seen += row.bytes.size();
+    return {};
+  }
+
+  std::size_t bytes_seen{0};
+};
+
+} // namespace
+
 int main() {
   mmxisf::ReaderOptions options;
   mmxisf::ImageReadOptions read_options;
+  mmxisf::ImageRowReadOptions row_read_options;
+  mmxisf::ImageRowReadSummary row_summary;
+  PackageRowSink row_sink;
   mmxisf::PropertyReadOptions property_read_options;
   mmxisf::Document document;
   mmxisf::MetadataBinding binding;
@@ -89,6 +106,11 @@ int main() {
                  read_options.pixel_storage ==
                      mmxisf::PixelStorageOutput::source &&
                  read_options.byte_order == mmxisf::ByteOrderOutput::source &&
+                 row_read_options.byte_order ==
+                     mmxisf::ByteOrderOutput::source &&
+                 row_read_options.max_row_bytes > 0 &&
+                 row_read_options.max_subblock_bytes > 0 &&
+                 row_summary.rows_delivered == 0 && row_sink.bytes_seen == 0 &&
                  property_read_options.byte_order ==
                      mmxisf::ByteOrderOutput::source &&
                  image.pixel_origin == mmxisf::PixelOrigin::top_left &&
