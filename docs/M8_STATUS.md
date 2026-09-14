@@ -3,16 +3,17 @@
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
+  SUPPORT_PROFILE_FROZEN_RC1;
   PFI_PRODUCT_ROUTING_PASS_BOUNDED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
   PIXINSIGHT_WRITER_PROPERTIES_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
-  EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
+  EXACT_CANDIDATE_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
-- Publication status: private repository; no tag or release
+- Publication status: private repository; `v0.1.0-rc.1` candidate tag; no release
 
 The machine-checked `docs/production-readiness.json` ledger currently derives
 `NOT_READY` independently for standalone beta, standalone production, and PFI
@@ -720,6 +721,14 @@ open; it does not turn historical evidence into exact-candidate evidence.
   exclusive temporary-file creation fix is therefore validated locally but
   remains pending cross-platform exact-head CI after the account block is
   resolved.
+- With explicit owner approval on 2026-09-14, the standalone support profile
+  and readiness ledger are frozen to the immutable candidate name
+  `v0.1.0-rc.1`. The profile continues to classify all 74 conformance rows and
+  keeps the optional viewer and PFI adapter outside the reusable C++ library
+  boundary. This closes only `candidate.support-profile-frozen`; publication,
+  release assets, exact-candidate platform/fuzz/API/security gates, native
+  Windows/MSVC, and PFI operator acceptance remain separately unauthorized or
+  untested.
 
 ## Still required for public beta
 

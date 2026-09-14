@@ -61,8 +61,10 @@ mmxisf_expect_profile_rejection(missing-row "${_missing}"
   "Missing support-profile row: container.signature")
 
 set(_frozen_without_ref "${_valid}")
-string(REPLACE "\"state\": \"PREPARED\"" "\"state\": \"FROZEN\""
-  _frozen_without_ref "${_frozen_without_ref}")
+string(JSON _frozen_without_ref SET "${_frozen_without_ref}"
+  state "\"FROZEN\"")
+string(JSON _frozen_without_ref SET "${_frozen_without_ref}"
+  candidateRef "\"\"")
 mmxisf_expect_profile_rejection(frozen-without-ref
   "${_frozen_without_ref}"
   "FROZEN support profile requires an immutable vX.Y.Z-rc.N ref")

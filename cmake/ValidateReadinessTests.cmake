@@ -39,17 +39,17 @@ string(REPLACE
 mmxisf_expect_readiness_rejection(false-ready "${_false_ready}"
   "conflicts with derived NOT_READY")
 
-string(REPLACE
-  "\"state\": \"UNFROZEN\",\n    \"ref\": \"\""
-  "\"state\": \"FROZEN\",\n    \"ref\": \"main\""
-  _invalid_ref "${_valid_json}")
+string(JSON _invalid_ref SET "${_valid_json}"
+  candidate state "\"FROZEN\"")
+string(JSON _invalid_ref SET "${_invalid_ref}"
+  candidate ref "\"main\"")
 mmxisf_expect_readiness_rejection(invalid-frozen-ref "${_invalid_ref}"
   "requires an immutable vX.Y.Z-rc.N ref")
 
-string(REPLACE
-  "\"state\": \"UNFROZEN\",\n    \"ref\": \"\""
-  "\"state\": \"FROZEN\",\n    \"ref\": \"v0.1.0-rc.1\""
-  _mismatched_profile "${_valid_json}")
+string(JSON _mismatched_profile SET "${_valid_json}"
+  candidate state "\"FROZEN\"")
+string(JSON _mismatched_profile SET "${_mismatched_profile}"
+  candidate ref "\"v0.1.0-rc.2\"")
 mmxisf_expect_readiness_rejection(mismatched-profile
   "${_mismatched_profile}"
   "candidate identity does not match the support profile")
