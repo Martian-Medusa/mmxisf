@@ -39,8 +39,10 @@ open; it does not turn historical evidence into exact-candidate evidence.
   checkout does not persist the read-only workflow token, and weekly
   Dependabot proposals track action updates without bypassing the test matrix.
 - A separate CI job produces the Git source archive twice, requires byte
-  identity, computes SHA-256, and retains the archive/checksum for 14 days
-  without creating a tag or release.
+  identity, computes SHA-256, and retains the archive/checksum plus a source-
+  candidate identity manifest for 14 days without creating a tag or release.
+  The shared local/CI preparation script rejects a dirty worktree, non-HEAD
+  ref, or existing output directory and records publication as unauthorized.
 - Contributor clean-room/testing requirements, the current untrusted-input
   security boundary, and an exact candidate/publication/rollback checklist are
   documented without claiming an unreleased support policy.

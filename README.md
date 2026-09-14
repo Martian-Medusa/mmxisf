@@ -108,11 +108,16 @@ headers, the target platform, compiler, build configuration, and static/shared
 linkage. Missing or malformed version macros fail configuration rather than
 producing guessed package data.
 
-Each manually dispatched full CI revision also creates the source archive twice,
-requires byte identity, and retains one archive plus its SHA-256 as a
-short-lived workflow artifact. Routine development currently uses local static,
-shared, sanitizer, package-consumer, and viewer gates to conserve hosted runner
-minutes. This is release rehearsal only; no tag or public release is created.
+Each manually dispatched full CI revision uses
+`cmake/PrepareSourceCandidate.cmake` to create the source archive twice, require
+byte identity, and retain one archive, its SHA-256, and a machine-readable
+identity manifest as a short-lived workflow artifact. The same script can
+prepare a local rehearsal from a clean checkout; it refuses to overwrite an
+output directory or package a ref other than the checked-out `HEAD`. Routine
+development currently uses local static, shared, sanitizer, package-consumer,
+and viewer gates to conserve hosted runner minutes. This is release rehearsal
+only; the manifest records `publicationAuthorized: false`, and no tag or public
+release is created.
 
 Generate the versioned HTML API reference locally with:
 

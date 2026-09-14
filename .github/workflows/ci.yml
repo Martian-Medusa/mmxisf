@@ -147,20 +147,17 @@ jobs:
         with:
           persist-credentials: false
       - name: Create deterministic source archives
-        run: |
-          mkdir -p dist
-          git archive --format=tar.gz --prefix="mmxisf-${GITHUB_SHA}/" --output=dist/mmxisf-source.tar.gz HEAD
-          git archive --format=tar.gz --prefix="mmxisf-${GITHUB_SHA}/" --output=dist/mmxisf-source-repeat.tar.gz HEAD
-          cmp dist/mmxisf-source.tar.gz dist/mmxisf-source-repeat.tar.gz
-          sha256sum dist/mmxisf-source.tar.gz > dist/mmxisf-source.tar.gz.sha256
-          rm dist/mmxisf-source-repeat.tar.gz
-      - name: Upload source package and checksum
+        run: >-
+          cmake
+          -DMMXISF_SOURCE_DIR=${{ github.workspace }}
+          -DMMXISF_OUTPUT_DIR=${{ github.workspace }}/dist/source-candidate
+          -DMMXISF_CANDIDATE_REF=${{ github.sha }}
+          -P cmake/PrepareSourceCandidate.cmake
+      - name: Upload source package, checksum, and identity manifest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mmxisf-source-${{ github.sha }}
-          path: |
-            dist/mmxisf-source.tar.gz
-            dist/mmxisf-source.tar.gz.sha256
+          path: dist/source-candidate/
           if-no-files-found: error
           retention-days: 14
 
