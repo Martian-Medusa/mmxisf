@@ -145,6 +145,8 @@ retains responsibility for its own concurrent-call contract.
 
 ## Further contracts
 
+- `docs/PUBLIC_API_AUDIT.md` records the current source/error/resource review
+  and its exact-candidate recheck boundary.
 - `docs/RESOURCE_LIMITS.md` defines the limit model.
 - `docs/THREAT_MODEL.md` defines the security boundary.
 - `docs/PFI_INTEGRATION.md` defines the narrow PFI adapter contract.

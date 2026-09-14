@@ -71,6 +71,14 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- The pre-1.0 public API, error, ownership, resource, cancellation, concurrency,
+  dependency-boundary, and shared-export review passed for exact commit
+  `85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f`. Its complete local macOS gate
+  passed warnings-as-errors static/shared 11/11, installed consumers 1/1,
+  ASan/UBSan 11/11 plus 20,000 mutations, ThreadSanitizer 11/11, API docs, and
+  strict deep bundle signature verification. The audit is retained in
+  `docs/PUBLIC_API_AUDIT.md`; an exact frozen-candidate diff review remains
+  **NOT_TESTED**, and no pre-1.0 ABI promise was added.
 - Exact commit `3724fc02e772a90260c98f942c1e99c138754575` passed the complete
   maintained local macOS gate after adding the readiness ledger: warnings-as-
   errors static/shared suites 10/10 each, installed-package consumers 1/1 each,

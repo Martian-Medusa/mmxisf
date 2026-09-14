@@ -47,7 +47,7 @@ mmxisf_expect_readiness_rejection(invalid-frozen-commit "${_invalid_commit}"
   "requires a lowercase 40-hex commit")
 
 string(REPLACE
-  "\"status\": \"LIMITED\""
+  "\"status\": \"NOT_TESTED\""
   "\"status\": \"CLAIMED\""
   _invalid_status "${_valid_json}")
 mmxisf_expect_readiness_rejection(invalid-status "${_invalid_status}"

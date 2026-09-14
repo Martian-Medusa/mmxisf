@@ -131,10 +131,17 @@
     },
     {
       "id": "api.public-error-resource-review",
-      "status": "LIMITED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Contracts and generated API documentation exist, but the frozen-candidate public API review remains open."
+      "evidence": "docs/PUBLIC_API_AUDIT.md",
+      "note": "The current pre-1.0 headers, exports, errors, ownership, resource limits, cancellation, and concurrency contracts passed a source and compiled-contract audit."
+    },
+    {
+      "id": "api.exact-candidate-diff-review",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/PUBLIC_API_AUDIT.md",
+      "note": "The final public-header and export-table diff review must run after the candidate commit and support profile are frozen."
     },
     {
       "id": "distribution.release-artifact-identity",
