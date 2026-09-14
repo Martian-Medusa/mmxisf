@@ -134,9 +134,11 @@ MMXISF_VCPKG_ROOT=/path/to/linux-vcpkg \
 
 The wrapper builds the pinned Ubuntu image, refuses to reuse a gate directory,
 and verifies that the vcpkg checkout commit equals the manifest baseline. The
-checkout and downloaded vcpkg cache stay outside the container for deliberate
-reuse; use a checkout dedicated to Linux because the bootstrapped vcpkg binary
-is platform-specific.
+checkout, downloads, and binary package cache stay outside the container for
+deliberate reuse. By default the binary cache is
+`.mmxisf-binary-cache/` inside the dedicated checkout; override it with
+`MMXISF_VCPKG_BINARY_CACHE`. Use a checkout dedicated to Linux because the
+bootstrapped vcpkg binary is platform-specific.
 
 The default package is static. Set `-DBUILD_SHARED_LIBS=ON` for a shared
 library. Public functions/classes use explicit import/export annotations, and

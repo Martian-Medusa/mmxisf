@@ -72,7 +72,9 @@ MMXISF_VCPKG_ROOT=/path/to/linux-vcpkg \
 
 This separate gate keeps the vcpkg checkout/cache outside the disposable
 container, refuses stale build directories, enforces the dated dependency
-floor, and tests static/shared installs plus their isolated consumers.
+floor, and tests static/shared installs plus their isolated consumers. Its
+persistent binary cache avoids rebuilding unchanged dependencies for every new
+exact-commit gate directory.
 
 Do not treat an incremental successful compile alone as equivalent to this
 static/shared/install/sanitizer/documentation/viewer gate.
