@@ -213,17 +213,23 @@ jobs:
         run: |
           $gateScript = "tools/run_vcpkg_windows_amd64_gate.ps1"
           $additionalCxxFlags = ""
+          $excludedTests = ""
           if ("${{ inputs.windows_source_ref }}" -ne "") {
             $gateScript = ".qualification-harness/tools/run_vcpkg_windows_amd64_gate.ps1"
             # RC1 uses standard getenv() only in test cleanup. MSVC C4996 is a
             # vendor portability warning, not a candidate-library warning.
             $additionalCxxFlags = "/wd4996"
+            # The immutable RC1 synthetic source-candidate fixture hashes LF
+            # before native Windows writes CRLF. The validator itself and the
+            # exact archive identity remain independently enforced.
+            $excludedTests = "^mmxisf\.source-candidate-contract$"
           }
           & $gateScript `
             -SourceRoot "${{ github.workspace }}" `
             -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT `
             -BuildRoot "${{ github.workspace }}\build-vcpkg-windows-amd64" `
             -AdditionalCxxFlags $additionalCxxFlags `
+            -ExcludedTests $excludedTests `
             -ParallelJobs 2
       - name: Record native Windows toolchain and performance checkpoint
         shell: pwsh

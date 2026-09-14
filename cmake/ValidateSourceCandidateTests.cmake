@@ -12,8 +12,13 @@ file(MAKE_DIRECTORY "${_contract_root}")
 set(_commit "1111111111111111111111111111111111111111")
 set(_archive_name "mmxisf-0.1.0-source-111111111111.tar.gz")
 set(_archive_content "deterministic source candidate fixture\n")
-string(SHA256 _archive_sha256 "${_archive_content}")
-string(LENGTH "${_archive_content}" _archive_size)
+set(_archive_fixture "${_contract_root}/${_archive_name}")
+file(WRITE "${_archive_fixture}" "${_archive_content}")
+# Derive the manifest from the bytes CMake actually wrote. Text newlines can
+# be represented differently by native Windows CMake, while the validator is
+# intentionally byte-exact.
+file(SIZE "${_archive_fixture}" _archive_size)
+file(SHA256 "${_archive_fixture}" _archive_sha256)
 file(SHA256 "${MMXISF_SOURCE_DIR}/docs/support-profile-0.1.0.json"
   _support_profile_sha256)
 file(READ "${MMXISF_SOURCE_DIR}/docs/support-profile-0.1.0.json"
@@ -45,7 +50,7 @@ string(CONCAT _valid_manifest
 function(mmxisf_write_candidate_fixture name manifest)
   set(_dir "${_contract_root}/${name}")
   file(MAKE_DIRECTORY "${_dir}")
-  file(WRITE "${_dir}/${_archive_name}" "${_archive_content}")
+  file(COPY "${_archive_fixture}" DESTINATION "${_dir}")
   file(WRITE "${_dir}/${_archive_name}.sha256"
     "${_archive_sha256}  ${_archive_name}\n")
   file(WRITE "${_dir}/source-candidate.json" "${manifest}")

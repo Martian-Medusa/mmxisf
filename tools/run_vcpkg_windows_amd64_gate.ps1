@@ -7,6 +7,7 @@ param(
   [string]$SourceRoot = "",
   [string]$Generator = "",
   [string]$AdditionalCxxFlags = "",
+  [string]$ExcludedTests = "",
   [ValidateRange(1, 64)]
   [int]$ParallelJobs = 2
 )
@@ -40,12 +41,16 @@ function Invoke-MmxisfTests {
   try {
     $runtimePath = $RuntimeDirectories -join ";"
     $env:PATH = "$runtimePath;$savedPath"
-    Invoke-MmxisfCommand "ctest.exe" @(
+    $testArguments = @(
       "--test-dir", $Directory,
       "-C", "Release",
       "--output-on-failure",
       "--timeout", "60"
     )
+    if (-not [string]::IsNullOrWhiteSpace($ExcludedTests)) {
+      $testArguments += @("-E", $ExcludedTests)
+    }
+    Invoke-MmxisfCommand "ctest.exe" $testArguments
   }
   finally {
     $env:PATH = $savedPath
