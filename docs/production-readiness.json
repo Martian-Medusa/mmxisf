@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-81b2691.json",
-      "note": "Exact development commit 81b26911afb14ba2aa3ba7e09854301ed7387be0 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 14/14, shared 15/15, installed, relocated, and embedded consumers 1/1 each for both linkage forms, all nine public headers compiled independently, the pre-1.0 package-version contract, dependency floors, documentation, and binary SBOM checks. Shared consumers configured with discovery of all five private development dependencies explicitly disabled. Embedded static and shared projects created neither global CTest state nor mmxisf install payload without explicit opt-in. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-7a25918.json",
+      "note": "Exact development commit 7a259188b91de0d92dddf0a79628e8ca7e40a148 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 15/15, shared 16/16, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. The package tests built and executed its installed reader/writer examples, including with all five private dependency searches disabled for shared linkage. All nine public headers, the pre-1.0 package-version contract, dependency floors, documentation, and binary SBOM checks passed. Embedded projects created no global CTest state, example targets, or mmxisf install payload without explicit opt-in. The shared-library contract reports exactly 39 mmxisf symbols out of 39 dynamic exports; the viewer was excluded. This remains unfrozen development evidence, not the exact-candidate cross-platform gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-81b2691.json",
-      "note": "Exact development commit 81b26911afb14ba2aa3ba7e09854301ed7387be0 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 14/14 and shared 15/15 suites, installed, relocated, and embedded consumers 1/1 each, independent compilation of all nine public headers, the pre-1.0 version contract, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. Shared consumers required no private development dependency discovery, and embedded builds added no implicit install payload. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-7a25918.json",
+      "note": "Exact development commit 7a259188b91de0d92dddf0a79628e8ca7e40a148 produced two byte-identical source archives. The extracted archive passed the pinned production dependency graph, warnings-as-errors static 15/15 and shared 16/16 suites, installed and relocated consumers 2/2, embedded consumers 1/1, independent compilation of all nine public headers, the pre-1.0 version contract, binary SBOM, API documentation, and the 39-of-39 shared-export contract on Linux amd64. Installed examples built and ran in all package-consumer variants, shared consumers required no private development dependency discovery, and embedded builds added no implicit install payload or example targets. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",

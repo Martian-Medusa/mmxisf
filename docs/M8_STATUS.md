@@ -79,6 +79,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
 ## Evidence available now
 
 - Exact development commit
+  `7a259188b91de0d92dddf0a79628e8ca7e40a148` produced a deterministic
+  320,657-byte source archive with SHA-256
+  `e046ae7018b7f895ddd3845fce2d7de5896f6e096f7fa8df66a9f3422896f615`.
+  Its extracted-source Linux amd64 gate passed static 15/15 and shared 16/16.
+  Direct and relocated installed consumers passed 2/2 for both linkage forms:
+  the package contract plus a real write/read round trip built from installed
+  public examples. Shared consumers found no private development dependency;
+  embedded consumers passed 1/1 without creating example targets or install
+  payload. All nine public headers, documentation, dependency floors, SBOMs,
+  and the exact 39-of-39 shared-export surface passed. Full evidence is retained
+  in `docs/quality-runs/2026-09-14-linux-amd64-7a25918.json`; the viewer was not
+  built and contributes nothing to this result.
+
+- Exact development commit
   `81b26911afb14ba2aa3ba7e09854301ed7387be0` produced a deterministic
   318,030-byte source archive with SHA-256
   `f5a634d2d4c84fc4ebea32f09d9119c00c5b0f6a06f659acbc6cba77e4813ff1`.
