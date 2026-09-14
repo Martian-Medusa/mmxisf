@@ -451,6 +451,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
   dependency evidence remains authoritative for dependency floors. This is
   exact two-host development evidence, not frozen-candidate or native-MSVC
   evidence; no readiness status is promoted.
+- The subsequent documentation-only exact commit
+  `78ee6db9d62368e53b5ff1064e2f3511a3236728` was packaged and independently
+  verified before its Windows-target replay. On `mllse`, the pinned production
+  vcpkg graph restored all eight packages from cache; MinGW GCC 13 static 19/19
+  and shared 20/20 suites passed under 64-bit Wine, along with direct and
+  relocated installed consumers 2/2 and embedded consumers 1/1 for both
+  linkage forms. The PE DLL exposes exactly 39 expected `mmxisf` symbols, and
+  independently built static libraries, DLLs, and import libraries are byte-
+  identical. The exact native-MSVC PowerShell script also passed parsing in the
+  digest-pinned official PowerShell image and rejected the non-Windows host as
+  designed. Full evidence is retained in
+  `docs/quality-runs/2026-09-14-mingw-amd64-78ee6db.json`. This refreshes the
+  Windows-target compatibility signal only; native Windows/MSVC and a frozen
+  candidate remain open.
 - Exact commit `88f12a7611c4897e82238b734648b32306d2b74d` passed the complete
   maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
   installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic

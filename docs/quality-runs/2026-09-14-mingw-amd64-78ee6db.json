@@ -1,0 +1,161 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T19:20:34Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "78ee6db9d62368e53b5ff1064e2f3511a3236728",
+  "sourceState": "DETERMINISTIC_EXTRACTED_ARCHIVE",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "archive": "mmxisf-0.1.0-source-78ee6db9d623.tar.gz",
+    "archiveSizeBytes": 353287,
+    "archiveSha256": "aefa0f30df5e3925074a8d54be49863be536b2aba4d4a1a4490a2a7575e143ab",
+    "checksumFileSizeBytes": 106,
+    "checksumFileSha256": "a2035154059736676c9adf68e3ebc8e4a1096971730a48d711ada5dbd2c57acd",
+    "candidateManifestSchema": "mmxisf.source-candidate/1.1.0",
+    "candidateManifestSizeBytes": 632,
+    "candidateManifestSha256": "99756948b4179e8ee92590bcd49004f94053c9556f6b757a3dfd6dc7138e4d67",
+    "supportProfileState": "PREPARED",
+    "supportProfileCandidateRef": "",
+    "supportProfileSha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "candidateVerification": "PASS_LOCAL_AND_LINUX_CONTAINER",
+    "status": "PREPARED_NOT_PUBLISHED"
+  },
+  "host": {
+    "name": "mllse",
+    "operatingSystem": "Ubuntu 24.04.4 LTS; Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "processor": "AMD Ryzen 5 5500U with Radeon Graphics",
+    "logicalCpuCount": 12
+  },
+  "target": {
+    "operatingSystem": "Windows",
+    "architecture": "amd64",
+    "binaryFormat": "PE/COFF",
+    "execution": "Wine 9.0, WINEARCH=win64",
+    "nativeWindowsHost": false,
+    "nativeMsvc": false
+  },
+  "buildEnvironment": {
+    "containerImageId": "sha256:3fad5ce9c97a2d63995e3e231a2dc2dd74755c5a01ee23f56b7975426f2d4c9f",
+    "containerImageSizeBytes": 1689704530,
+    "containerRecipeSha256": "4a0c2361e0d4e262e339b4e6f4d3696582e42d40cb344f6c6433aab931efff77",
+    "baseImage": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "compiler": "x86_64-w64-mingw32-g++ (GCC) 13-posix",
+    "cmake": "3.28.3",
+    "wine": "9.0 (Ubuntu 9.0~repack-4build3)",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror -Wno-missing-field-initializers",
+    "sharedLinkerFlags": "-Wl,--no-insert-timestamp",
+    "vcpkgCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "vcpkgManifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d",
+    "vcpkgTargetTriplet": "x64-mingw-static",
+    "dependencies": {
+      "Expat": "2.8.4",
+      "zlib": "1.3.2#2",
+      "LZ4": "1.10.0",
+      "Zstandard": "1.5.7",
+      "OpenSSL": "3.6.4"
+    }
+  },
+  "results": {
+    "staticWarningsAsErrors": "PASS_19_OF_19_UNDER_WINE",
+    "sharedWarningsAsErrors": "PASS_20_OF_20_UNDER_WINE",
+    "sourceCandidateContract": "PASS_POSITIVE_AND_5_MUTATIONS_STATIC_SHARED",
+    "publicApiBaseline": "PASS_9_HEADERS_AND_4_MUTATIONS_STATIC_SHARED",
+    "sharedExportValidatorContract": "PASS_MSVC_VALID_UNEXPECTED_AND_EMPTY_FIXTURES_STATIC_SHARED",
+    "sharedExportSurface": "PASS_39_OF_39_MINGW_PE_EXPORTS",
+    "installedStaticConsumer": "PASS_2_OF_2_UNDER_WINE",
+    "relocatedStaticConsumer": "PASS_2_OF_2_UNDER_WINE",
+    "installedSharedConsumer": "PASS_2_OF_2_UNDER_WINE_WITH_DEPENDENCY_DISCOVERY_DISABLED",
+    "relocatedSharedConsumer": "PASS_2_OF_2_UNDER_WINE_WITH_DEPENDENCY_DISCOVERY_DISABLED",
+    "embeddedStaticConsumer": "PASS_1_OF_1_UNDER_WINE",
+    "embeddedSharedConsumer": "PASS_1_OF_1_UNDER_WINE",
+    "preOnePackageVersionContract": "PASS",
+    "supportProfileContract": "PASS_SCHEMA_1_1_PREPARED_UNFROZEN",
+    "productionDependencyBaseline": "PASS",
+    "binarySbom": "PASS_STATIC_AND_SHARED",
+    "binaryReproducibility": "PASS_BYTE_IDENTICAL_STATIC_DLL_AND_IMPORT_LIBRARY_DISTINCT_BUILD_DIRECTORIES",
+    "nativeMsvcGateScriptSyntax": "PASS_OFFICIAL_POWERSHELL_CONTAINER",
+    "nativeMsvcHostGuard": "PASS_REJECTS_NON_WINDOWS",
+    "nativeMsvcGateExecution": "NOT_RUN_NATIVE_WINDOWS_REQUIRED",
+    "generatedApiDocumentation": "NOT_RUN",
+    "viewerBuilt": false
+  },
+  "nativeMsvcPreparation": {
+    "script": "tools/run_vcpkg_windows_amd64_gate.ps1",
+    "scriptSha256": "c2236c4fe0f333da5074ba72b3f7a7caa9de6eb2729e12a74fb791de45d29d77",
+    "syntaxValidatorImage": "mcr.microsoft.com/powershell@sha256:810c4f1e0c9d23022c3ec18c50a6205ee4b60766f1739d329b2948df1fd7d5b0",
+    "syntaxValidatorImageId": "sha256:0feac0f6bbe6480c2f7fa5c93d8b9e9d14d3219ed83d98cd66bf7242735c90b0",
+    "syntaxStatus": "PASS",
+    "hostGuardStatus": "PASS_REJECTS_NON_WINDOWS",
+    "executionStatus": "NOT_TESTED"
+  },
+  "binaryReproducibility": {
+    "scope": "SAME_EXTRACTED_SOURCE_HOST_CONTAINER_TOOLCHAIN_FLAGS_AND_PINNED_DEPENDENCY_GRAPH",
+    "crossToolchainIdentityClaimed": false,
+    "static": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "49da89caa2079b0ae71325049ff4200b8d2836dba976ff375aee7b2d96492309",
+      "reproductionSha256": "49da89caa2079b0ae71325049ff4200b8d2836dba976ff375aee7b2d96492309"
+    },
+    "sharedDll": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "300424e2b356f9f490c2720ae7fe23fe36f845bf9e7b44b5af0c76258a789af5",
+      "reproductionSha256": "300424e2b356f9f490c2720ae7fe23fe36f845bf9e7b44b5af0c76258a789af5"
+    },
+    "sharedImportLibrary": {
+      "status": "PASS_BYTE_IDENTICAL",
+      "primarySha256": "e0abea7401aa4480a63e43ced1a00a8898f3d7c3515c0f484980f088d4b9424b",
+      "reproductionSha256": "e0abea7401aa4480a63e43ced1a00a8898f3d7c3515c0f484980f088d4b9424b"
+    }
+  },
+  "sharedLibraryContract": {
+    "namedPeExports": 39,
+    "mmxisfApiExports": 39,
+    "unexpectedExports": 0,
+    "productionDependenciesLinkedStatically": true,
+    "validator": "mmxisf.shared-export-surface"
+  },
+  "artifacts": [
+    {
+      "path": "gate/static/libmmxisf.a",
+      "sizeBytes": 647982,
+      "sha256": "49da89caa2079b0ae71325049ff4200b8d2836dba976ff375aee7b2d96492309"
+    },
+    {
+      "path": "gate/shared/libmmxisf.dll",
+      "sizeBytes": 8591572,
+      "sha256": "300424e2b356f9f490c2720ae7fe23fe36f845bf9e7b44b5af0c76258a789af5"
+    },
+    {
+      "path": "gate/shared/libmmxisf.dll.a",
+      "sizeBytes": 36106,
+      "sha256": "e0abea7401aa4480a63e43ced1a00a8898f3d7c3515c0f484980f088d4b9424b"
+    },
+    {
+      "path": "gate/static/binary-dependencies.spdx.json",
+      "sizeBytes": 3045,
+      "sha256": "c3cb6e305ffc7c62f019513409ab97585085e36ffb26509cb3d2f88eac5ca626"
+    },
+    {
+      "path": "gate/shared/binary-dependencies.spdx.json",
+      "sizeBytes": 3045,
+      "sha256": "5a29f5b1ceb19c7a89a8a44f1164154662695e4f249be26050cdc27a54fb0eae"
+    }
+  ],
+  "limitations": [
+    "This is exact-development-commit Windows-target compatibility evidence, not a frozen release-candidate result.",
+    "The artifacts were cross-compiled with MinGW and executed under Wine on Linux, not built with MSVC or exercised on a native Windows host.",
+    "The native MSVC gate script passed parser and host-guard checks but has not been executed on Windows.",
+    "This result does not satisfy quality.exact-candidate-cross-platform or establish a Windows support claim.",
+    "Sanitizer, long-fuzz, native Windows performance, final vulnerability, signing, and packaging audits remain separate gates.",
+    "The optional viewer was excluded and contributes nothing to standalone library readiness."
+  ],
+  "retainedEvidence": {
+    "remoteRoot": "/home/matt/mmxisf-windows-cross/78ee6db",
+    "extractedSourceDirectory": "/home/matt/mmxisf-windows-cross/78ee6db/source/mmxisf-0.1.0",
+    "gateDirectory": "/home/matt/mmxisf-windows-cross/78ee6db/gate"
+  }
+}

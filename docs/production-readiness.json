@@ -36,7 +36,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate. Exact development commit 6d1eab0e6ae45041b967021cfc3979fd8421882e passed the supplemental MinGW/Wine Windows-target gate and its native-MSVC gate script passed parser and PowerShell syntax contracts, but that is not native MSVC execution or frozen-candidate evidence."
+      "note": "The manual Linux, macOS, and Windows matrix has not run on a frozen candidate. Exact development commit 78ee6db9d62368e53b5ff1064e2f3511a3236728 passed the supplemental pinned-vcpkg MinGW/Wine Windows-target gate and its native-MSVC gate script passed parser and non-Windows host-guard checks in the digest-pinned official PowerShell image. This is current Windows-target compatibility evidence, not native MSVC execution or frozen-candidate evidence."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
