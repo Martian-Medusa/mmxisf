@@ -67,6 +67,14 @@
   documentation. A remote run query after push returned no workflow for that
   commit, confirming that the automatic runner spend stopped. Windows and
   Linux for this exact commit remain **NOT_TESTED**.
+- A 900-second local macOS arm64 coverage-guided campaign on commit
+  `673d6179af37d6a7d55d24d94c65c170e37e2f53` executed 3,921,535 inputs,
+  added 3,404 corpus units, peaked at 463 MiB RSS, and produced no crash or
+  ASan/UBSan finding. Corpus replay reached `cov: 13866`, `ft: 38237`. It is
+  `PASS_WITH_TOOLCHAIN_LIMITATION`, not candidate qualification, because the
+  Apple Clang 21 compiler/sanitizers used an LLVM 17 libFuzzer runtime archive
+  and the external symbolizer was unavailable. Exact evidence is retained in
+  `docs/fuzz-campaigns/2026-09-14-local-macos-arm64.json`.
 - Fresh macOS Release shared build with warnings-as-errors: 6/6 tests PASS.
 - Fresh shared install plus separately configured public package consumer: 1/1
   PASS.

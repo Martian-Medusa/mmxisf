@@ -136,6 +136,22 @@ The CI package gate also configures and runs the independent
 `tests/package_consumer` project against the installed CMake package rather
 than the source tree.
 
+During the hosted-runner budget pause, run the complete local gate from the
+repository root:
+
+```sh
+tools/run_local_quality_gates.sh
+```
+
+It performs warning-as-error static and shared builds, both installed-package
+consumer tests, the ASan/UBSan suite and deterministic 20,000-case mutation
+smoke, generated API documentation, and—on macOS—the bundled viewer build and
+strict code-signature verification. Outputs stay under the ignored
+`build-local-gates` directory. `MMXISF_LOCAL_GATE_ROOT`, `MMXISF_LOCAL_JOBS`,
+and `MMXISF_LOCAL_CXX_FLAGS` can override its output location, parallelism, and
+warning flags. The command records only evidence for the host where it runs;
+it does not replace the manually dispatched Linux/macOS/Windows matrix.
+
 The pre-release `Writer::write_file` API emits one or more attached little-
 endian Planar Gray or RGB images using UInt8, UInt16, UInt32, Float32, or
 Float64 samples. Floating-point images require explicit finite bounds; all

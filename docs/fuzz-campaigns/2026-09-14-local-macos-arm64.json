@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "mmxisf.fuzz-campaign-evidence/1.0.0",
+  "status": "PASS_WITH_TOOLCHAIN_LIMITATION",
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "commit": "673d6179af37d6a7d55d24d94c65c170e37e2f53",
+    "compiledInputsDifferFromCommit": false
+  },
+  "host": {
+    "operatingSystem": "macOS 26.5.2 (25F84)",
+    "architecture": "arm64"
+  },
+  "toolchain": {
+    "compiler": "Apple clang 21.0.0 (clang-2100.1.1.101)",
+    "sanitizers": ["AddressSanitizer", "UndefinedBehaviorSanitizer"],
+    "fuzzerRuntime": "MacPorts LLVM 17.0.6 libclang_rt.fuzzer_osx.a",
+    "fuzzerRuntimeSha256": "9e5f4b30bc7e89750401754c1f143ec5f032f079154a4f8da93798b6cc8a7a7a",
+    "runtimeComposition": "Apple clang 21 compiler and matching sanitizer runtimes with the standalone LLVM 17 libFuzzer main/runtime archive"
+  },
+  "binary": {
+    "sizeBytes": 7309312,
+    "sha256": "57b72f3cf3f953b6a72edf97ec601bae26e1a604a129cbf08be7e14c78c013b3"
+  },
+  "campaign": {
+    "durationSeconds": 900,
+    "maximumInputBytes": 1048576,
+    "perInputTimeoutSeconds": 10,
+    "rssLimitMiB": 4096,
+    "committedSeedFileCount": 41,
+    "executedUnits": 3921535,
+    "averageExecutionsPerSecond": 4352,
+    "newUnitsAdded": 3404,
+    "peakRssMiB": 463,
+    "crashArtifactCount": 0,
+    "sanitizerFindingCount": 0
+  },
+  "retainedLocalCorpus": {
+    "fileCount": 1453,
+    "logicalBytes": 1964254,
+    "sortedEntryManifestSha256": "597a477b80f978970276b212cd3b82812dad4a724223a5640e1153902b4378ae",
+    "manifestRecord": "sha256 logical-size basename, sorted by path",
+    "committed": false
+  },
+  "coverageReplay": {
+    "inputExecutions": 1457,
+    "coveredEdges": 13866,
+    "features": 38237,
+    "effectiveCorpusUnits": 659,
+    "effectiveCorpusBytesDisplay": "817Kb",
+    "peakRssMiB": 119
+  },
+  "limitations": [
+    "This is additional macOS arm64 hardening evidence, not an exact-candidate Linux or Windows result.",
+    "The libFuzzer runtime archive and compiler major versions differ, so this campaign does not satisfy the matching-toolchain candidate gate.",
+    "The external symbolizer failed to start; sanitizer detection remained active but any failure stack would have required offline symbolization.",
+    "The evolved corpus remains local and ignored; only its bounded inventory and manifest identity are retained in the repository."
+  ]
+}

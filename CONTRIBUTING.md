@@ -35,6 +35,15 @@ checkpoints. A local macOS pass is never recorded as Windows or Linux evidence.
 The candidate-campaign evidence and regression-promotion rules are in
 `docs/FUZZING.md`.
 
+The maintained one-command local gate is:
+
+```sh
+tools/run_local_quality_gates.sh
+```
+
+Do not treat an incremental successful compile alone as equivalent to this
+static/shared/install/sanitizer/documentation/viewer gate.
+
 ## Change requirements
 
 - Treat all sizes, offsets, dimensions, XML, compressed streams, and external

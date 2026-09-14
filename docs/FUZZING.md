@@ -8,8 +8,8 @@ runner without bound.
 
 ## Per-commit gates
 
-The main CI workflow runs two fast checks under AddressSanitizer and
-UndefinedBehaviorSanitizer:
+The manually dispatched main CI workflow runs two checks under AddressSanitizer
+and UndefinedBehaviorSanitizer:
 
 - 20,000 deterministic mutations of a compact valid unit;
 - 20,000 coverage-guided libFuzzer executions seeded from the versioned parser
@@ -18,6 +18,12 @@ UndefinedBehaviorSanitizer:
 Any crashing input is retained as a short-lived workflow artifact. A confirmed
 regression must be minimized, converted to a permanent test or seed, and
 documented before the defect is closed.
+
+For routine local development, `tools/run_local_quality_gates.sh` runs the
+deterministic 20,000-case sanitizer smoke after the ASan/UBSan unit suite. A
+coverage-guided local campaign additionally requires a Clang installation with
+its matching libFuzzer and sanitizer runtimes; never combine a successful local
+result with a Windows/Linux support claim.
 
 ## Long campaign
 
@@ -51,3 +57,21 @@ The retained upload contains 785 files (551,031 compressed bytes), artifact ID
 No failure artifact was produced. This is a historical PASS for that exact
 reader commit and seed set; SHA-3 support and later changes still require a
 fresh candidate campaign.
+
+## Local macOS campaign after CI budget pause
+
+An additional 15-minute coverage-guided campaign completed on macOS arm64 at
+commit `673d6179af37d6a7d55d24d94c65c170e37e2f53`. It executed 3,921,535
+inputs, added 3,404 units, peaked at 463 MiB RSS, and produced no crash or
+ASan/UBSan finding. A replay of the retained local corpus reached `cov: 13866`
+and `ft: 38237`.
+
+This is deliberately classified `PASS_WITH_TOOLCHAIN_LIMITATION`: Apple Clang
+21 supplied the compiler and matching sanitizer runtimes, while a separately
+installed LLVM 17 archive supplied the otherwise missing libFuzzer runtime.
+It is useful additional parser pressure, but does not satisfy the matching-
+toolchain candidate gate and adds no Windows/Linux evidence. The external
+symbolizer also failed to start, so a future failure would require offline
+symbolization. Exact binary, runtime, corpus-manifest, host, and limit evidence
+is retained in
+[`fuzz-campaigns/2026-09-14-local-macos-arm64.json`](fuzz-campaigns/2026-09-14-local-macos-arm64.json).
