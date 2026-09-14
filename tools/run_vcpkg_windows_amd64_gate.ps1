@@ -146,10 +146,14 @@ $reproducibilityMeasurements = @()
 
 $installedDirectory = Join-Path $BuildRoot "vcpkg_installed"
 $vcpkgRuntime = Join-Path $installedDirectory "x64-windows\bin"
+# Reader is an exported facade with an opaque PIMPL, out-of-line destructor,
+# and no exposed Impl operations. MSVC C4251 nevertheless diagnoses its private
+# std::unique_ptr<Impl> member. Suppress only that known PIMPL warning while
+# retaining /W4 /WX for every other diagnostic.
 # /Brepro must reach cl.exe as well as lib.exe/link.exe: the librarian can
 # normalize archive metadata, but it cannot remove nondeterminism already
 # present in the compiled COFF members.
-$warningFlags = "/EHsc /W4 /WX /permissive- /Zc:__cplusplus /Brepro"
+$warningFlags = "/EHsc /W4 /WX /wd4251 /permissive- /Zc:__cplusplus /Brepro"
 if (-not [string]::IsNullOrWhiteSpace($AdditionalCxxFlags)) {
   $warningFlags = "$warningFlags $AdditionalCxxFlags"
 }
