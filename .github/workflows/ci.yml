@@ -174,13 +174,14 @@ jobs:
           persist-credentials: false
           ref: ${{ inputs.windows_source_ref || github.sha }}
       - name: Restore the pinned Windows dependency cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: mmxisf-vcpkg-Windows-x64-${{ hashFiles('vcpkg.json') }}
           restore-keys: mmxisf-vcpkg-Windows-x64-
       - name: Install dependencies once
         run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
           $manifest = Get-Content -Raw -LiteralPath vcpkg.json | ConvertFrom-Json
           $baseline = $manifest.'builtin-baseline'
           if ($baseline -notmatch '^[0-9a-f]{40}$') {
