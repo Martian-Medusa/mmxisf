@@ -122,4 +122,25 @@ foreach(index RANGE ${last_fixture})
   endforeach()
 endforeach()
 
+set(native_validation_script
+  "${MMXISF_SOURCE_DIR}/tests/pixinsight/MMXISFWriterNativeValidation.js")
+set(native_validation_checksum
+  "${MMXISF_SOURCE_DIR}/tests/pixinsight/MMXISFWriterNativeValidation.js.sha256")
+if(NOT EXISTS "${native_validation_script}" OR
+   NOT EXISTS "${native_validation_checksum}")
+  message(FATAL_ERROR "Native writer validation script or checksum is missing")
+endif()
+file(SHA256 "${native_validation_script}" native_validation_actual_sha256)
+file(READ "${native_validation_checksum}" native_validation_checksum_line)
+string(STRIP "${native_validation_checksum_line}" native_validation_checksum_line)
+if(NOT native_validation_checksum_line MATCHES
+   "^([0-9a-f]+)  MMXISFWriterNativeValidation\\.js$")
+  message(FATAL_ERROR "Invalid native writer validation checksum sidecar")
+endif()
+set(native_validation_expected_sha256 "${CMAKE_MATCH_1}")
+if(NOT native_validation_expected_sha256 STREQUAL
+   native_validation_actual_sha256)
+  message(FATAL_ERROR "Native writer validation script checksum mismatch")
+endif()
+
 message(STATUS "Validated ${row_count} XISF planning rows and ${interop_fixture_count} interop fixtures")

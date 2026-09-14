@@ -72,6 +72,7 @@ milestone. They remain candidates for later conformance work.
 - [M7 row-delivery memory checkpoint](docs/M7_ROW_PERFORMANCE.md)
 - [M8 hardening and distribution](docs/M8_STATUS.md)
 - [Writer API](docs/WRITER.md)
+- [Manual PixInsight validation](tests/pixinsight/README.md)
 - [Bounded image-row reader](docs/ROW_READER.md)
 - [Generated API reference overview](docs/API.md)
 - [Fuzzing policy](docs/FUZZING.md)

@@ -136,6 +136,15 @@
 - Sixteen simultaneous writers targeting one output yield exactly one complete,
   reopenable file, fifteen explicit I/O failures, and no leaked temporary. This
   compiled regression guards the exclusive-create/no-overwrite contract.
+- A committed 12,292-byte source-bound native-validation fixture (SHA-256
+  `b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6`)
+  contains one 2x2 UInt16 Gray image plus image-scoped `F64Matrix`,
+  `UI16Vector`, and String Properties. The compiled interoperability test
+  verifies its exact matrix/vector source bytes, checksum state, metadata
+  bindings, and pixel hash in Release, ASan/UBSan, and ThreadSanitizer builds.
+  A source-hashed PJSR script is prepared under `tests/pixinsight` to require
+  exact native values and working-sample pixels. PixInsight execution remains
+  manual and **NOT_TESTED**; preparing the gate is not native evidence.
 
 ## Still required for M6
 
@@ -143,6 +152,7 @@
   exact-head Linux/macOS/Windows, fuzz, and installed-package matrix. The
   immediately preceding static/shared platform matrix passed; the latest
   attempted pushed head created no runner because of the account-level block.
-- Validate writer-produced vector/matrix Properties natively in PixInsight.
+- Run the prepared source-bound PJSR gate and validate writer-produced
+  vector/matrix Properties natively in PixInsight.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.

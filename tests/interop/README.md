@@ -63,6 +63,14 @@ deterministic 12,292-byte probe had SHA-256
 The compiled writer test regenerates and verifies its stronger self-round-trip
 contract; the external package is not a project dependency.
 
+The `mmxisf-writer-native-properties` fixture is a separate source-bound input
+for manual PixInsight validation. It contains one 2x2 UInt16 Gray image and
+image-scoped `F64Matrix`, `UI16Vector`, and String Properties with exact owned
+values. `tests/pixinsight/MMXISFWriterNativeValidation.js` requires native
+recovery of those values and the exact working-sample pixel hash. Until that
+manual script produces a PASS record, the manifest and M6 status retain native
+writer Property interoperability as pending.
+
 The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
 writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
 serialized checksum and recovers source-order pixel SHA-256

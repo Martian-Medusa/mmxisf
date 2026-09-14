@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -278,6 +279,75 @@ void check_codec_writer_fixture(const std::filesystem::path &path) {
   }
 }
 
+void check_native_properties_writer_fixture(const std::filesystem::path &path) {
+  auto bytes = load_base64(path);
+  expect(sha256_hex(bytes) ==
+             "b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6",
+         "native Property writer fixture identity changed");
+  auto opened = mmxisf::Reader::open_source(
+      std::make_shared<MemorySource>(std::move(bytes)));
+  expect(opened.has_value(), "native Property writer fixture did not open");
+  const auto &document = opened.value().document();
+  expect(document.images().size() == 1 && document.metadata().size() == 5 &&
+             document.metadata_bindings().size() == 5,
+         "native Property writer fixture shape changed");
+
+  std::optional<std::size_t> matrix_index;
+  std::optional<std::size_t> vector_index;
+  for (std::size_t index = 0; index < document.metadata().size(); ++index) {
+    const auto &entry = document.metadata()[index];
+    if (entry.name == "Test:Matrix") {
+      matrix_index = index;
+      expect(entry.image_index == 0 && entry.type == "F64Matrix" &&
+                 entry.rows == 2 && entry.columns == 2 &&
+                 entry.compression == "zstd+sh:32:8" &&
+                 entry.checksum.starts_with("sha-256:"),
+             "native matrix Property descriptor changed");
+    } else if (entry.name == "Test:Vector") {
+      vector_index = index;
+      expect(entry.image_index == 0 && entry.type == "UI16Vector" &&
+                 entry.length == 2 && entry.compression.empty(),
+             "native vector Property descriptor changed");
+    } else if (entry.name == "Test:Label") {
+      expect(entry.image_index == 0 && entry.type == "String" &&
+                 entry.value == "mmxisf native writer validation",
+             "native String Property changed");
+    }
+  }
+  expect(matrix_index && vector_index,
+         "native block Property descriptors are missing");
+
+  const std::array<std::byte, 32> expected_matrix{
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0xf0}, std::byte{0x3f},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x40},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x08}, std::byte{0x40},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x00}, std::byte{0x10}, std::byte{0x40}};
+  const std::array<std::byte, 4> expected_vector{
+      std::byte{0x01}, std::byte{0x02}, std::byte{0x03}, std::byte{0x04}};
+  const auto matrix = opened.value().read_property_block(*matrix_index);
+  const auto vector = opened.value().read_property_block(*vector_index);
+  expect(matrix &&
+             matrix.value().bytes ==
+                 std::vector<std::byte>(expected_matrix.begin(),
+                                        expected_matrix.end()) &&
+             matrix.value().checksum_verification ==
+                 mmxisf::ChecksumVerification::verified,
+         "native matrix Property bytes changed");
+  expect(vector && vector.value().bytes ==
+                       std::vector<std::byte>(expected_vector.begin(),
+                                              expected_vector.end()),
+         "native vector Property bytes changed");
+  const auto image = opened.value().read_image(0);
+  expect(image && sha256_hex(image.value().pixels) ==
+                      "ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d"
+                      "2c404bfb",
+         "native Property writer fixture pixels changed");
+}
+
 } // namespace
 
 int main() {
@@ -354,6 +424,8 @@ int main() {
     check_multi_writer_fixture(root / "mmxisf-writer-multi-scalars.xisf.b64");
     check_metadata_writer_fixture(root / "mmxisf-writer-metadata.xisf.b64");
     check_codec_writer_fixture(root / "mmxisf-writer-codecs.xisf.b64");
+    check_native_properties_writer_fixture(
+        root / "mmxisf-writer-native-properties.xisf.b64");
     std::cout << "PASS: independent producer and consumer interop matrix\n";
     return 0;
   } catch (const std::exception &exception) {

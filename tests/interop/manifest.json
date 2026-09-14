@@ -158,6 +158,18 @@
       "expectedArtifact": "Independent public-API read: shape 2x2x3, dtype uint16, all 12 samples exact; serialized SHA-256 951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10; pixel SHA-256 9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"
     },
     {
+      "id": "mmxisf-writer-native-properties",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-native-properties.xisf.b64"},
+      "sha256": "b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
+      "generationProcedure": "Invoke Writer::write_file with a 2x2 UInt16 Gray image, image-scoped F64Matrix, UI16Vector, and String Properties, fixed little-endian source values, Zstandard+shuffle+SHA-256 matrix storage, and deterministic provenance.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.baseline-monolithic", "writer.block-properties", "writer.deterministic", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "Source-bound manual PixInsight gate requires exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb; native result pending."
+    },
+    {
       "id": "mmxisf-writer-sha3-rgb",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-sha3-rgb.xisf.b64"},
       "sha256": "2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5",
