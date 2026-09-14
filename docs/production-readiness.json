@@ -22,7 +22,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "Exact commit d5a81ed566d02b1222e9e2baf51ecf2faffbef24 passed the maintained local static, shared, sanitizer, package, documentation, and viewer gate."
+      "note": "Exact commit 3724fc02e772a90260c98f942c1e99c138754575 passed the maintained local static, shared, sanitizer, package, documentation, viewer, and readiness-contract gate."
     },
     {
       "id": "quality.exact-candidate-cross-platform",

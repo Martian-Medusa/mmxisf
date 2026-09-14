@@ -71,6 +71,15 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- Exact commit `3724fc02e772a90260c98f942c1e99c138754575` passed the complete
+  maintained local macOS gate after adding the readiness ledger: warnings-as-
+  errors static/shared suites 10/10 each, installed-package consumers 1/1 each,
+  ASan/UBSan 10/10 plus the deterministic 20,000-case mutation smoke,
+  ThreadSanitizer 10/10, generated API documentation, and strict deep viewer-
+  bundle signature verification. The two added contracts validate the current
+  ledger and prove rejection of a false `READY` claim, malformed frozen commit,
+  and unknown gate status. This is macOS arm64 evidence; the exact-candidate
+  Linux/Windows and external gates remain open.
 - Exact commit `d5a81ed566d02b1222e9e2baf51ecf2faffbef24` passed the complete
   maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
   installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
