@@ -92,7 +92,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "Identical decoded planes have not completed the staged detector, fitter, and scientific-result parity plan."
+      "note": "PFI commit 43b7ca190d2dd946c2be3925a73d90ac5f5a5574 prepares a source-bound exact same-pixel detector, fitter, field-model, and reliability comparison, but the generated gate has not been executed natively."
     },
     {
       "id": "performance.local-representative-mono-rgb",

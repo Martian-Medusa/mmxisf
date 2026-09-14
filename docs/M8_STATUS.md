@@ -108,6 +108,15 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `f01ef8fe5f0a1872d6e0fcd7fe74d290519766e82974274eddd5636c7dfb0559`
   and passed the fresh warnings-as-errors 8/8 gate. Native execution and product
   qualification remain open, so the ledger status does not change.
+- PFI commit `43b7ca190d2dd946c2be3925a73d90ac5f5a5574` extends the
+  manual provider gate beyond byte identity. It binds the exact current
+  detector, Moffat4 fitter, filtering, field-model, and reliability sources,
+  runs the provider and host windows through both, and predeclares exact
+  canonical-result equality after excluding only `sourceViewId`. The ignored
+  125,895-byte generated script has SHA-256
+  `6cf567db81344aa22827dfd6987ba1e692864abceec40e1e5a572e66236ef9a3`.
+  Generation and tamper contracts pass, but native execution is pending;
+  `pfi.detection-fitting-scientific-parity` therefore remains `NOT_TESTED`.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
