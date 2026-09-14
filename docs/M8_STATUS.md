@@ -80,6 +80,20 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- Exact development commit
+  `28aef678ebc104aa924f38d929bdbe15edb6db03` produced a deterministic
+  330,833-byte source archive with SHA-256
+  `b11b601471da2834f00947c70ffcc466bccd2929c0ae447df3674e566cc5b2ae`.
+  The archive passed independent commit/archive verification before transfer;
+  its extracted source passed the pinned Linux amd64 production gate: static
+  18/18, shared 19/19, direct and relocated package consumers 2/2, and embedded
+  consumers 1/1 for both linkage forms. Distinct repeated builds produced
+  byte-identical static and shared libraries. The public API baseline,
+  dependency isolation and floors, SBOMs, generated API documentation, and
+  exact 39-of-39 shared-export contract also passed. Full evidence is retained
+  in `docs/quality-runs/2026-09-14-linux-amd64-28aef67.json`. This remains
+  unpublished, unfrozen, library-only evidence; the viewer was excluded.
+
 - Candidate identity no longer relies on the impossible requirement that a
   tracked file contain the hash of its own commit. Support-profile schema 1.1
   and readiness schema 2 bind a future immutable `vX.Y.Z-rc.N` name, while the

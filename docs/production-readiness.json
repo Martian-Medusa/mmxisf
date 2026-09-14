@@ -28,8 +28,8 @@
       "id": "quality.local-linux-amd64",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-ca0ead3.json",
-      "note": "Exact development commit ca0ead3c0165257b874a6eb3f65e2f4fea04b261 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 18/18, shared 19/19, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. The source-candidate contract rejected five identity/integrity mutations, and the new public API baseline bound all nine installed headers byte-for-byte to the audited surface while rejecting four drift mutations. Installed and relocated packages exported and revalidated the baseline. Dependency isolation, floors, docs, SBOMs, and the exact 39-of-39 shared-export surface passed; the viewer was excluded. This remains unfrozen development evidence."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-28aef67.json",
+      "note": "Exact development commit 28aef678ebc104aa924f38d929bdbe15edb6db03 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 18/18, shared 19/19, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. Distinct repeated static and shared builds were byte-identical in the pinned environment. The source-candidate mutation contracts, nine-header public API baseline and mutations, dependency isolation and floors, docs, SBOMs, and exact 39-of-39 shared-export surface passed; the viewer was excluded. This remains unfrozen development evidence."
     },
     {
       "id": "quality.exact-candidate-cross-platform",
@@ -161,8 +161,8 @@
       "id": "distribution.source-candidate-rehearsal",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-ca0ead3.json",
-      "note": "Exact development commit ca0ead3c0165257b874a6eb3f65e2f4fea04b261 produced two byte-identical source archives and passed independent commit/archive verification. The extracted archive passed the pinned dependency graph, warnings-as-errors static 18/18 and shared 19/19 suites, installed and relocated consumers 2/2, embedded consumers 1/1, source-candidate mutation contracts, the nine-header public API baseline and mutation contracts, package isolation, SBOMs, API documentation, installed examples, and the 39-of-39 shared-export contract. No viewer was built or counted."
+      "evidence": "docs/quality-runs/2026-09-14-linux-amd64-28aef67.json",
+      "note": "Exact development commit 28aef678ebc104aa924f38d929bdbe15edb6db03 produced two byte-identical source archives and passed independent commit/archive verification. The extracted archive passed the pinned dependency graph, warnings-as-errors static 18/18 and shared 19/19 suites, installed and relocated consumers 2/2, embedded consumers 1/1, source-candidate mutation contracts, the nine-header public API baseline and mutation contracts, package isolation, SBOMs, API documentation, installed examples, and the 39-of-39 shared-export contract. Distinct repeated static and shared builds were byte-identical in the recorded environment. No viewer was built or counted."
     },
     {
       "id": "distribution.release-artifact-identity",
