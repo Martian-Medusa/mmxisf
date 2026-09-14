@@ -25,6 +25,11 @@
   the exact Expat, zlib, LZ4, Zstandard, and OpenSSL versions parsed from the
   headers that are actually compiled. The installed artifact records platform,
   compiler, configuration, and linkage; missing versions fail closed.
+- CI retains the exact generated binary SBOM for every Unix matrix entry and
+  both Windows linkage variants, independently from the source SBOM.
+- All third-party GitHub Actions are pinned to immutable commit identifiers,
+  checkout does not persist the read-only workflow token, and weekly
+  Dependabot proposals track action updates without bypassing the test matrix.
 - A separate CI job produces the Git source archive twice, requires byte
   identity, computes SHA-256, and retains the archive/checksum for 14 days
   without creating a tag or release.
@@ -64,6 +69,9 @@
   Later SHA-3 and CI-only changes are outside this historical campaign.
 - Cross-platform shared-library evidence is pending the first CI run containing
   this matrix.
+- The source/license/supply-chain review is recorded in
+  `docs/SUPPLY_CHAIN_AUDIT.md` as a conditional source-only pass. Binary
+  vulnerability review and the public security intake remain release gates.
 
 ## Still required for public beta
 

@@ -5,12 +5,12 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: M1 is complete; M2 implementation has an independent-producer scalar
-> and color matrix, with storage/endian combinations still partial; M3 codec,
-> resource-limit, and local performance prerequisites are complete; M4 is in
-> progress and the first M5 integration prerequisites are implemented. M6 has
-> a deterministic, uncompressed multi-image Gray/RGB writer for the PFI scalar
-> profile. Version
+> Status: M1-M3 implementation is complete for the declared local monolithic
+> profile; M4/M5 library and PFI-adapter paths await native PixInsight evidence.
+> M6 includes a deterministic compressed multi-image Gray/RGB writer with
+> declarative scalar and block-backed metadata. M7 now inventories ancillary
+> objects, ICC profiles, thumbnails, extensions, and bounded heterogeneous
+> tables. M8 hardening and distribution work is in progress. Version
 > `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
@@ -69,9 +69,11 @@ milestone. They remain candidates for later conformance work.
 - [M4 progress](docs/M4_STATUS.md)
 - [M6 writer progress](docs/M6_STATUS.md)
 - [M7 broader image coverage](docs/M7_STATUS.md)
+- [M8 hardening and distribution](docs/M8_STATUS.md)
 - [Writer API](docs/WRITER.md)
 - [Generated API reference overview](docs/API.md)
 - [Fuzzing policy](docs/FUZZING.md)
+- [Supply-chain and license audit](docs/SUPPLY_CHAIN_AUDIT.md)
 - [Sources and clean-room policy](docs/SOURCES.md)
 
 ## Build the library and inspector

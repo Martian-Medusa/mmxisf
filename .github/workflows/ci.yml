@@ -31,7 +31,9 @@ jobs:
             shared: "ON"
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Select Xcode 26.3 (macOS)
         if: runner.os == 'macOS'
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
@@ -65,11 +67,20 @@ jobs:
         run: cmake --build build-consumer --config Release
       - name: Test installed-package consumer
         run: ctest --test-dir build-consumer -C Release --output-on-failure
+      - name: Retain resolved binary SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mmxisf-binary-sbom-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shared }}-${{ github.sha }}
+          path: build/binary-dependencies.spdx.json
+          if-no-files-found: error
+          retention-days: 14
 
   windows-build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install dependencies once
         run: vcpkg install expat:x64-windows lz4:x64-windows openssl:x64-windows zlib:x64-windows zstd:x64-windows
       - name: Configure static library
@@ -118,11 +129,22 @@ jobs:
           $vcpkgRuntime = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\install-shared\bin;$vcpkgRuntime;$env:PATH"
           ctest --test-dir consumer-shared -C Release --output-on-failure --timeout 30
+      - name: Retain resolved static and shared binary SBOMs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mmxisf-binary-sbom-Windows-${{ runner.arch }}-${{ github.sha }}
+          path: |
+            build-static/binary-dependencies.spdx.json
+            build-shared/binary-dependencies.spdx.json
+          if-no-files-found: error
+          retention-days: 14
 
   source-package:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Create deterministic source archives
         run: |
           mkdir -p dist
@@ -132,7 +154,7 @@ jobs:
           sha256sum dist/mmxisf-source.tar.gz > dist/mmxisf-source.tar.gz.sha256
           rm dist/mmxisf-source-repeat.tar.gz
       - name: Upload source package and checksum
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mmxisf-source-${{ github.sha }}
           path: |
@@ -144,7 +166,9 @@ jobs:
   api-reference:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install documentation toolchain
         run: sudo apt-get update && sudo apt-get install -y doxygen libexpat1-dev liblz4-dev libssl-dev libzstd-dev zlib1g-dev
       - name: Configure generated API reference
@@ -159,7 +183,7 @@ jobs:
       - name: Verify generated entry point
         run: test -s build-docs/api/html/index.html
       - name: Upload generated API reference
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mmxisf-api-${{ github.sha }}
           path: build-docs/api/html/
@@ -169,7 +193,9 @@ jobs:
   fuzz-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev liblz4-dev libssl-dev libzstd-dev zlib1g-dev
       - name: Configure
@@ -207,7 +233,7 @@ jobs:
           build-fuzz/corpus
       - name: Retain libFuzzer failure artifact
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: libfuzzer-failure
           path: build-fuzz/artifacts/
