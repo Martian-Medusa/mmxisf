@@ -12,13 +12,17 @@ The current PFI foundation now includes a fail-closed host-default router, a
 source-built external Float32 Gray/RGB provider, standalone metadata-only
 preflight, and a self-contained local macOS-arm64 provider bundle. The preflight
 reads container metadata and only the bounded PFI WCS blocks, not image pixels.
-A generated PJSR gate is bound to the exact provider/source hashes. A disposable
-PixInsight 1.9.4 arm64 CLI run now establishes exact host/adapter source,
+A generated PJSR gate is bound to the exact provider/source hashes. Disposable
+PixInsight 1.9.4 arm64 CLI runs establish exact host/adapter source,
 representation, full/per-channel pixel, and interpreted-metadata parity for one
-private Float32 Gray and one private Float32 RGB source. None of this grants
-qualification or changes the default product route: provider lifecycle,
-detector/fitter parity, UI configuration, rollback exercise, and operator
-acceptance remain open.
+private Float32 Gray and one private Float32 RGB source. A subsequent run of the
+complete ExternalProcess/ImageWindow route produced exact pixels and exact
+canonical current PFI detector, Moffat4 fitter, filtering, field-model, and
+reliability results for both sources after excluding only `sourceViewId`. This
+is source-bound route equivalence, not independent scientific validation or
+physical accuracy. None of this grants qualification or changes the default
+product route: UI configuration, rollback exercise, operator acceptance, and
+release distribution remain open.
 
 ## Adapter contract
 
@@ -65,6 +69,8 @@ publish a partial frame as valid input.
    tests appropriate to floating storage without applying display transforms.
 4. Exercise PSF measurements with identical decoded pixels; differences are an
    I/O defect until proven otherwise, not permission to retune algorithms.
+   The current macOS-arm64 two-source source-bound gate passes this step; broader
+   platform/corpus coverage remains part of later qualification.
 5. Validate separate standalone and PCL builds, lifecycle, cancellation, batch
    throughput, and diagnostics.
 6. Enable `mmxisf` by default only after native PixInsight corpus parity and a

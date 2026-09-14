@@ -5,6 +5,7 @@
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
+  PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
   EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
@@ -316,8 +317,9 @@ open; it does not turn historical evidence into exact-candidate evidence.
   canonical-result equality after excluding only `sourceViewId`. The ignored
   125,895-byte generated script has SHA-256
   `6cf567db81344aa22827dfd6987ba1e692864abceec40e1e5a572e66236ef9a3`.
-  Generation and tamper contracts pass, but native execution is pending;
-  `pfi.detection-fitting-scientific-parity` therefore remains `NOT_TESTED`.
+  Generation and tamper contracts passed, but native execution was pending at
+  this checkpoint; the later source-bound run below supersedes that
+  `NOT_TESTED` state.
 - PFI commit `1452d1d5b0b11d6f985c0a1fa75fc63b73e2f7cc` adds the
   create-only production-baseline provider gate. Against clean `mmxisf` commit
   `405aba83ba5292dd3ff0e8bf46728c4edf317c1a` and pinned vcpkg registry commit
@@ -348,7 +350,25 @@ open; it does not turn historical evidence into exact-candidate evidence.
   or `src/`). Exact sanitized evidence is retained in
   `docs/quality-runs/2026-09-14-pixinsight-reader-macos-arm64.json`. This closes
   the Gray/RGB reader gates for those exact sources, not the separate native
-  provider-lifecycle, writer, scientific, rollback, or operator gates.
+  provider-lifecycle, writer, scientific, rollback, or operator gates at that
+  checkpoint.
+- PFI commit `8c3dcb8135455d2fcf4bc0ad4d34fbab5cb7fb4f` then automated
+  the exact provider gate and retained both a failed dependency-closure attempt
+  and its correction. A fresh provider built from PFI commit
+  `297977eaaf5b2ebfb2ae266b946e5257395baadd` and exact `mmxisf` commit
+  `850811d5a1b076c4ac467bfc2d665b27620a707c` passed 19/19 library and
+  8/8 PFI native tests with warnings-as-errors. The corrected 134,733-byte
+  validation script ran without Computer Use in a disposable PixInsight 1.9.4
+  arm64 process. One private Float32 RGB and one private Float32 Gray source
+  both passed exact provider/host geometry, representation, full/per-channel
+  pixel hashes, and exact complete current detector, Moffat4 fitter, filtering,
+  field-model, and reliability results after excluding only `sourceViewId`.
+  The independent review accepted promotion of
+  `pfi.detection-fitting-scientific-parity` to `PASS` for this source-bound
+  route-equivalence scope. It does not establish physical accuracy. Product
+  wiring remains `LIMITED`; configuration, qualification, rollback and operator
+  acceptance remain open. Exact sanitized evidence is retained in
+  `docs/quality-runs/2026-09-14-pfi-provider-native-macos-arm64.json`.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The

@@ -92,14 +92,14 @@
       "status": "LIMITED",
       "requiredFor": ["pfiProduction"],
       "evidence": "docs/M8_STATUS.md",
-      "note": "PFI commit 1452d1d5b0b11d6f985c0a1fa75fc63b73e2f7cc passed a clean-source, pinned-static macOS-arm64 provider gate against mmxisf 405aba83ba5292dd3ff0e8bf46728c4edf317c1a. Its manifest binds both commits, the exact dependency SBOM, provider and dylib identities; 12/12 mmxisf and 8/8 PFI tests passed and a representative metadata/full-pixel transport completed. The provider remains unconfigured and NOT_TESTED in PJSR; no UI preference, granted qualification, scientific parity, or operator acceptance exists."
+      "note": "PFI commit 8c3dcb8135455d2fcf4bc0ad4d34fbab5cb7fb4f records a fresh pinned-static macOS-arm64 provider build against mmxisf 850811d5a1b076c4ac467bfc2d665b27620a707c: 19/19 mmxisf and 8/8 PFI tests passed, the dependency SBOM and provider identity are bound, and the native ExternalProcess/ImageWindow lifecycle passed for one Float32 RGB and one Float32 Gray source. Product configuration is unchanged; no UI preference, granted qualification, configured rollback, or operator acceptance exists, so the gate remains LIMITED."
     },
     {
       "id": "pfi.detection-fitting-scientific-parity",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "PFI commit 43b7ca190d2dd946c2be3925a73d90ac5f5a5574 prepares a source-bound exact same-pixel detector, fitter, field-model, and reliability comparison, but the generated gate has not been executed natively."
+      "evidence": "docs/quality-runs/2026-09-14-pfi-provider-native-macos-arm64.json",
+      "note": "PFI commit 8c3dcb8135455d2fcf4bc0ad4d34fbab5cb7fb4f retains a source-bound PixInsight 1.9.4 arm64 PASS for one private Float32 RGB and one private Float32 Gray source against mmxisf 850811d5a1b076c4ac467bfc2d665b27620a707c. Provider and host windows had exact pixels and exact complete current detector, Moffat4 fitter, filtering, field-model, and reliability results after excluding only sourceViewId. This is route equivalence for the two exact inputs, not independent scientific validation or physical accuracy."
     },
     {
       "id": "performance.local-representative-mono-rgb",

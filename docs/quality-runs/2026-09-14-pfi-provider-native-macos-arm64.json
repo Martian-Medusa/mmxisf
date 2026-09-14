@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "mmxisf-pfi-provider-native-parity/1.0.0",
+  "status": "PASS_WITH_LIMITATIONS",
+  "observedAt": "2026-09-14T20:42:23+02:00",
+  "platform": {
+    "program": "PixInsight Core 1.9.4 (arm64)",
+    "version": "1.9.4.0",
+    "os": "macOS",
+    "engine": "PJSR V8",
+    "execution": "DISPOSABLE_CLI_AUTOMATION_NO_STARTUP_SCRIPTS_FORCE_EXIT",
+    "computerUse": "DISABLED"
+  },
+  "libraryIdentity": {
+    "providerBuildCommit": "850811d5a1b076c4ac467bfc2d665b27620a707c",
+    "currentCommitAtAudit": "850811d5a1b076c4ac467bfc2d665b27620a707c",
+    "version": "0.1.0"
+  },
+  "pfiIdentity": {
+    "providerBuildCommit": "297977eaaf5b2ebfb2ae266b946e5257395baadd",
+    "nativeEvidenceCommit": "8c3dcb8135455d2fcf4bc0ad4d34fbab5cb7fb4f",
+    "validationCandidateSchema": "pfi.mmxisf-provider-native-candidate/1.2.0",
+    "validationGeneratorSha256": "6a91c9fc42ebd8cf4c2c1189a7d7e776f879d1c735a730cbcce2ffd427e6c1e5",
+    "trackedEvidence": {
+      "path": "docs/cpp/mmxisf-provider-native-parity-macos-arm64.json",
+      "sizeBytes": 7804,
+      "sha256": "7dd607602df33a41f047b01e8f4030f2aaf9faf65814cb66c20560430659b9af"
+    }
+  },
+  "providerBundle": {
+    "status": "LOCAL_ADHOC_SIGNED_NOT_PUBLISHED",
+    "manifestSchemaVersion": "pfi.mmxisf-provider-macos-bundle/1.1.0",
+    "manifestSha256": "113eaf197e80628614209d7252af8de784b493afbcf4f874d6059978fb2856ab",
+    "providerSizeBytes": 5705392,
+    "providerSha256": "90e5a167c0de68c4c8fa7289a77bda463f54ce3734bdf1c39b5e159d9cac6aba",
+    "dependencySbomSha256": "89f54f5a810e5732ebd0e422a6388cda8d9344ec2746de84f538b156b692b724",
+    "mmxisfCTest": {
+      "passed": 19,
+      "failed": 0
+    },
+    "pfiNativeCTest": {
+      "passed": 8,
+      "failed": 0
+    },
+    "warningsAsErrors": true,
+    "bundledNonSystemLibraries": 0,
+    "signature": "PASS_ADHOC_STRICT"
+  },
+  "attempts": [
+    {
+      "status": "FAIL_RETAINED",
+      "scriptSizeBytes": 127619,
+      "scriptSha256": "1cedaa75c484d63798bc0e17f061ade1cd7933ce1d29c1a26622dd4d2ef0860d",
+      "rawEvidenceSizeBytes": 5024,
+      "rawEvidenceSha256": "722cd19ae27ac8e47d4946cc62020c9301f4943dc00c5c8dd36f2bf5a8ddadc5",
+      "diagnostic": "ReferenceError: pfiCornerOrientationDiagnosticsWithConfidence is not defined",
+      "disposition": "The PFI generator dependency closure omitted orientation_confidence.js; the negative result remains retained outside this repository."
+    },
+    {
+      "status": "PASS",
+      "scriptSizeBytes": 134733,
+      "scriptSha256": "b82c69e492e767b8e2a66a8b4785780dcec4fd3003c1f329b66a1562c12f56e1",
+      "rawEvidenceSizeBytes": 8250,
+      "rawEvidenceSha256": "4fd104449e285da9e4594027f4d513776f7ac85a74f6d5bc93d6f6f2602d0126"
+    }
+  ],
+  "records": [
+    {
+      "profile": "PRIVATE_FLOAT32_RGB_5983X3911",
+      "sourceSizeBytes": 295282544,
+      "sourceSha256": "c1ab87d7dc71bd1c69f361ddd67d1279f37ebbf7beacad43db941f70de286880",
+      "status": "PASS",
+      "decodedPixelSha256": "2bc119b96c12efa61dd64fc0d790e4705660508dcbff43d859c8e2b6bb8fb502",
+      "canonicalPipelineResultSha256": "5ce2a568bae7f1eca2a978b6c357a429fc48766cfc84ae9524c1024536196541",
+      "detectedStarCount": 44519,
+      "fittedStarCount": 43539,
+      "acceptedStarCount": 39504,
+      "rejectedStarCount": 4035
+    },
+    {
+      "profile": "PRIVATE_FLOAT32_GRAY_6217X4150",
+      "sourceSizeBytes": 103395232,
+      "sourceSha256": "236b958cc97dc07e690880e326feec610392506baf2221fcd61ac8a25ab093f3",
+      "status": "PASS",
+      "decodedPixelSha256": "1d91351c58e777ef5ea474be8c6e785819dcc4b9b7cbc5cb555e29383962c229",
+      "canonicalPipelineResultSha256": "579df02f3911f7da614d6629c11f2cb0d167ae02ec047db6ac11ccb534581331",
+      "detectedStarCount": 840,
+      "fittedStarCount": 565,
+      "acceptedStarCount": 490,
+      "rejectedStarCount": 75
+    }
+  ],
+  "comparison": {
+    "passedRecords": 2,
+    "totalRecords": 2,
+    "providerLifecycle": "OBSERVED",
+    "pixelParity": "EXACT_FOR_MATCHED_FLOAT32_WORKING_REPRESENTATION",
+    "detectorFitterFieldModelReliabilityParity": "EXACT_CANONICAL_RESULT_EXCLUDING_SOURCE_VIEW_ID"
+  },
+  "authority": {
+    "pfiDetectionFittingRouteParity": "PASS_FOR_TWO_EXACT_PRIVATE_SOURCES",
+    "mmxisfStandaloneReadinessChange": "NONE",
+    "physicalTruthOrAccuracy": "NOT_ASSESSED",
+    "productConfiguration": "NOT_CHANGED",
+    "qualification": "NOT_GRANTED",
+    "rollback": "NOT_TESTED",
+    "operatorAcceptance": "NOT_ASSESSED"
+  },
+  "limitations": [
+    "The evidence covers one private Float32 RGB and one private Float32 Gray source in PixInsight 1.9.4 arm64 on macOS.",
+    "Both routes use the same current PFI measurement implementation, so this is exact I/O-route equivalence rather than an independent scientific implementation.",
+    "This quality run does not freeze a candidate or change standalone library, Windows/MSVC, writer, product-configuration, rollback, publication, or operator gates."
+  ]
+}

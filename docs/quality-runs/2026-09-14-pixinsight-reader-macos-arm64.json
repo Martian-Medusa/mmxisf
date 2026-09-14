@@ -106,6 +106,6 @@
   "limitations": [
     "This evidence qualifies the observed Float32 Gray and RGB reader profiles on PixInsight 1.9.4 arm64 macOS only.",
     "Independent-producer tests cover broader sample/codec profiles, but native PixInsight parity is not generalized beyond these two exact sources.",
-    "Writer-property, provider-lifecycle, scientific, rollback, and operator gates remain separate."
+    "Writer-property, provider-lifecycle, detector/fitter, rollback, and operator gates are assessed separately; later provider evidence does not broaden this reader-only result."
   ]
 }
