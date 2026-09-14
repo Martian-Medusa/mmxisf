@@ -24,15 +24,6 @@ PFI, PixInsight, PCL, or Qt.
 > integrity, resource-limit, endian, and cancellation guarantees.
 > This is still a pre-release profile, not a general XISF decoder.
 
-## Why the public name is not `libXISF`
-
-The requested local directory remains `software/libXISF`. An unrelated GPLv3+
-C++ project is already distributed under the `libXISF` name and as a Debian
-package. To avoid package, linker, search, and contributor confusion, this plan
-uses the public project/package name `mmxisf`, CMake target
-`mmxisf::mmxisf`, and C++ namespace `mmxisf`. The final public repository name
-is `mmxisf`.
-
 Contributions must follow [`CONTRIBUTING.md`](CONTRIBUTING.md) and the
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md); security reports follow
 [`SECURITY.md`](SECURITY.md). The fail-closed candidate, publication, and
