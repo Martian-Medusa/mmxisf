@@ -40,6 +40,15 @@ NSString *display_string(const std::string &value) {
   return ns_string(preview);
 }
 
+NSString *expanded_name(const std::string &namespace_uri,
+                        const std::string &name) {
+  if (namespace_uri.empty()) {
+    return ns_string(name);
+  }
+  return [NSString
+      stringWithFormat:@"{%@}%@", ns_string(namespace_uri), ns_string(name)];
+}
+
 NSString *geometry_string(const mmxisf::ImageInfo &image) {
   NSMutableArray<NSString *> *axes = [NSMutableArray array];
   for (const auto axis : image.geometry) {
@@ -460,6 +469,9 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
       [NSString stringWithFormat:@"%u", document.header_length()], @"");
   add(@"Document", @"Summary", @"Images", @"Count",
       [NSString stringWithFormat:@"%lu", document.images().size()], @"");
+  add(@"Document", @"Summary", @"Extensions", @"Count",
+      [NSString stringWithFormat:@"%lu", document.extension_elements().size()],
+      @"");
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     NSString *scope = [NSString stringWithFormat:@"Image %lu", index];
@@ -557,6 +569,31 @@ NSString *geometry_string(const mmxisf::ImageInfo &image) {
       scope = [NSString stringWithFormat:@"Image %lu", *entry.image_index];
     }
     add_metadata(entry, scope, false);
+  }
+  for (std::size_t index = 0; index < document.extension_elements().size();
+       ++index) {
+    const auto &extension = document.extension_elements()[index];
+    NSString *scope =
+        extension.image_index
+            ? [NSString stringWithFormat:@"Image %lu", *extension.image_index]
+            : @"XISF unit";
+    NSString *parent =
+        expanded_name(extension.parent_namespace_uri, extension.parent_name);
+    if (extension.parent_extension_index) {
+      parent = [NSString stringWithFormat:@"%@ · extension %lu", parent,
+                                          *extension.parent_extension_index];
+    }
+    add(scope, @"Extension",
+        expanded_name(extension.namespace_uri, extension.name),
+        [NSString stringWithFormat:@"Child of %@", parent],
+        display_string(extension.text),
+        [NSString stringWithFormat:@"Semantic inventory index %lu", index]);
+    for (const auto &attribute : extension.attributes) {
+      add(scope, @"Extension attribute",
+          expanded_name(attribute.namespace_uri, attribute.name),
+          [NSString stringWithFormat:@"On extension %lu", index],
+          display_string(attribute.value), @"");
+    }
   }
   rows_ = [rows copy];
 }

@@ -1,6 +1,7 @@
 # M7 progress: broader image sample coverage
 
-- Status: EXTENDED_SAMPLE_DECODER_IMPLEMENTED; EXTERNAL_ORACLE_PENDING
+- Status: EXTENDED_SAMPLE_AND_EXTENSION_INSPECTION_IMPLEMENTED;
+  EXTERNAL_SAMPLE_ORACLE_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 11.5.1
 - Publication status: private repository; no tag or release
@@ -18,6 +19,12 @@
   retained and no misleading magnitude image is synthesized.
 - SHA3-256 and SHA3-512 block integrity verification and writer output through
   the existing checksum-before-decompression and bounded spool paths.
+- Namespace-aware semantic inventory of non-XISF extension elements in document
+  order, with parent/image links, normalized attributes, and direct text.
+- Independent finite defaults for extension elements, cumulative attributes,
+  and copied semantic bytes; limit violations fail as `resource_limit`.
+- Explicitly no raw-XML, prefix, CDATA-boundary, comment, processing-instruction,
+  or byte-identical writer round-trip claim.
 
 PFI remains intentionally scalar-only and must reject complex images at the
 adapter boundary. This milestone expands the standalone reader, not the PFI
@@ -41,11 +48,13 @@ scientific contract.
   Zstandard+shuffle+SHA3-256 descriptor and returned an exact 2x2x3 UInt16 RGB
   value matrix. The committed fixture is reverified by mmxisf, including its
   digest; independent digest verification itself is not inferred.
+- Synthetic nested extension tests cover two namespaces, qualified and
+  unqualified attributes, document order, direct mixed text, parent linkage,
+  image association, and each dedicated resource limit.
 
 ## Still required for M7
 
 - Obtain independently produced UInt64 and complex fixtures from another
   producer, with provenance and exact pixel hashes.
-- Decide and document supported non-core extension preservation.
 - Implement any additional metadata object families selected for the 1.0
   monolithic profile.

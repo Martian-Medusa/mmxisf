@@ -54,6 +54,9 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t *data,
   options.max_xml_nodes = 10'000;
   options.max_metadata_entries = 2'000;
   options.max_metadata_value_bytes = 256U * 1024U;
+  options.max_extension_elements = 512;
+  options.max_extension_attributes = 4'096;
+  options.max_extension_bytes = 256U * 1024U;
   options.max_decoded_image_bytes = 1024U * 1024U;
   options.max_serialized_property_bytes = 1024U * 1024U;
   options.max_decoded_property_bytes = 1024U * 1024U;
@@ -89,7 +92,9 @@ namespace {
 std::vector<std::uint8_t> seed_unit() {
   const std::string xml =
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+      "xmlns:ext=\"urn:mmxisf:fuzz\" version=\"1.0\">"
+      "<ext:Probe ext:mode=\"fuzz\">before<ext:Nested/>after</ext:Probe>"
       "<Property id=\"test\" type=\"String\">value</Property>"
       "<Property id=\"Test:Boolean\" type=\"Boolean\" value=\"true\"/>"
       "<Property id=\"Test:Integer\" type=\"Int32\" value=\"-42\"/>"

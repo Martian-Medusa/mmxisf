@@ -739,6 +739,11 @@ struct MetadataBindingEvent {
   bool by_reference{false};
 };
 
+struct XmlElementName {
+  std::string namespace_uri;
+  std::string name;
+};
+
 struct XmlBuilder {
   enum class EmbeddedEncoding { none, base64, hex };
 
@@ -759,6 +764,11 @@ struct XmlBuilder {
   bool saw_xml_declaration{false};
   std::vector<std::size_t> image_stack;
   std::vector<std::string> element_stack;
+  std::vector<XmlElementName> qualified_element_stack;
+  std::vector<std::optional<std::size_t>> extension_stack;
+  std::vector<ExtensionElement> extension_elements;
+  std::size_t extension_attribute_count{0};
+  std::size_t extension_bytes{0};
   std::optional<std::size_t> text_metadata_index;
   std::size_t metadata_count{0};
   bool saw_creation_time{false};
@@ -795,6 +805,19 @@ struct XmlBuilder {
                                : std::optional<std::size_t>(image_stack.back());
   }
 };
+
+bool consume_extension_bytes(XmlBuilder &state, std::size_t count,
+                             std::string_view element) {
+  const auto limit = state.options.max_extension_bytes;
+  const auto available = limit - std::min(state.extension_bytes, limit);
+  if (count > available) {
+    state.fail(ErrorCode::resource_limit,
+               "Extension inventory byte limit exceeded", std::string(element));
+    return false;
+  }
+  state.extension_bytes += count;
+  return true;
+}
 
 bool ascii_case_equal(std::string_view left, std::string_view right) {
   if (left.size() != right.size()) {
@@ -988,7 +1011,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
   ++state.depth;
   ++state.nodes;
   const std::string name(local_name(qualified_name));
-  const bool is_xisf_element = namespace_name(qualified_name) == kXisfNamespace;
+  const std::string_view namespace_uri = namespace_name(qualified_name);
+  const bool is_xisf_element = namespace_uri == kXisfNamespace;
   const std::string parent =
       state.element_stack.empty() ? std::string{} : state.element_stack.back();
   if (state.depth > state.options.max_xml_depth) {
@@ -1006,7 +1030,88 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     state.fail(ErrorCode::resource_limit, "XML attribute limit exceeded", name);
     return;
   }
+
+  std::optional<std::size_t> extension_index;
+  if (state.depth > 1 && !is_xisf_element) {
+    if (state.extension_elements.size() >=
+        state.options.max_extension_elements) {
+      state.fail(ErrorCode::resource_limit,
+                 "Extension element count limit exceeded", name);
+      return;
+    }
+    const auto attribute_limit = state.options.max_extension_attributes;
+    const auto attribute_capacity =
+        attribute_limit -
+        std::min(state.extension_attribute_count, attribute_limit);
+    if (attribute_count > attribute_capacity) {
+      state.fail(ErrorCode::resource_limit,
+                 "Extension attribute count limit exceeded", name);
+      return;
+    }
+
+    const auto parent_namespace_uri =
+        state.qualified_element_stack.empty()
+            ? std::string_view{}
+            : std::string_view(
+                  state.qualified_element_stack.back().namespace_uri);
+    const auto parent_name =
+        state.qualified_element_stack.empty()
+            ? std::string_view{}
+            : std::string_view(state.qualified_element_stack.back().name);
+    std::size_t copied_bytes = namespace_uri.size();
+    const auto add_copied_bytes = [&](std::size_t count) {
+      if (count > std::numeric_limits<std::size_t>::max() - copied_bytes) {
+        return false;
+      }
+      copied_bytes += count;
+      return true;
+    };
+    if (!add_copied_bytes(name.size()) ||
+        !add_copied_bytes(parent_namespace_uri.size()) ||
+        !add_copied_bytes(parent_name.size())) {
+      state.fail(ErrorCode::resource_limit,
+                 "Extension inventory byte count overflow", name);
+      return;
+    }
+    for (std::size_t index = 0; index < attribute_count; ++index) {
+      if (!add_copied_bytes(namespace_name(attributes[index * 2]).size()) ||
+          !add_copied_bytes(local_name(attributes[index * 2]).size()) ||
+          !add_copied_bytes(
+              std::string_view(attributes[index * 2 + 1]).size())) {
+        state.fail(ErrorCode::resource_limit,
+                   "Extension inventory byte count overflow", name);
+        return;
+      }
+    }
+    if (!consume_extension_bytes(state, copied_bytes, name)) {
+      return;
+    }
+
+    ExtensionElement extension;
+    extension.namespace_uri = std::string(namespace_uri);
+    extension.name = name;
+    extension.parent_namespace_uri = std::string(parent_namespace_uri);
+    extension.parent_name = std::string(parent_name);
+    if (!state.extension_stack.empty()) {
+      extension.parent_extension_index = state.extension_stack.back();
+    }
+    extension.image_index = state.current_image();
+    extension.attributes.reserve(attribute_count);
+    for (std::size_t index = 0; index < attribute_count; ++index) {
+      ExtensionAttribute entry;
+      entry.namespace_uri = std::string(namespace_name(attributes[index * 2]));
+      entry.name = std::string(local_name(attributes[index * 2]));
+      entry.value = std::string(attributes[index * 2 + 1]);
+      extension.attributes.push_back(std::move(entry));
+    }
+    state.extension_attribute_count += attribute_count;
+    extension_index = state.extension_elements.size();
+    state.extension_elements.push_back(std::move(extension));
+  }
   state.element_stack.push_back(is_xisf_element ? name : std::string{});
+  state.qualified_element_stack.push_back(
+      XmlElementName{std::string(namespace_uri), name});
+  state.extension_stack.push_back(extension_index);
 
   const auto generic_location = attribute(attributes, "location");
   if (generic_location && generic_location->starts_with("attachment:")) {
@@ -1623,6 +1728,12 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
   if (!state.element_stack.empty()) {
     state.element_stack.pop_back();
   }
+  if (!state.qualified_element_stack.empty()) {
+    state.qualified_element_stack.pop_back();
+  }
+  if (!state.extension_stack.empty()) {
+    state.extension_stack.pop_back();
+  }
 }
 
 void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
@@ -1633,6 +1744,17 @@ void XMLCALL character_data(void *user_data, const XML_Char *text, int length) {
   const std::string_view data(text, static_cast<std::size_t>(length));
   if (state.embedded_image_index || state.inline_metadata_index) {
     decode_embedded_text(state, data);
+    return;
+  }
+  if (!state.extension_stack.empty() && state.extension_stack.back()) {
+    const auto extension_index = *state.extension_stack.back();
+    if (!consume_extension_bytes(
+            state, static_cast<std::size_t>(length),
+            state.extension_elements[extension_index].name)) {
+      return;
+    }
+    state.extension_elements[extension_index].text.append(
+        text, static_cast<std::size_t>(length));
     return;
   }
   if (!state.text_metadata_index) {
@@ -1819,7 +1941,8 @@ Result<ParsedHeader> parse_header(std::string_view xml,
   }
   Document document(std::move(state.version), std::move(state.images),
                     std::move(state.metadata), file_size, header_length,
-                    std::move(metadata_bindings));
+                    std::move(metadata_bindings),
+                    std::move(state.extension_elements));
   return ParsedHeader{std::move(document), std::move(state.embedded_blocks),
                       std::move(state.inline_metadata_blocks),
                       std::move(state.attached_ranges)};

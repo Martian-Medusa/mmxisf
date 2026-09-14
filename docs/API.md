@@ -9,6 +9,8 @@ first public release, while ABI stability is not promised before 1.0.
 1. Open a seekable source with `mmxisf::Reader::open_file` or
    `mmxisf::Reader::open_source` and explicit `mmxisf::ReaderOptions` limits.
 2. Inspect the immutable `mmxisf::Document` without decoding pixels.
+   `Document::extension_elements()` exposes a bounded, namespace-aware semantic
+   inventory of non-core XML extensions.
 3. Read an image into an owning `mmxisf::RawImage` or a correctly sized
    caller-owned span. Use `mmxisf::ImageReadOptions` when native byte order or a
    specific Planar/Normal layout is required.
@@ -58,6 +60,12 @@ contract, not performance hints. Applications may tighten them for their own
 workloads. A resource-limit failure, checksum mismatch, unsupported feature,
 or malformed structure is reported explicitly and yields no trusted pixels.
 External paths and URLs are not resolved by the current profile.
+
+Extension records preserve namespace/local names, normalized attributes,
+direct character data, parent association, and containing-image association.
+They intentionally do not preserve XML prefixes, CDATA boundaries, comments,
+processing instructions, attribute syntax, or byte-identical source text. The
+inventory is inspection data, not a writer round-trip representation.
 
 ## Cancellation and concurrency
 

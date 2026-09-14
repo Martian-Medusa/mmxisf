@@ -11,6 +11,9 @@ validation. Values below are the draft PFI desktop profile for M1/M2 tests.
 | XML nodes | 250,000 | Bound CPU and model construction |
 | attributes per element | 256 | Bound attribute scanning and duplicates |
 | inspected Property text value | 8 MiB | Preserve large processing history while bounding copies |
+| extension elements | 4,096 cumulative | Bound semantic records for non-XISF namespaces |
+| extension attributes | 65,536 cumulative | Bound attribute-object overhead across extension records |
+| extension semantic strings | 4 MiB cumulative | Bound copied namespace, name, value, and direct-text bytes |
 | images per unit | 64 | PFI accepts one but must safely enumerate inputs |
 | metadata objects and bindings | 100,000 each | Preserve large legitimate metadata sets while bounding repeated references |
 | image axes | 8 inspect / 2 decode | Recognize N-D, decode PFI 2-D only |
@@ -50,6 +53,12 @@ inventoried attachment ranges. Every scanned byte must be zero. The attachment
 inventory includes standard elements and extension elements that use the
 standard `attachment:position:size` syntax, preventing legitimate extension
 payloads from being mistaken for unused space.
+
+The extension semantic-string budget counts each copied namespace URI, local
+name, parent name/namespace, attribute value, and direct text byte. It does not
+replace the element or attribute record-count limits. Prefixes, comments,
+processing instructions, CDATA boundaries, and raw source spelling are not
+copied into the document model.
 
 Writer compression subblocks are rounded down to a whole number of samples and
 further capped by the selected codec's input type. A configured size smaller

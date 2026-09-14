@@ -19,7 +19,7 @@
     {"id":"xml.version-1.0","section":"9.5","feature":"XISF root version 1.0 and namespace","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.1"},
     {"id":"xml.utf8","section":"5, 9.5","feature":"strict XML 1.0 UTF-8 header","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.1"},
     {"id":"xml.core-elements","section":"11","feature":"recognize all XISF core element names","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.1"},
-    {"id":"xml.extensions","section":"5, 9.5","feature":"bounded preservation of unknown extension elements","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3"},
+    {"id":"xml.extensions","section":"5, 9.5","feature":"bounded semantic inventory of unknown extension elements","pfi":"INSPECT_ONLY","baselineDecoder":"INSPECT_ONLY","target":"0.3","note":"Namespace/local names, attributes, direct text, parent links, and image association are retained under dedicated limits; lexical XML and writer round-trip preservation are not claimed."},
     {"id":"xml.digital-signature","section":"9.5","feature":"XML digital signature verification","pfi":"REJECT_EXPLICITLY","baselineDecoder":"DEFERRED","target":"DEFERRED","note":"Presence is reported; authenticity is never claimed."},
 
     {"id":"block.attachment","section":"10.1, 10.3","feature":"attachment:position:size","pfi":"REQUIRED","baselineDecoder":"REQUIRED","target":"0.2"},

@@ -192,6 +192,9 @@ layout, color, or sample precision.
 source-representation pixel bytes for differential producer/PFI comparisons.
 `--decode-properties-sha256` performs the corresponding bounded decode and hash
 for every block-backed Property without decoding image pixels.
+The normal inspector output also lists the bounded semantic inventory of
+non-XISF XML extension elements and their namespace-aware attributes; this is
+inspection data, not a byte-identical XML round-trip representation.
 
 For a local sanitizer mutation smoke:
 
@@ -227,8 +230,9 @@ and Zstandard when they resolve to non-system dynamic libraries. Its
 current preview scope is the first supported uncompressed, zlib-, LZ4-, or
 Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
-can still open a broader set of headers, while unsupported image decoding fails
-closed.
+can still open a broader set of headers and displays inventoried extension
+elements/attributes alongside core metadata, while unsupported image decoding
+fails closed.
 
 ## License
 

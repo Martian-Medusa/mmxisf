@@ -58,7 +58,8 @@ int main(int argc, char **argv) {
             << "images: " << document.images().size() << "\n"
             << "metadata: " << document.metadata().size() << "\n"
             << "metadata-bindings: " << document.metadata_bindings().size()
-            << "\n";
+            << "\n"
+            << "extensions: " << document.extension_elements().size() << "\n";
   for (std::size_t index = 0; index < document.images().size(); ++index) {
     const auto &image = document.images()[index];
     std::cout << "image[" << index << "]: id=\"" << image.id << "\" geometry=";
@@ -177,6 +178,29 @@ int main(int argc, char **argv) {
     }
     std::cout << '\t' << (binding.by_reference ? "Reference" : "Direct")
               << '\n';
+  }
+  for (std::size_t index = 0; index < document.extension_elements().size();
+       ++index) {
+    const auto &extension = document.extension_elements()[index];
+    std::cout << "extension[" << index << "]\t{" << extension.namespace_uri
+              << '}' << extension.name << "\tparent={"
+              << extension.parent_namespace_uri << '}' << extension.parent_name;
+    if (extension.parent_extension_index) {
+      std::cout << "\tparent-extension[" << *extension.parent_extension_index
+                << ']';
+    }
+    if (extension.image_index) {
+      std::cout << "\timage[" << *extension.image_index << ']';
+    }
+    if (!extension.text.empty()) {
+      std::cout << "\ttext=" << std::quoted(extension.text);
+    }
+    std::cout << '\n';
+    for (const auto &attribute : extension.attributes) {
+      std::cout << "extension[" << index << "].attribute\t{"
+                << attribute.namespace_uri << '}' << attribute.name << '='
+                << std::quoted(attribute.value) << '\n';
+    }
   }
   return EXIT_SUCCESS;
 }

@@ -50,6 +50,9 @@ The M1 pre-release API now supports:
 - bounded chunk reads with cooperative cancellation;
 - exact UInt64 and complex image bytes, with component-wise native-endian
   conversion and no magnitude/phase interpretation;
+- a bounded, namespace-aware semantic inventory for non-XISF XML extension
+  elements, including parent/image links, attributes, and direct text without
+  a raw-XML round-trip claim;
 
 The pre-release writer now provides:
 
@@ -79,6 +82,11 @@ single-block bytes, decompression ratio, and diagnostic detail. Library code
 uses checked multiplication/addition before conversions to `size_t` or stream
 offset types. Attachment layout transforms use at most an 8 MiB staging buffer;
 they do not allocate a second full decoded frame.
+
+Extension-domain construction has independent cumulative limits for element
+records, attribute records, and copied namespace/name/value/text bytes. The
+header, XML node, depth, and per-element attribute limits still apply, so the
+extension inventory cannot bypass the general parser budget.
 
 Compressed input is staged once so its checksum can be verified before any
 codec call. Unshuffled codec output is written directly to the caller's buffer.

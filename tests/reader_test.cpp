@@ -2325,11 +2325,106 @@ int main() {
   expect(extension_attachment.has_value(),
          "extension attachment is inventoried for unused-space validation");
   if (extension_attachment) {
+    const auto &extensions =
+        extension_attachment.value().document().extension_elements();
+    expect(extensions.size() == 1,
+           "extension element is exposed in the semantic inventory");
+    if (extensions.size() == 1) {
+      expect(extensions[0].namespace_uri == "urn:mmxisf:test" &&
+                 extensions[0].name == "Block",
+             "extension namespace and local name are preserved");
+      expect(extensions[0].parent_namespace_uri ==
+                     "http://www.pixinsight.com/xisf" &&
+                 extensions[0].parent_name == "xisf" &&
+                 !extensions[0].parent_extension_index &&
+                 !extensions[0].image_index,
+             "root extension association is explicit");
+      expect(extensions[0].attributes.size() == 1 &&
+                 extensions[0].attributes[0].namespace_uri.empty() &&
+                 extensions[0].attributes[0].name == "location" &&
+                 extensions[0].attributes[0].value == "attachment:1024:2",
+             "extension attribute semantics are preserved");
+    }
     auto image = extension_attachment.value().read_image(0);
     expect(image &&
                image.value().pixels == std::vector<std::byte>{std::byte{0xcc}},
            "image following an extension attachment is read exactly");
   }
+
+  const auto nested_extension_path = write_fixture(
+      "mmxisf-nested-extension-inventory.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "xmlns:ext=\"urn:mmxisf:test\" "
+                  "xmlns:aux=\"urn:mmxisf:aux\" version=\"1.0\">"
+                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                  "location=\"attachment:1024:1\">"
+                  "<ext:Capture ext:mode=\"science\" plain=\"yes\">"
+                  "pre<![CDATA[mid]]><aux:Child aux:key=\"v\">payload"
+                  "</aux:Child>post</ext:Capture></Image>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x2a}});
+  auto nested_extension = mmxisf::Reader::open_file(nested_extension_path);
+  expect(nested_extension.has_value(),
+         "nested extension inventory fixture opens");
+  if (nested_extension) {
+    const auto &extensions =
+        nested_extension.value().document().extension_elements();
+    expect(extensions.size() == 2,
+           "nested extensions are inventoried in document order");
+    if (extensions.size() == 2) {
+      const auto &capture = extensions[0];
+      const auto &child = extensions[1];
+      expect(capture.namespace_uri == "urn:mmxisf:test" &&
+                 capture.name == "Capture" && capture.image_index == 0 &&
+                 !capture.parent_extension_index &&
+                 capture.text == "premidpost",
+             "extension direct text and image association are preserved");
+      const auto mode =
+          std::find_if(capture.attributes.begin(), capture.attributes.end(),
+                       [](const mmxisf::ExtensionAttribute &attribute) {
+                         return attribute.namespace_uri == "urn:mmxisf:test" &&
+                                attribute.name == "mode";
+                       });
+      const auto plain = std::find_if(
+          capture.attributes.begin(), capture.attributes.end(),
+          [](const mmxisf::ExtensionAttribute &attribute) {
+            return attribute.namespace_uri.empty() && attribute.name == "plain";
+          });
+      expect(mode != capture.attributes.end() && mode->value == "science" &&
+                 plain != capture.attributes.end() && plain->value == "yes",
+             "qualified and unqualified extension attributes are distinct");
+      expect(child.namespace_uri == "urn:mmxisf:aux" && child.name == "Child" &&
+                 child.parent_namespace_uri == "urn:mmxisf:test" &&
+                 child.parent_name == "Capture" &&
+                 child.parent_extension_index == 0 && child.image_index == 0 &&
+                 child.text == "payload",
+             "nested extension parent link and direct text are preserved");
+    }
+  }
+
+  mmxisf::ReaderOptions one_extension;
+  one_extension.max_extension_elements = 1;
+  auto extension_element_limit =
+      mmxisf::Reader::open_file(nested_extension_path, one_extension);
+  expect(!extension_element_limit && extension_element_limit.error().code ==
+                                         mmxisf::ErrorCode::resource_limit,
+         "cumulative extension element limit is enforced");
+
+  mmxisf::ReaderOptions two_extension_attributes;
+  two_extension_attributes.max_extension_attributes = 2;
+  auto extension_attribute_limit = mmxisf::Reader::open_file(
+      nested_extension_path, two_extension_attributes);
+  expect(!extension_attribute_limit && extension_attribute_limit.error().code ==
+                                           mmxisf::ErrorCode::resource_limit,
+         "cumulative extension attribute limit is enforced");
+
+  mmxisf::ReaderOptions tiny_extension_bytes;
+  tiny_extension_bytes.max_extension_bytes = 1;
+  auto extension_byte_limit =
+      mmxisf::Reader::open_file(nested_extension_path, tiny_extension_bytes);
+  expect(!extension_byte_limit && extension_byte_limit.error().code ==
+                                      mmxisf::ErrorCode::resource_limit,
+         "cumulative extension byte limit is enforced");
 
   const auto nonzero_trailing_path = write_fixture(
       "mmxisf-nonzero-trailing-space.xisf",

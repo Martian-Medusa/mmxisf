@@ -86,6 +86,23 @@ struct MetadataBinding {
   bool by_reference{false};
 };
 
+struct ExtensionAttribute {
+  std::string namespace_uri;
+  std::string name;
+  std::string value;
+};
+
+struct ExtensionElement {
+  std::string namespace_uri;
+  std::string name;
+  std::string parent_namespace_uri;
+  std::string parent_name;
+  std::optional<std::size_t> parent_extension_index;
+  std::optional<std::size_t> image_index;
+  std::vector<ExtensionAttribute> attributes;
+  std::string text;
+};
+
 struct ImageInfo {
   std::string id;
   std::vector<std::uint64_t> geometry;
@@ -113,11 +130,13 @@ public:
   Document(std::string version, std::vector<ImageInfo> images,
            std::vector<MetadataEntry> metadata, std::uint64_t file_size,
            std::uint32_t header_length,
-           std::vector<MetadataBinding> metadata_bindings = {})
+           std::vector<MetadataBinding> metadata_bindings = {},
+           std::vector<ExtensionElement> extension_elements = {})
       : version_(std::move(version)), images_(std::move(images)),
         metadata_(std::move(metadata)), file_size_(file_size),
         header_length_(header_length),
-        metadata_bindings_(std::move(metadata_bindings)) {}
+        metadata_bindings_(std::move(metadata_bindings)),
+        extension_elements_(std::move(extension_elements)) {}
 
   [[nodiscard]] const std::string &version() const noexcept { return version_; }
   [[nodiscard]] const std::vector<ImageInfo> &images() const noexcept {
@@ -129,6 +148,10 @@ public:
   [[nodiscard]] const std::vector<MetadataBinding> &
   metadata_bindings() const noexcept {
     return metadata_bindings_;
+  }
+  [[nodiscard]] const std::vector<ExtensionElement> &
+  extension_elements() const noexcept {
+    return extension_elements_;
   }
   [[nodiscard]] std::uint64_t file_size() const noexcept { return file_size_; }
   [[nodiscard]] std::uint32_t header_length() const noexcept {
@@ -142,6 +165,7 @@ private:
   std::uint64_t file_size_{0};
   std::uint32_t header_length_{0};
   std::vector<MetadataBinding> metadata_bindings_;
+  std::vector<ExtensionElement> extension_elements_;
 };
 
 [[nodiscard]] MMXISF_API const char *to_string(SampleFormat format) noexcept;
