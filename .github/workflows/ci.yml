@@ -103,13 +103,19 @@ jobs:
           cmake --build build-shared --config Release
           ctest --test-dir build-shared -C Release --output-on-failure
           cmake --install build-shared --config Release --prefix install-shared
-      - name: Test installed shared package
+      - name: Configure installed shared package consumer
+        timeout-minutes: 5
+        run: >-
+          cmake -S tests/package_consumer -B consumer-shared -A x64
+          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared"
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+      - name: Build installed shared package consumer
+        timeout-minutes: 5
+        run: cmake --build consumer-shared --config Release
+      - name: Test installed shared package consumer
+        timeout-minutes: 5
         run: |
-          cmake -S tests/package_consumer -B consumer-shared -A x64 `
-            -DCMAKE_PREFIX_PATH="${{ github.workspace }}/install-shared" `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
-          cmake --build consumer-shared --config Release
-          echo "${{ github.workspace }}\install-shared\bin" >> $env:GITHUB_PATH
+          $env:PATH = "${{ github.workspace }}\install-shared\bin;$env:PATH"
           ctest --test-dir consumer-shared -C Release --output-on-failure
 
   source-package:
