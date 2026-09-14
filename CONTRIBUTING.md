@@ -27,8 +27,11 @@ ctest --test-dir build --output-on-failure
 
 Also test `-DBUILD_SHARED_LIBS=ON` for public API/package changes. Parser,
 codec, block, arithmetic, ownership, and cancellation changes require the
-ASan/UBSan mutation smoke described in `README.md`. CI is authoritative for the
-Linux/macOS/Windows and coverage-guided fuzz matrix.
+ASan/UBSan mutation smoke described in `README.md`. During the current hosted
+runner budget pause, ordinary pushes do not start GitHub Actions: contributors
+must run the applicable local gates, while the manually dispatched CI workflow
+remains authoritative for Linux/macOS/Windows and coverage-guided fuzz
+checkpoints. A local macOS pass is never recorded as Windows or Linux evidence.
 The candidate-campaign evidence and regression-promotion rules are in
 `docs/FUZZING.md`.
 

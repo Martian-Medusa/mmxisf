@@ -1,8 +1,9 @@
 name: ci
 
 on:
-  push:
-  pull_request:
+  # Temporarily manual-only while routine development uses the documented local
+  # gates. Dispatch the full matrix only for selected cross-platform checkpoints.
+  workflow_dispatch:
 
 permissions:
   contents: read

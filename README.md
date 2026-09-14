@@ -107,9 +107,11 @@ headers, the target platform, compiler, build configuration, and static/shared
 linkage. Missing or malformed version macros fail configuration rather than
 producing guessed package data.
 
-Each CI revision also creates the source archive twice, requires byte identity,
-and retains one archive plus its SHA-256 as a short-lived workflow artifact.
-This is release rehearsal only; no tag or public release is created.
+Each manually dispatched full CI revision also creates the source archive twice,
+requires byte identity, and retains one archive plus its SHA-256 as a
+short-lived workflow artifact. Routine development currently uses local static,
+shared, sanitizer, package-consumer, and viewer gates to conserve hosted runner
+minutes. This is release rehearsal only; no tag or public release is created.
 
 Generate the versioned HTML API reference locally with:
 

@@ -1,7 +1,8 @@
 # M8 progress: hardening and distribution
 
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
-  CI_REVALIDATION_BLOCKED_ACCOUNT_BILLING;
+  ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
+  EXACT_HEAD_CROSS_PLATFORM_REVALIDATION_PENDING;
   PUBLICATION_NOT_AUTHORIZED
 - Started: 2026-09-14
 - Publication status: private repository; no tag or release
@@ -51,6 +52,11 @@
 - The Windows static and shared gates share one dependency installation in a
   single job, then use isolated build/install/consumer directories. This keeps
   both linkage variants while removing the dominant duplicated vcpkg setup.
+- Routine push and pull-request triggers are temporarily disabled to conserve
+  hosted-runner minutes. The complete workflow remains available through
+  manual dispatch for selected cross-platform checkpoints. Current development
+  uses local static/shared, sanitizer, package-consumer, fuzz-smoke, and macOS
+  viewer gates; local evidence does not substitute for Windows or Linux.
 
 ## Evidence available now
 
@@ -104,9 +110,10 @@
 
 ## Still required for public beta
 
-- Resolve the GitHub Actions billing/spending-limit block, then rerun and
-  complete the first exact-head matrix with the upgraded immutable action pins,
-  retained binary SBOMs, sequential writer-sink API, and row-delivery API.
+- Manually dispatch and complete an exact-candidate Linux/macOS/Windows matrix
+  with the upgraded immutable action pins, retained binary SBOMs, sequential
+  writer-sink API, and row-delivery API; routine pushes intentionally remain
+  local-only until the hosted-runner budget policy is revisited.
 - Repeat the long campaign on the exact release candidate and preserve/promote
   any minimized regressions; the first retained campaign is complete.
 - Enable a private vulnerability-reporting channel before publication.
