@@ -23,6 +23,8 @@ open; it does not turn historical evidence into exact-candidate evidence.
 - Linux, macOS, and Windows Release builds in CI.
 - Installed-package consumer configured only against the installed CMake
   package, not source-tree headers.
+- The maintained Linux production-dependency gate builds each static and shared
+  library twice in distinct build directories and requires byte identity.
 - Static library is the default; shared-library builds use explicit public
   symbol import/export annotations, hidden non-public symbols on supported
   compilers, and the same installed-package consumer.

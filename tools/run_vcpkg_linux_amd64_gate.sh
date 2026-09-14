@@ -81,6 +81,7 @@ run_variant() {
   relocated_install_directory="$build_root/install-$variant-relocated"
   relocated_consumer_directory="$build_root/consumer-$variant-relocated"
   subdirectory_consumer_directory="$build_root/subdirectory-consumer-$variant"
+  reproduction_directory="$build_root/reproduction-$variant"
 
   cmake -S "$repository_root" -B "$build_directory" \
     -G Ninja \
@@ -128,6 +129,32 @@ run_variant() {
 
   test -s "$build_directory/binary-dependencies.spdx.json"
   test -s "$install_directory/share/mmxisf/sbom/binary-dependencies.spdx.json"
+
+  cmake -S "$repository_root" -B "$reproduction_directory" \
+    -G Ninja \
+    "-DCMAKE_TOOLCHAIN_FILE=$toolchain" \
+    "-DVCPKG_INSTALLED_DIR=$installed_directory" \
+    -DVCPKG_TARGET_TRIPLET=x64-linux \
+    -DMMXISF_ENFORCE_PRODUCTION_DEPENDENCY_BASELINE=ON \
+    -DMMXISF_BUILD_TESTS=OFF \
+    -DMMXISF_BUILD_TOOLS=OFF \
+    -DMMXISF_BUILD_EXAMPLES=OFF \
+    -DMMXISF_BUILD_VIEWER=OFF \
+    -DMMXISF_BUILD_DOCS=OFF \
+    -DMMXISF_INSTALL=OFF \
+    "-DBUILD_SHARED_LIBS=$shared" \
+    -DCMAKE_BUILD_TYPE=Release \
+    "-DCMAKE_CXX_FLAGS=$warning_flags"
+  cmake --build "$reproduction_directory" --target mmxisf \
+    --parallel "$parallel_jobs"
+  if [ "$shared" = ON ]; then
+    primary_library="$build_directory/libmmxisf.so"
+    reproduced_library="$reproduction_directory/libmmxisf.so"
+  else
+    primary_library="$build_directory/libmmxisf.a"
+    reproduced_library="$reproduction_directory/libmmxisf.a"
+  fi
+  cmake -E compare_files "$primary_library" "$reproduced_library"
 }
 
 export VCPKG_DISABLE_METRICS=1
