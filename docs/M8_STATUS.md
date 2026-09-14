@@ -46,9 +46,8 @@
 - A ThreadSanitizer suite is wired into the existing manual Linux fuzz job and
   the local quality gate. It exercises concurrent owning/row reads through one
   built-in file-backed Reader plus the existing concurrent same-destination
-  writer contract. The local AppleClang feasibility run passed 8/8 before this
-  gate was committed; exact-commit local and Linux candidate evidence remains
-  to be recorded.
+  writer contract. The exact-commit local AppleClang run passes; Linux candidate
+  evidence remains to be recorded when the manual matrix is dispatched.
 - A separate manual candidate workflow runs a 15-minute ASan/UBSan libFuzzer
   campaign with explicit input/time/RSS bounds, retains its evolved corpus, and
   preserves crash inputs longer for minimization and regression promotion.
@@ -66,6 +65,15 @@
 
 ## Evidence available now
 
+- Exact commit `88f12a7611c4897e82238b734648b32306d2b74d` passed the complete
+  maintained local macOS gate: warning-as-error static/shared suites 8/8 each,
+  installed-package consumers 1/1 each, ASan/UBSan 8/8 plus the deterministic
+  20,000-case mutation smoke, ThreadSanitizer 8/8, generated API documentation,
+  and strict deep viewer-bundle signature verification. The reader contract
+  includes eight threads performing 256 owning reads and 256 bounded row reads
+  through one file-backed `Reader`; the writer contract retains sixteen
+  simultaneous attempts at one no-overwrite destination. No sanitizer finding
+  occurred. This is macOS arm64 evidence, not Linux/Windows substitution.
 - Exact commit `a42f46fc6ab48d3bfc42afe84a5eb5fffd4ef7fa`, which switched
   routine CI to manual dispatch, passed the local macOS static and shared
   8/8 suites, both installed-package consumers (1/1 each), the ASan/UBSan
