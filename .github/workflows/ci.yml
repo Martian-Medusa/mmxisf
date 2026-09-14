@@ -293,13 +293,27 @@ jobs:
           $vcpkgRuntime = "${{ github.workspace }}\vcpkg_installed\x64-windows\bin"
           $env:PATH = "${{ github.workspace }}\subdirectory-consumer-shared\mmxisf-source\Release;$vcpkgRuntime;$env:PATH"
           ctest --test-dir subdirectory-consumer-shared -C Release --output-on-failure --timeout 30
+      - name: Checkout the current qualification harness for an older source ref
+        if: inputs.windows_source_ref != ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+          path: .qualification-harness
+          sparse-checkout: tools/run_vcpkg_windows_amd64_gate.ps1
+          sparse-checkout-cone-mode: false
       - name: Run warnings-as-errors and reproducibility gate
         shell: pwsh
-        run: >-
-          tools/run_vcpkg_windows_amd64_gate.ps1
-          -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT
-          -BuildRoot "${{ github.workspace }}\build-vcpkg-windows-amd64"
-          -ParallelJobs 2
+        run: |
+          $gateScript = "tools/run_vcpkg_windows_amd64_gate.ps1"
+          if ("${{ inputs.windows_source_ref }}" -ne "") {
+            $gateScript = ".qualification-harness/tools/run_vcpkg_windows_amd64_gate.ps1"
+          }
+          & $gateScript `
+            -SourceRoot "${{ github.workspace }}" `
+            -VcpkgRoot $env:VCPKG_INSTALLATION_ROOT `
+            -BuildRoot "${{ github.workspace }}\build-vcpkg-windows-amd64" `
+            -ParallelJobs 2
       - name: Record native Windows toolchain and performance checkpoint
         shell: pwsh
         run: |

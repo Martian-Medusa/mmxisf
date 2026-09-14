@@ -33,9 +33,10 @@ uses the public project/package name `mmxisf`, CMake target
 `mmxisf::mmxisf`, and C++ namespace `mmxisf`. The final public repository name
 is `mmxisf`.
 
-Contributions must follow [`CONTRIBUTING.md`](CONTRIBUTING.md); security reports
-follow [`SECURITY.md`](SECURITY.md). The fail-closed candidate, publication,
-and rollback checklist is in
+Contributions must follow [`CONTRIBUTING.md`](CONTRIBUTING.md) and the
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md); security reports follow
+[`SECURITY.md`](SECURITY.md). The fail-closed candidate, publication, and
+rollback checklist is in
 [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md).
 
 ## Intended scope
@@ -287,9 +288,10 @@ consumers under 64-bit Wine, validates DLL exports and SBOMs, and compares
 independent rebuilds byte-for-byte. This gate does not replace the native MSVC
 candidate run required for a Windows support claim.
 
-On a native Windows amd64 host with Visual Studio 2022 and a dedicated,
-bootstrapped vcpkg checkout at the manifest baseline, run the corresponding
-MSVC gate from PowerShell:
+On a native Windows amd64 host with a supported Visual Studio C++ toolchain and
+a dedicated, bootstrapped vcpkg checkout at the manifest baseline, run the
+corresponding MSVC gate from PowerShell. CMake selects the current default
+Visual Studio generator; pass `-Generator` to pin one explicitly:
 
 ```powershell
 .\tools\run_vcpkg_windows_amd64_gate.ps1 -VcpkgRoot C:\src\vcpkg

@@ -4,6 +4,8 @@
 param(
   [string]$VcpkgRoot = $env:VCPKG_ROOT,
   [string]$BuildRoot = "",
+  [string]$SourceRoot = "",
+  [string]$Generator = "",
   [ValidateRange(1, 64)]
   [int]$ParallelJobs = 2
 )
@@ -75,7 +77,12 @@ if ($env:OS -ne "Windows_NT" -or
 }
 
 $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repositoryRoot = (Resolve-Path (Join-Path $scriptDirectory "..")).Path
+if ([string]::IsNullOrWhiteSpace($SourceRoot)) {
+  $repositoryRoot = (Resolve-Path (Join-Path $scriptDirectory "..")).Path
+}
+else {
+  $repositoryRoot = (Resolve-Path $SourceRoot).Path
+}
 if ([string]::IsNullOrWhiteSpace($VcpkgRoot)) {
   throw "Pass -VcpkgRoot or set VCPKG_ROOT to a dedicated vcpkg checkout"
 }
@@ -116,7 +123,6 @@ if (Test-Path -LiteralPath $BuildRoot) {
 $installedDirectory = Join-Path $BuildRoot "vcpkg_installed"
 $vcpkgRuntime = Join-Path $installedDirectory "x64-windows\bin"
 $warningFlags = "/EHsc /W4 /WX /permissive- /Zc:__cplusplus"
-$generator = "Visual Studio 17 2022"
 $env:VCPKG_DISABLE_METRICS = "1"
 $env:VCPKG_ROOT = $VcpkgRoot
 
@@ -132,7 +138,6 @@ function Invoke-MmxisfConfigure {
   $arguments = @(
     "-S", $Source,
     "-B", $Binary,
-    "-G", $generator,
     "-A", "x64",
     "-DCMAKE_TOOLCHAIN_FILE=$toolchain",
     "-DVCPKG_TARGET_TRIPLET=x64-windows",
@@ -140,7 +145,11 @@ function Invoke-MmxisfConfigure {
     "-DCMAKE_CXX_FLAGS=$warningFlags",
     "-DCMAKE_STATIC_LINKER_FLAGS=/Brepro",
     "-DCMAKE_SHARED_LINKER_FLAGS=/Brepro"
-  ) + $ExtraArguments
+  )
+  if (-not [string]::IsNullOrWhiteSpace($Generator)) {
+    $arguments = @("-G", $Generator) + $arguments
+  }
+  $arguments += $ExtraArguments
   Invoke-MmxisfCommand "cmake.exe" $arguments
 }
 

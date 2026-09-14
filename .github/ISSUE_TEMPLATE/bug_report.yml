@@ -1,0 +1,70 @@
+name: Bug report
+description: Report a reproducible defect in the standalone mmxisf library
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report suspected vulnerabilities or upload proprietary XISF files here. Follow `SECURITY.md` for a private report.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The exact mmxisf tag or commit that was tested.
+      placeholder: v0.1.0-rc.1 or a full commit hash
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux amd64
+        - Linux arm64
+        - macOS arm64
+        - macOS amd64
+        - Windows amd64
+        - Windows arm64
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Compiler and build configuration
+      placeholder: MSVC 19.xx, CMake 4.x, Release, shared library
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the observed result and the expected result.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest safe reproducer, including relevant ReaderOptions or WriterOptions limits.
+      placeholder: Steps, code, or a link to a redistributable fixture
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Add the structured mmxisf error, test output, and sanitizer report when available.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I confirmed that this is not a security vulnerability.
+          required: true
+        - label: I have permission to share every attached fixture and removed sensitive metadata.
+          required: true
+

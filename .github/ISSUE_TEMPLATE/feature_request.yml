@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a focused addition to the standalone mmxisf library
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        mmxisf is a standalone C++ library. Viewer and product-specific requests must not introduce Qt, PCL, PixInsight, or PFI dependencies into the core.
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: Explain the consumer problem and why the existing public API is insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe inputs, outputs, limits, errors, and compatibility expectations.
+    validations:
+      required: true
+  - type: textarea
+    id: specification
+    attributes:
+      label: XISF specification basis
+      description: Cite the public XISF specification section or explain why this is a library API concern.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include application-side solutions that would keep the core API smaller.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope checks
+      options:
+        - label: This proposal preserves the clean-room boundary in CONTRIBUTING.md.
+          required: true
+        - label: I understand that public API changes require an ADR and a pre-1.0 compatibility statement.
+          required: true
+
