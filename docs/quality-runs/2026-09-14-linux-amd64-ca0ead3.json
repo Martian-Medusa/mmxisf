@@ -1,0 +1,136 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-14T16:18:29Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "ca0ead3c0165257b874a6eb3f65e2f4fea04b261",
+  "sourceState": "DETERMINISTIC_EXTRACTED_ARCHIVE",
+  "publicationAuthorized": false,
+  "candidateFrozen": false,
+  "source": {
+    "archive": "mmxisf-0.1.0-source-ca0ead3c0165.tar.gz",
+    "archiveSizeBytes": 329621,
+    "archiveSha256": "fa7c154c00f9b5599135ee5b09c98a7b3921151652786116a086537d085a4eed",
+    "candidateManifestSchema": "mmxisf.source-candidate/1.1.0",
+    "candidateManifestSizeBytes": 632,
+    "candidateManifestSha256": "a0926dfb5e466cefc016884c93025736c35a1932f3af18a7e4d82c3371cb7108",
+    "supportProfileState": "PREPARED",
+    "supportProfileCandidateRef": "",
+    "supportProfileSha256": "50fb3357af577752b52347e978b9a7497c19e02252252ada23bed246effbdbe4",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "status": "PREPARED_NOT_PUBLISHED",
+    "gitArchiveByteIdentity": "PASS_LOCAL"
+  },
+  "host": {
+    "name": "mllse",
+    "operatingSystem": "Ubuntu Linux 6.8.0-139-generic",
+    "architecture": "x86_64",
+    "processor": "AMD Ryzen 5 5500U with Radeon Graphics",
+    "logicalCpuCount": 12
+  },
+  "buildEnvironment": {
+    "containerImageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "containerImageSizeBytes": 967837114,
+    "baseImage": "ubuntu@sha256:224a1869083a311ef3f13648a154ba79832fbef6364d31493642ca03082da254",
+    "compiler": "GCC 13.3.0",
+    "cmake": "3.28.3",
+    "languageStandard": "C++20",
+    "warningFlags": "-Wall -Wextra -Wpedantic -Werror -Wno-missing-field-initializers",
+    "vcpkgCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "vcpkgManifestSha256": "60a320dbbb654e3bc526c9232ead03746894ca9eb255e790619d5c81992c671d",
+    "dependencies": {
+      "Expat": "2.8.4",
+      "zlib": "1.3.2#2",
+      "LZ4": "1.10.0",
+      "Zstandard": "1.5.7",
+      "OpenSSL": "3.6.4"
+    }
+  },
+  "results": {
+    "staticWarningsAsErrors": "PASS_18_OF_18",
+    "sharedWarningsAsErrors": "PASS_19_OF_19",
+    "sourceCandidateContract": "PASS_POSITIVE_AND_5_MUTATIONS_STATIC_SHARED",
+    "publicApiBaseline": "PASS_9_HEADERS_AND_4_MUTATIONS_STATIC_SHARED",
+    "installedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "relocatedStaticConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_AND_API_BASELINE",
+    "installedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "relocatedSharedConsumer": "PASS_2_OF_2_WITH_PUBLIC_EXAMPLES_API_BASELINE_AND_DEPENDENCY_DISCOVERY_DISABLED",
+    "embeddedStaticConsumer": "PASS_1_OF_1",
+    "embeddedSharedConsumer": "PASS_1_OF_1",
+    "embeddedInstallPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "embeddedCtestPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "embeddedExampleTargetPollution": "PASS_NONE_STATIC_AND_SHARED",
+    "installedPublicHeadersSelfContained": "PASS_9_OF_9_STATIC_AND_SHARED",
+    "embeddedPublicHeadersSelfContained": "PASS_9_OF_9_STATIC_AND_SHARED",
+    "preOnePackageVersionContract": "PASS",
+    "supportProfileContract": "PASS_SCHEMA_1_1_PREPARED_UNFROZEN",
+    "productionDependencyBaseline": "PASS",
+    "generatedApiDocumentation": "PASS",
+    "viewerBuilt": false
+  },
+  "publicApiBoundary": {
+    "baselineSchema": "mmxisf.public-api-baseline/1.0.0",
+    "baselineSha256": "b1af58f9c4053c55f0fb3cb68af00f0628abe73cdea12056019ba04bd38a2199",
+    "auditedCommit": "85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f",
+    "headerCount": 9,
+    "currentHeadersMatchAuditedBytes": true,
+    "installedStaticBaselineMatch": true,
+    "installedSharedBaselineMatch": true,
+    "relocatedPackageValidation": "PASS_STATIC_SHARED",
+    "abiPolicy": "NO_ABI_PROMISE_BEFORE_1.0"
+  },
+  "packageBoundary": {
+    "topLevelInstallEnabledByDefault": true,
+    "embeddedInstallEnabledByDefault": false,
+    "embeddedExamplesEnabledByDefault": false,
+    "embeddedInstallProbeFiles": 0,
+    "staticConfigFindsPrivateLinkDependencies": true,
+    "sharedConfigFindsPrivateBuildDependencies": false,
+    "sharedPublicDependencyTargets": 0
+  },
+  "sharedLibraryContract": {
+    "definedDynamicExports": 39,
+    "mmxisfApiExports": 39,
+    "unexpectedExports": 0,
+    "directRuntimeDependencies": [
+      "libstdc++.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "productionDependenciesLinkedStaticallyAndHidden": true,
+    "validator": "mmxisf.shared-export-surface"
+  },
+  "artifacts": [
+    {
+      "path": "build-vcpkg-linux-amd64-ca0ead3/static/libmmxisf.a",
+      "sizeBytes": 807198,
+      "sha256": "da7201053357f4b964a28011a6d83182ada334970edc81768d0decdd9481a91c"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-ca0ead3/shared/libmmxisf.so.0.1.0",
+      "sizeBytes": 8569864,
+      "sha256": "fdb9f5d20769383c486d83d5558681da4dbff7c41c87bc1e4b93d4efcccfc478"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-ca0ead3/install-static/share/mmxisf/sbom/binary-dependencies.spdx.json",
+      "sha256": "7310823cdb03c6e949a549c09cf83175c0b1added8cbe3b24f88e3015086d92a"
+    },
+    {
+      "path": "build-vcpkg-linux-amd64-ca0ead3/install-shared/share/mmxisf/sbom/binary-dependencies.spdx.json",
+      "sha256": "009a6058b47c41bb5dcb172d64f1406cd5323fd370d67cee9b39e2a2bdcca56c"
+    },
+    {
+      "path": "docs/public-api-baseline-0.1.0.json",
+      "sha256": "b1af58f9c4053c55f0fb3cb68af00f0628abe73cdea12056019ba04bd38a2199"
+    }
+  ],
+  "limitations": [
+    "This is exact-development-commit Linux amd64 evidence, not a frozen release-candidate result.",
+    "Windows and exact-candidate macOS/Linux validation remain separate gates.",
+    "The header baseline prevents accidental source API drift but does not promise pre-1.0 ABI compatibility.",
+    "Sanitizer and long-fuzz results are retained in separate runs and were not repeated in this production-dependency replay.",
+    "The optional viewer was excluded and does not contribute to standalone library readiness."
+  ],
+  "retainedEvidence": {
+    "remoteRoot": "/home/matt/mmxisf-gates/ca0ead3c0165"
+  }
+}

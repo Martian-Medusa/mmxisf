@@ -89,6 +89,19 @@ open; it does not turn historical evidence into exact-candidate evidence.
   no publication is authorized.
 
 - Exact development commit
+  `ca0ead3c0165257b874a6eb3f65e2f4fea04b261` adds a machine-enforced
+  public-header baseline for the audited 0.1 API. Its deterministic
+  329,621-byte source archive (SHA-256
+  `fa7c154c00f9b5599135ee5b09c98a7b3921151652786116a086537d085a4eed`)
+  passed commit/archive verification and the extracted Linux production gate:
+  static 18/18, shared 19/19, direct and relocated package consumers 2/2, and
+  embedded consumers 1/1 for both linkage forms. All nine public headers match
+  their audited hashes; four mutation cases fail closed, and both installed
+  linkage variants export and revalidate the same baseline. Full evidence is
+  retained in `docs/quality-runs/2026-09-14-linux-amd64-ca0ead3.json`. This is
+  still unpublished, unfrozen library evidence and not an ABI promise.
+
+- Exact development commit
   `a0bb9a6fe794d9074eb3d163e66b9b8e7152f9f2` adds an independent,
   fail-closed source-candidate verifier. Its positive contract and five
   mutations cover publication authority, expected commit, archive name,
