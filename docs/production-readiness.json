@@ -89,10 +89,10 @@
     },
     {
       "id": "pfi.product-input-wiring",
-      "status": "LIMITED",
+      "status": "PASS",
       "requiredFor": ["pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "PFI commit 8c3dcb8135455d2fcf4bc0ad4d34fbab5cb7fb4f records a fresh pinned-static macOS-arm64 provider build against mmxisf 850811d5a1b076c4ac467bfc2d665b27620a707c: 19/19 mmxisf and 8/8 PFI tests passed, the dependency SBOM and provider identity are bound, and the native ExternalProcess/ImageWindow lifecycle passed for one Float32 RGB and one Float32 Gray source. Product configuration is unchanged; no UI preference, granted qualification, configured rollback, or operator acceptance exists, so the gate remains LIMITED."
+      "evidence": "docs/quality-runs/2026-09-14-pfi-product-routing-macos-arm64.json",
+      "note": "PFI commit 7c63705e757ad31c63b006912d1b043167e91e0c adds a versioned host-default product route whose provider path is external while exact qualification, platform/architecture, byte size and SHA-256 are PFI-owned. Exact deterministic artifact aa11769eb84c3d0d639b48b58f823a3b7cae9d9d2b6e7b2fbef0cf83564a8598 completed configured mmxisf metadata preflight and Batch analysis for the retained RGB and Gray Float32 sources; both final results retained explicit mmxisf pixel/metadata provenance and matched prior detector/fitter summaries. This closes the bounded non-interactive product-wiring gate. The separate dialog interaction, operator acceptance, rollback-operator, distribution and platform gates remain open."
     },
     {
       "id": "pfi.detection-fitting-scientific-parity",

@@ -1,0 +1,104 @@
+{
+  "schemaVersion": "mmxisf-pfi-product-routing/1.0.0",
+  "status": "PASS_WITH_LIMITATIONS",
+  "observedAt": "2026-09-14T21:54:00+02:00",
+  "platform": {
+    "program": "PixInsight Core 1.9.4 (arm64)",
+    "version": "1.9.4.0",
+    "os": "macOS",
+    "engine": "PJSR V8",
+    "execution": "DISPOSABLE_CLI_AUTOMATION_NO_STARTUP_SCRIPTS_FORCE_EXIT",
+    "computerUse": "DISABLED"
+  },
+  "libraryIdentity": {
+    "providerBuildCommit": "850811d5a1b076c4ac467bfc2d665b27620a707c",
+    "currentCommitAtAudit": "fe8f8ed6db725d8d0d19d98c6c50bf083c6b3173",
+    "version": "0.1.0"
+  },
+  "pfiIdentity": {
+    "routingImplementationCommit": "7c63705e757ad31c63b006912d1b043167e91e0c",
+    "evidenceCommit": "67bb80c52c63b62c5034cc76270ff9c3005bd163",
+    "deterministicBuildSha256": "aa11769eb84c3d0d639b48b58f823a3b7cae9d9d2b6e7b2fbef0cf83564a8598",
+    "trackedEvidence": {
+      "path": "docs/cpp/mmxisf-product-routing-batch-native-macos-arm64.json",
+      "sizeBytes": 4010,
+      "sha256": "e89f376917937c1109a2c7c0c6b29b6ad82beac4f0cf8100ef1582474d599e91"
+    },
+    "nativeHarnessSha256": "d9bc7eb5c3c53f81a1f102ab5301648f30161bae32ad04d673bd779b30828076",
+    "rawEvidenceSha256": "51b8997ad6986545fb90e7c2d0fc56e58eb321f7509e776757232afe8fe1636c"
+  },
+  "provider": {
+    "status": "LOCAL_ADHOC_SIGNED_NOT_PUBLISHED",
+    "qualificationSchema": "pfi.mmxisf-provider-qualification/1.0.0",
+    "platform": "macOS",
+    "architectureMarker": "(arm64)",
+    "sizeBytes": 5705392,
+    "sha256": "90e5a167c0de68c4c8fa7289a77bda463f54ce3734bdf1c39b5e159d9cac6aba",
+    "pathSuppliedExternally": true,
+    "hashAndSizeOwnedByProduct": true
+  },
+  "routing": {
+    "schemaVersion": "pfi.xisf-input-routing/1.0.0",
+    "default": "pixinsight_host",
+    "selected": "mmxisf",
+    "explicitAuthorization": true,
+    "absolutePathRequired": true,
+    "providerSizeVerifiedBeforeUse": true,
+    "providerHashVerifiedBeforeExecution": true,
+    "automaticFallback": false
+  },
+  "batch": {
+    "metadataPreflight": "PASS",
+    "analysis": "PASS",
+    "completedRecords": 2,
+    "failedRecords": 0,
+    "frameResultInputBackend": "mmxisf_external_float32",
+    "frameResultMetadataBackend": "mmxisf_external_metadata"
+  },
+  "records": [
+    {
+      "profile": "PRIVATE_FLOAT32_RGB_5983X3911",
+      "status": "COMPLETE",
+      "sourceSha256": "c1ab87d7dc71bd1c69f361ddd67d1279f37ebbf7beacad43db941f70de286880",
+      "detectedStarCount": 44519,
+      "fittedStarCount": 43539,
+      "acceptedStarCount": 39504,
+      "rejectedStarCount": 4035,
+      "medianFwhmPixels": 1.5572875097234122,
+      "fwhmMadPixels": 0.22170256654835763
+    },
+    {
+      "profile": "PRIVATE_FLOAT32_GRAY_6217X4150",
+      "status": "COMPLETE",
+      "sourceSha256": "236b958cc97dc07e690880e326feec610392506baf2221fcd61ac8a25ab093f3",
+      "detectedStarCount": 840,
+      "fittedStarCount": 565,
+      "acceptedStarCount": 490,
+      "rejectedStarCount": 75,
+      "medianFwhmPixels": 1.0173370638454615,
+      "fwhmMadPixels": 0.12523162044942998
+    }
+  ],
+  "independentReview": {
+    "status": "PASS_WITH_LIMITATIONS",
+    "report": "/Users/matt/MartianMedusa/software/PFI-agent-reports/2026-09-14/2026-09-14T21-57-59+0200_mmxisf-batch-evidence-review/report.json",
+    "rawEvidenceHashMatch": true,
+    "harnessHashMatch": true,
+    "retainedCountsFwhmMatch": true
+  },
+  "authority": {
+    "pfiProductInputWiring": "PASS_FOR_CONFIGURED_NON_INTERACTIVE_MACOS_ARM64_SCOPE",
+    "nativeRollback": "PASS_NON_INTERACTIVE_CONFIGURATION_ONLY",
+    "dialogButtonInteraction": "NOT_ASSESSED",
+    "operatorAcceptance": "NOT_ASSESSED",
+    "productionDistribution": "NOT_ESTABLISHED",
+    "physicalTruthOrAccuracy": "NOT_ASSESSED",
+    "standaloneCandidateState": "UNFROZEN"
+  },
+  "limitations": [
+    "The production routing and Batch orchestration functions ran from an exact deterministic PFI artifact, but the Batch dialog button was not clicked.",
+    "Evidence covers one private Float32 RGB and one private Float32 Gray source on PixInsight 1.9.4 arm64 macOS.",
+    "The provider is ad-hoc signed and unpublished; notarized distribution, operator acceptance, native Windows/MSVC and frozen-candidate gates remain open.",
+    "Non-interactive rollback constructed no provider, but the separate operator rollback exercise is not satisfied."
+  ]
+}

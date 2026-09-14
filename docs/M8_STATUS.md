@@ -3,7 +3,7 @@
 - Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
-  PFI_PRODUCT_ROUTER_FOUNDATION_LIMITED;
+  PFI_PRODUCT_ROUTING_PASS_BOUNDED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
   PIXINSIGHT_WRITER_PROPERTIES_PASS;
@@ -370,6 +370,22 @@ open; it does not turn historical evidence into exact-candidate evidence.
   wiring remains `LIMITED`; configuration, qualification, rollback and operator
   acceptance remain open. Exact sanitized evidence is retained in
   `docs/quality-runs/2026-09-14-pfi-provider-native-macos-arm64.json`.
+- PFI routing commit `7c63705e757ad31c63b006912d1b043167e91e0c`
+  then implemented a versioned, host-default configuration whose provider path
+  is external but qualification, platform/architecture, byte size and SHA-256
+  are product-owned. Exact deterministic artifact
+  `aa11769eb84c3d0d639b48b58f823a3b7cae9d9d2b6e7b2fbef0cf83564a8598`
+  ran without its UI entry point in disposable PixInsight 1.9.4 arm64. The
+  configured production backend completed metadata preflight and Batch analysis
+  for both retained Float32 sources; both results were `COMPLETE`, preserved
+  explicit mmxisf pixel/metadata provenance, and exactly matched the earlier
+  detector/fitter count and FWHM summaries. Independent evidence review matched
+  the raw result and harness hashes. This promotes
+  `pfi.product-input-wiring` to `PASS` for the bounded non-interactive macOS-arm64
+  scope. The Batch button, native operator acceptance, operator rollback,
+  distribution/notarization and other platforms remain separate open gates.
+  Sanitized evidence is retained in
+  `docs/quality-runs/2026-09-14-pfi-product-routing-macos-arm64.json`.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The
