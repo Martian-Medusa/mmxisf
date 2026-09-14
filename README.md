@@ -216,7 +216,10 @@ Each manually dispatched full CI revision uses
 byte identity, and retain one archive, its SHA-256, and a machine-readable
 identity manifest as a short-lived workflow artifact. The same script can
 prepare a local rehearsal from a clean checkout; it refuses to overwrite an
-output directory or package a ref other than the checked-out `HEAD`. Routine
+output directory or package a ref other than the checked-out `HEAD`. Its
+manifest binds the exact commit and archive bytes plus the tracked support-
+profile state, immutable RC ref when frozen, and profile hash. This avoids an
+impossible attempt to embed a commit's own hash inside itself. Routine
 development currently uses local static, shared, sanitizer, and package-
 consumer gates to conserve hosted runner minutes. The viewer has a separate
 opt-in gate and never contributes to the standalone-library result. This is

@@ -78,6 +78,16 @@ open; it does not turn historical evidence into exact-candidate evidence.
 
 ## Evidence available now
 
+- Candidate identity no longer relies on the impossible requirement that a
+  tracked file contain the hash of its own commit. Support-profile schema 1.1
+  and readiness schema 2 bind a future immutable `vX.Y.Z-rc.N` name, while the
+  deterministic source manifest independently binds the exact commit, archive
+  bytes, and support-profile hash. Profile and ledger state/ref pairs are
+  machine-checked; post-tag source preparation can require the ref to resolve
+  to checked-out `HEAD`. This is release-mechanism hardening only: the current
+  profile remains `PREPARED`, the ledger remains `UNFROZEN`, no tag exists, and
+  no publication is authorized.
+
 - Exact development commit
   `7a259188b91de0d92dddf0a79628e8ca7e40a148` produced a deterministic
   320,657-byte source archive with SHA-256

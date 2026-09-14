@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "candidate": {
     "state": "UNFROZEN",
-    "commit": ""
+    "ref": ""
   },
   "claims": {
     "standaloneBeta": "NOT_READY",
@@ -15,7 +15,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/support-profile-0.1.0.json",
-      "note": "The standalone reusable-C++-library profile now classifies all 74 conformance rows and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is PREPARED; the exact candidate commit and final dispositions have not been frozen."
+      "note": "The standalone reusable-C++-library profile now classifies all 74 conformance rows and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is PREPARED; final dispositions and the intended immutable candidate ref have not been frozen."
     },
     {
       "id": "quality.local-macos-arm64",

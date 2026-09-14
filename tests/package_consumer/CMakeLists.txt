@@ -82,7 +82,7 @@ endif()
 
 file(READ "${mmxisf_SUPPORT_PROFILE}" _support_profile)
 string(JSON _support_profile_schema GET "${_support_profile}" schema)
-if(NOT _support_profile_schema STREQUAL "mmxisf.support-profile/1.0.0")
+if(NOT _support_profile_schema STREQUAL "mmxisf.support-profile/1.1.0")
   message(FATAL_ERROR "Installed mmxisf support profile has wrong schema")
 endif()
 string(JSON _viewer_included GET "${_support_profile}"

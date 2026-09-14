@@ -60,12 +60,12 @@ string(REPLACE "      \"container.signature\",\n" "" _missing
 mmxisf_expect_profile_rejection(missing-row "${_missing}"
   "Missing support-profile row: container.signature")
 
-set(_frozen_without_commit "${_valid}")
+set(_frozen_without_ref "${_valid}")
 string(REPLACE "\"state\": \"PREPARED\"" "\"state\": \"FROZEN\""
-  _frozen_without_commit "${_frozen_without_commit}")
-mmxisf_expect_profile_rejection(frozen-without-commit
-  "${_frozen_without_commit}"
-  "FROZEN support profile requires a hexadecimal commit")
+  _frozen_without_ref "${_frozen_without_ref}")
+mmxisf_expect_profile_rejection(frozen-without-ref
+  "${_frozen_without_ref}"
+  "FROZEN support profile requires an immutable vX.Y.Z-rc.N ref")
 
 set(_missing_platform "${_valid}")
 string(REPLACE ",\n    \"Windows-amd64\"" "" _missing_platform

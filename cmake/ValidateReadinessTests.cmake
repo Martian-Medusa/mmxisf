@@ -40,11 +40,19 @@ mmxisf_expect_readiness_rejection(false-ready "${_false_ready}"
   "conflicts with derived NOT_READY")
 
 string(REPLACE
-  "\"state\": \"UNFROZEN\",\n    \"commit\": \"\""
-  "\"state\": \"FROZEN\",\n    \"commit\": \"short\""
-  _invalid_commit "${_valid_json}")
-mmxisf_expect_readiness_rejection(invalid-frozen-commit "${_invalid_commit}"
-  "requires a lowercase 40-hex commit")
+  "\"state\": \"UNFROZEN\",\n    \"ref\": \"\""
+  "\"state\": \"FROZEN\",\n    \"ref\": \"main\""
+  _invalid_ref "${_valid_json}")
+mmxisf_expect_readiness_rejection(invalid-frozen-ref "${_invalid_ref}"
+  "requires an immutable vX.Y.Z-rc.N ref")
+
+string(REPLACE
+  "\"state\": \"UNFROZEN\",\n    \"ref\": \"\""
+  "\"state\": \"FROZEN\",\n    \"ref\": \"v0.1.0-rc.1\""
+  _mismatched_profile "${_valid_json}")
+mmxisf_expect_readiness_rejection(mismatched-profile
+  "${_mismatched_profile}"
+  "candidate identity does not match the support profile")
 
 string(REPLACE
   "\"status\": \"NOT_TESTED\""

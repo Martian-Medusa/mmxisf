@@ -10,6 +10,12 @@ endif()
 if(NOT DEFINED MMXISF_CANDIDATE_REF)
   set(MMXISF_CANDIDATE_REF HEAD)
 endif()
+if(NOT DEFINED MMXISF_VERIFY_CANDIDATE_REF)
+  set(MMXISF_VERIFY_CANDIDATE_REF OFF)
+endif()
+if(NOT MMXISF_VERIFY_CANDIDATE_REF MATCHES "^(ON|OFF)$")
+  message(FATAL_ERROR "MMXISF_VERIFY_CANDIDATE_REF must be ON or OFF")
+endif()
 
 function(mmxisf_git output)
   execute_process(
@@ -51,6 +57,48 @@ if(NOT CMAKE_MATCH_1)
 endif()
 set(_version "${CMAKE_MATCH_1}")
 
+set(_support_profile_path
+  "${MMXISF_SOURCE_DIR}/docs/support-profile-0.1.0.json")
+file(READ "${_support_profile_path}" _support_profile)
+string(JSON _support_profile_schema ERROR_VARIABLE _support_profile_error GET
+  "${_support_profile}" schema)
+if(NOT _support_profile_error STREQUAL "NOTFOUND" OR
+   NOT _support_profile_schema STREQUAL "mmxisf.support-profile/1.1.0")
+  message(FATAL_ERROR "Invalid support-profile schema for source candidate")
+endif()
+string(JSON _support_profile_state GET "${_support_profile}" state)
+string(JSON _support_profile_candidate_ref GET
+  "${_support_profile}" candidateRef)
+if(_support_profile_state STREQUAL "PREPARED")
+  if(NOT _support_profile_candidate_ref STREQUAL "")
+    message(FATAL_ERROR
+      "A PREPARED support profile cannot bind a candidate ref")
+  endif()
+elseif(_support_profile_state STREQUAL "FROZEN")
+  if(NOT _support_profile_candidate_ref MATCHES
+     "^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[1-9][0-9]*$")
+    message(FATAL_ERROR
+      "A FROZEN support profile requires an immutable vX.Y.Z-rc.N ref")
+  endif()
+else()
+  message(FATAL_ERROR
+    "Invalid support-profile state for source candidate")
+endif()
+if(MMXISF_VERIFY_CANDIDATE_REF)
+  if(NOT _support_profile_state STREQUAL "FROZEN")
+    message(FATAL_ERROR
+      "Candidate-ref verification requires a FROZEN support profile")
+  endif()
+  mmxisf_git(_support_profile_commit rev-parse
+    "${_support_profile_candidate_ref}^{commit}")
+  if(NOT _support_profile_commit STREQUAL _head)
+    message(FATAL_ERROR
+      "Candidate ref ${_support_profile_candidate_ref} resolves to "
+      "${_support_profile_commit}, expected checked-out HEAD ${_head}")
+  endif()
+endif()
+file(SHA256 "${_support_profile_path}" _support_profile_sha256)
+
 file(MAKE_DIRECTORY "${MMXISF_OUTPUT_DIR}")
 set(_archive_name "mmxisf-${_version}-source-${_short_commit}.tar.gz")
 set(_archive "${MMXISF_OUTPUT_DIR}/${_archive_name}")
@@ -83,7 +131,7 @@ file(SIZE "${_archive}" _archive_size)
 file(WRITE "${_archive}.sha256" "${_archive_sha256}  ${_archive_name}\n")
 file(WRITE "${MMXISF_OUTPUT_DIR}/source-candidate.json"
   "{\n"
-  "  \"schemaVersion\": \"mmxisf.source-candidate/1.0.0\",\n"
+  "  \"schemaVersion\": \"mmxisf.source-candidate/1.1.0\",\n"
   "  \"status\": \"PREPARED_NOT_PUBLISHED\",\n"
   "  \"publicationAuthorized\": false,\n"
   "  \"version\": \"${_version}\",\n"
@@ -93,6 +141,11 @@ file(WRITE "${MMXISF_OUTPUT_DIR}/source-candidate.json"
   "    \"sizeBytes\": ${_archive_size},\n"
   "    \"sha256\": \"${_archive_sha256}\",\n"
   "    \"prefix\": \"${_prefix}\"\n"
+  "  },\n"
+  "  \"supportProfile\": {\n"
+  "    \"state\": \"${_support_profile_state}\",\n"
+  "    \"candidateRef\": \"${_support_profile_candidate_ref}\",\n"
+  "    \"sha256\": \"${_support_profile_sha256}\"\n"
   "  },\n"
   "  \"determinismCheck\": \"PASS_TWO_BYTE_IDENTICAL_ARCHIVES\"\n"
   "}\n")

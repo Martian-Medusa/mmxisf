@@ -6,18 +6,19 @@ the exact candidate commit.
 
 `docs/production-readiness.json` is the machine-checked gate ledger for the
 standalone beta, standalone production, and PFI production claims. CTest rejects
-unknown states, duplicate gates, missing evidence paths, an unfrozen candidate
-with a commit, a frozen candidate without an exact commit, or any `READY` claim
-while a required gate is not `PASS`. The ledger records evidence; it does not
-grant publication authority or replace the checks below.
+unknown states, duplicate gates, missing evidence paths, mismatched profile and
+ledger candidate identities, or any `READY` claim while a required gate is not
+`PASS`. The ledger records evidence; it does not grant publication authority or
+replace the checks below.
 
 ## Candidate gate
 
 1. Review `docs/support-profile-0.1.0.json`, which classifies every conformance
    row exactly once and excludes both the viewer and PFI adapter from the
    standalone library boundary. Change its state from `PREPARED` to `FROZEN`
-   and bind the exact candidate commit only after the claimed dispositions are
-   final. Every required row has a fixture or is explicitly marked
+   and bind the intended immutable `vX.Y.Z-rc.N` ref only after the claimed
+   dispositions are final. Set the readiness ledger to the matching state and
+   ref. Every required row has a fixture or is explicitly marked
    `LIMITED`/`NOT_TESTED`; synthetic and native evidence remain distinguishable.
 2. Require the full Linux/macOS/Windows static and shared installed-package CI
    matrix, sanitizer tests, deterministic mutation smoke, and coverage-guided
@@ -37,8 +38,16 @@ The CI and local rehearsal share `cmake/PrepareSourceCandidate.cmake`. It only
 packages a clean checked-out `HEAD`, refuses an existing output directory,
 requires two generated archives to be byte-identical, and writes the full
 commit, version, archive name/size/SHA-256, prefix, determinism result, and
-`publicationAuthorized: false` to `source-candidate.json`. Preparing this
-manifest never creates a tag or authorizes publication.
+support-profile state/ref/SHA-256 with `publicationAuthorized: false` to
+`source-candidate.json`. Preparing this manifest never creates a tag or
+authorizes publication. The non-self-referential identity rationale is recorded
+in `docs/decisions/0020-non-self-referential-candidate-identity.md`.
+
+For a frozen candidate, create the approved annotated `vX.Y.Z-rc.N` ref once at
+the exact tested commit, never move it, and repeat source preparation with
+`MMXISF_VERIFY_CANDIDATE_REF=ON`. Verify that the ref resolves to checked-out
+`HEAD` and that this is the same commit recorded by `source-candidate.json`.
+A failed candidate is superseded by a new commit and the next RC number.
 
 The preparation mechanism has a retained clean-room rehearsal on exact commit
 `75b1cc588254d01f801efe4de597a9b66a1347f1`: the archive was extracted outside

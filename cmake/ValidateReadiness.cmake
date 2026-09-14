@@ -23,23 +23,52 @@ function(mmxisf_readiness_json_get output)
 endfunction()
 
 mmxisf_readiness_json_get(_schema schemaVersion)
-if(NOT _schema STREQUAL "1")
-  message(FATAL_ERROR "Production readiness schemaVersion must be 1")
+if(NOT _schema STREQUAL "2")
+  message(FATAL_ERROR "Production readiness schemaVersion must be 2")
 endif()
 
 mmxisf_readiness_json_get(_candidate_state candidate state)
-mmxisf_readiness_json_get(_candidate_commit candidate commit)
+mmxisf_readiness_json_get(_candidate_ref candidate ref)
 if(NOT _candidate_state MATCHES "^(UNFROZEN|FROZEN)$")
   message(FATAL_ERROR "Candidate state must be UNFROZEN or FROZEN")
 endif()
 if(_candidate_state STREQUAL "FROZEN")
-  string(LENGTH "${_candidate_commit}" _candidate_commit_length)
-  if(NOT _candidate_commit_length EQUAL 40 OR
-     NOT _candidate_commit MATCHES "^[0-9a-f]+$")
-    message(FATAL_ERROR "A frozen candidate requires a lowercase 40-hex commit")
+  if(NOT _candidate_ref MATCHES
+     "^v[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[1-9][0-9]*$")
+    message(FATAL_ERROR
+      "A frozen candidate requires an immutable vX.Y.Z-rc.N ref")
   endif()
-elseif(NOT _candidate_commit STREQUAL "")
-  message(FATAL_ERROR "An unfrozen candidate must not claim a commit")
+elseif(NOT _candidate_ref STREQUAL "")
+  message(FATAL_ERROR "An unfrozen candidate must not claim a ref")
+endif()
+
+if(DEFINED MMXISF_SUPPORT_PROFILE_FILE)
+  set(_support_profile_path "${MMXISF_SUPPORT_PROFILE_FILE}")
+else()
+  set(_support_profile_path
+    "${MMXISF_SOURCE_DIR}/docs/support-profile-0.1.0.json")
+endif()
+if(NOT EXISTS "${_support_profile_path}")
+  message(FATAL_ERROR "Missing support profile: ${_support_profile_path}")
+endif()
+file(READ "${_support_profile_path}" _support_profile_json)
+string(JSON _profile_state ERROR_VARIABLE _profile_state_error GET
+  "${_support_profile_json}" state)
+string(JSON _profile_candidate_ref ERROR_VARIABLE _profile_ref_error GET
+  "${_support_profile_json}" candidateRef)
+if(NOT _profile_state_error STREQUAL "NOTFOUND" OR
+   NOT _profile_ref_error STREQUAL "NOTFOUND")
+  message(FATAL_ERROR "Invalid candidate identity in support profile")
+endif()
+if(_candidate_state STREQUAL "UNFROZEN")
+  set(_expected_profile_state PREPARED)
+else()
+  set(_expected_profile_state FROZEN)
+endif()
+if(NOT _profile_state STREQUAL _expected_profile_state OR
+   NOT _profile_candidate_ref STREQUAL _candidate_ref)
+  message(FATAL_ERROR
+    "Readiness candidate identity does not match the support profile")
 endif()
 
 set(_dimensions standaloneBeta standaloneProduction pfiProduction)
