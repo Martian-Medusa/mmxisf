@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "mmxisf-pixinsight-reader-parity/1.0.0",
+  "status": "PASS",
+  "observedAt": "2026-09-14T20:26:15+02:00",
+  "platform": {
+    "program": "PixInsight Core 1.9.4 (arm64)",
+    "version": "1.9.4.0",
+    "os": "macOS",
+    "engine": "PJSR V8",
+    "execution": "DISPOSABLE_CLI_AUTOMATION_NO_STARTUP_SCRIPTS_FORCE_EXIT"
+  },
+  "libraryIdentity": {
+    "probeBuildCommit": "aaefd9502e7bc108ec1aa985809476bc338119fb",
+    "currentCommitAtAudit": "19228bfc550479388b19dd002b614c306eff97e1",
+    "sourceEquivalence": "READER_AND_IMPLEMENTATION_SOURCES_UNCHANGED",
+    "differenceFromProbeCommit": "Only a public writer.hpp lifetime comment changed under include/ or src/; reader and implementation sources are byte-identical.",
+    "probeSizeBytes": 430144,
+    "probeSha256": "5463a495a887990a312dbe5d3399350e93d708ef938fec8b3fd13d6cfd1a8c94"
+  },
+  "pfiIdentity": {
+    "probeBuildCommit": "8960383c8be8bb42b47f3afa557f192d077d4e3b",
+    "keywordCompatibilityFixCommit": "392a08d625def764b35a86eb07c6bececfd016fd",
+    "nativeEvidenceCommit": "297977eaaf5b2ebfb2ae266b946e5257395baadd",
+    "hostCandidate": {
+      "generatorSha256": "0541793a8db6296bddbd0e7967a69e05f4ffce3bb124dfd722c26a8cc3cdd065",
+      "coordinateFramesSha256": "c3c1216cb9039fa80e7637a13258a670f89b398d714908d59a64710976073515",
+      "frameMetadataSha256": "cd85f9ae4d6bcc3ac50349e19913eed9b0d7d028b4fc879f7fdb980309511209",
+      "batchInputSha256": "9359a385813ce6c85f8130d26c6d4913acc3600b0501ce5ce107c25234fcd0bb"
+    }
+  },
+  "records": [
+    {
+      "profile": "PRIVATE_FLOAT32_RGB_5983X3911",
+      "sourceSizeBytes": 295282544,
+      "sourceSha256": "c1ab87d7dc71bd1c69f361ddd67d1279f37ebbf7beacad43db941f70de286880",
+      "status": "PASS",
+      "width": 5983,
+      "height": 3911,
+      "channels": 3,
+      "sampleFormat": "Float32",
+      "colorSpace": "RGB",
+      "decodedPixelSha256": "2bc119b96c12efa61dd64fc0d790e4705660508dcbff43d859c8e2b6bb8fb502",
+      "channelSha256": [
+        "13163b745fddeb7db2957b9f6621583c30d3f30045b5b1d2e00c6ab5b7854036",
+        "7a55f6ed89ac277c22615db4ca536c6abf1d8403eba464ce941daac07334297f",
+        "a9451c43e1808a3a33b08eb246380d04e61646d0d3628f9f0d86d62020c0cc22"
+      ],
+      "passedChecks": 13,
+      "totalChecks": 13
+    },
+    {
+      "profile": "PRIVATE_FLOAT32_GRAY_6217X4150",
+      "sourceSizeBytes": 103395232,
+      "sourceSha256": "236b958cc97dc07e690880e326feec610392506baf2221fcd61ac8a25ab093f3",
+      "status": "PASS",
+      "width": 6217,
+      "height": 4150,
+      "channels": 1,
+      "sampleFormat": "Float32",
+      "colorSpace": "Gray",
+      "decodedPixelSha256": "1d91351c58e777ef5ea474be8c6e785819dcc4b9b7cbc5cb555e29383962c229",
+      "channelSha256": [
+        "1d91351c58e777ef5ea474be8c6e785819dcc4b9b7cbc5cb555e29383962c229"
+      ],
+      "passedChecks": 13,
+      "totalChecks": 13
+    }
+  ],
+  "comparison": {
+    "status": "PASS",
+    "passedRecords": 2,
+    "totalRecords": 2,
+    "passedChecks": 26,
+    "totalChecks": 26,
+    "pixelParity": "EXACT_FOR_MATCHED_WORKING_SAMPLE_ENCODING",
+    "metadataParity": "EXACT_CURRENT_PFI_INTERPRETED_SEMANTICS",
+    "comparatorSha256": "b72cee68f266dbfc1873364b3fc40f4c706233060c0fe8105d90de686c95b09b"
+  },
+  "rawEvidence": {
+    "automationScript": {
+      "sizeBytes": 104964,
+      "sha256": "84bb7e1584f6d5d169b8310052bd5697051ce806774ab3aa2b2c47e44e66fdeb"
+    },
+    "hostCapture": {
+      "sizeBytes": 326430,
+      "sha256": "375964c27f328d317ac7d31e8ea9d83296fd45067286189dc36ed4a4c1cf809b"
+    },
+    "adapterCapture": {
+      "sizeBytes": 54743,
+      "sha256": "dd1134bd1df6d1148f968ba678896d2fb19b605711cae1d295672ca25196a2b7"
+    },
+    "parityReport": {
+      "sizeBytes": 34493,
+      "sha256": "3e5bb2e5980a9e7277baab74fee0a71bd1d86af9f1b41dc0055374f550c0b8f3"
+    },
+    "retention": "PFI_LOCAL_EXTERNAL_HANDOFF"
+  },
+  "authority": {
+    "readerGray": "PASS_FOR_ONE_EXACT_PRIVATE_SOURCE",
+    "readerRgb": "PASS_FOR_ONE_EXACT_PRIVATE_SOURCE",
+    "metadataSemantics": "PFI_OWNED_EXACT_INTERPRETATION",
+    "writerProperties": "NOT_ASSESSED",
+    "scientificParity": "NOT_ASSESSED",
+    "productEnablement": "NOT_AUTHORIZED"
+  },
+  "limitations": [
+    "This evidence qualifies the observed Float32 Gray and RGB reader profiles on PixInsight 1.9.4 arm64 macOS only.",
+    "Independent-producer tests cover broader sample/codec profiles, but native PixInsight parity is not generalized beyond these two exact sources.",
+    "Writer-property, provider-lifecycle, scientific, rollback, and operator gates remain separate."
+  ]
+}

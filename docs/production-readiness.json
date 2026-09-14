@@ -63,15 +63,15 @@
       "id": "interop.pixinsight-reader-gray",
       "status": "PASS",
       "requiredFor": ["pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "One native Float32 Gray astrometric source has exact host and adapter pixel plus interpreted-metadata parity."
+      "evidence": "docs/quality-runs/2026-09-14-pixinsight-reader-macos-arm64.json",
+      "note": "One native PixInsight 1.9.4 arm64 Float32 Gray astrometric source has exact host and adapter source, representation, full/channel pixel, and interpreted-metadata parity; the fail-closed comparison passed 13/13 checks."
     },
     {
       "id": "interop.pixinsight-reader-rgb",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["pfiProduction"],
-      "evidence": "docs/M8_STATUS.md",
-      "note": "A corrected source-bound PJSR capture requires a fresh manual RGB rerun."
+      "evidence": "docs/quality-runs/2026-09-14-pixinsight-reader-macos-arm64.json",
+      "note": "One native PixInsight 1.9.4 arm64 5983x3911 Float32 RGB source has exact host and adapter source, representation, full pixel, all three channel, and interpreted-metadata parity; the fail-closed comparison passed 13/13 checks. The probe reader/implementation sources are unchanged through the current audited commit."
     },
     {
       "id": "interop.pixinsight-writer-properties",

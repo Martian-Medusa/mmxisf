@@ -332,6 +332,23 @@ open; it does not turn historical evidence into exact-candidate evidence.
   completed both metadata-only and full-pixel transports. The generated
   PixInsight candidate remains **NOT_TESTED**, so product wiring stays
   `LIMITED` and qualification remains ungranted.
+- PFI commits `392a08d625def764b35a86eb07c6bececfd016fd` and
+  `297977eaaf5b2ebfb2ae266b946e5257395baadd` corrected the native
+  Matrix-like keyword-collection boundary and added a source-bound unattended
+  host gate. A new disposable PixInsight 1.9.4 arm64 run used no Computer Use
+  and preserved preferences by enabling automation mode and disabling startup
+  scripts. One 5983x3911 Float32 RGB source and one 6217x4150 Float32 Gray
+  source both matched the identified adapter probe exactly. The fail-closed
+  comparator reported 2/2 records and 26/26 checks PASS, including full and
+  per-channel pixel hashes plus current PFI interpreted metadata semantics.
+  The probe used `mmxisf` commit
+  `aaefd9502e7bc108ec1aa985809476bc338119fb`; comparison through current commit
+  `19228bfc550479388b19dd002b614c306eff97e1` shows no reader or implementation
+  source change (only a public writer-header comment changed under `include/`
+  or `src/`). Exact sanitized evidence is retained in
+  `docs/quality-runs/2026-09-14-pixinsight-reader-macos-arm64.json`. This closes
+  the Gray/RGB reader gates for those exact sources, not the separate native
+  provider-lifecycle, writer, scientific, rollback, or operator gates.
 - Exact commit `75b1cc588254d01f801efe4de597a9b66a1347f1` produced the
   deterministic unpublished source archive
   `mmxisf-0.1.0-source-75b1cc588254.tar.gz` twice byte-identically. The

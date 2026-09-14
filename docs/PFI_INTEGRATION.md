@@ -12,10 +12,13 @@ The current PFI foundation now includes a fail-closed host-default router, a
 source-built external Float32 Gray/RGB provider, standalone metadata-only
 preflight, and a self-contained local macOS-arm64 provider bundle. The preflight
 reads container metadata and only the bounded PFI WCS blocks, not image pixels.
-A generated manual PJSR gate is bound to the exact provider/source hashes. None
-of this grants qualification or changes the default product route: provider
-execution in PixInsight, corrected RGB host parity, detector/fitter parity, UI
-configuration, rollback exercise, and operator acceptance remain open.
+A generated PJSR gate is bound to the exact provider/source hashes. A disposable
+PixInsight 1.9.4 arm64 CLI run now establishes exact host/adapter source,
+representation, full/per-channel pixel, and interpreted-metadata parity for one
+private Float32 Gray and one private Float32 RGB source. None of this grants
+qualification or changes the default product route: provider lifecycle,
+detector/fitter parity, UI configuration, rollback exercise, and operator
+acceptance remain open.
 
 ## Adapter contract
 
@@ -95,7 +98,8 @@ Block-backed properties remain explicit. The current PFI adapter decodes the
 2x2 native astrometric matrix and two length-2 reference vectors, records every
 other omitted block with a reason, and never substitutes an empty value. Its
 synthetic JSON projection reaches the existing PFI frame/coordinate metadata
-semantics; current-host differential acceptance remains separate.
+semantics. The two-source current-host differential gate is PASS; broader
+corpus and product-workflow acceptance remain separate.
 
 Before any pixel read, the adapter checks `Document::images().size()`. A count
 other than one returns PFI's existing unsupported-multi-image result while the
