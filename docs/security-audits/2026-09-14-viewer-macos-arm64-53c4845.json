@@ -1,0 +1,79 @@
+{
+  "schema": "mmxisf.viewer-development-bundle/1.0.0",
+  "date": "2026-09-14",
+  "result": "PASS_LOCAL_ADHOC_NOT_NOTARIZED",
+  "publicationAuthorized": false,
+  "source": {
+    "commit": "53c4845857eaeed7bfd610c7f41a170862a633e1",
+    "trackedStateAtBuild": "CLEAN",
+    "version": "0.1.0"
+  },
+  "platform": {
+    "operatingSystem": "macOS 26.5.2 (25F84)",
+    "architecture": "arm64",
+    "compiler": "AppleClang 21.0.0.21000101",
+    "configuration": "Release",
+    "linkage": "static third-party dependencies"
+  },
+  "dependencyGraph": {
+    "source": "previously retained exact installed vcpkg graph",
+    "registryCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "productionFloor": "PASS",
+    "dependencies": [
+      {"name": "Expat", "version": "2.8.4"},
+      {"name": "zlib", "version": "1.3.2", "portVersion": 2},
+      {"name": "LZ4", "version": "1.10.0"},
+      {"name": "Zstandard", "version": "1.5.7"},
+      {"name": "OpenSSL", "version": "3.6.4"}
+    ]
+  },
+  "validation": {
+    "warningsAsErrorsBuild": "PASS",
+    "ctest": {"result": "PASS", "passed": 13, "total": 13},
+    "bundleResourceContract": "PASS",
+    "binarySbomContract": "PASS",
+    "deepStrictCodeSignature": "PASS_ADHOC",
+    "zipExtractionDeepStrictCodeSignature": "PASS_ADHOC",
+    "architecture": "PASS_ARM64",
+    "runtimeLinkage": "PASS_SYSTEM_ONLY",
+    "nativeViewerLaunch": "NOT_TESTED"
+  },
+  "application": {
+    "path": "/Users/matt/MartianMedusa/software/.codex-builds/mmxisf-viewer-20260914-53c4845/artifacts/mmXISF Viewer PoC.app",
+    "bundleIdentifier": "com.martianmedusa.mmxisf.viewer-poc",
+    "executableSizeBytes": 5698032,
+    "executableSha256": "f9221343c4abaa20ae52bd47314ec80f13df1d6b6e5ff860fc1ca35d3a58be33",
+    "codeDirectorySha256": "b5ed502c3514059c4ee0b491f81be497b71ad6db4f955c5ad4e20205a2e35265",
+    "signature": "adhoc",
+    "teamIdentifier": null,
+    "nonSystemRuntimeDependencies": []
+  },
+  "resources": [
+    {"name": "LICENSE", "sizeBytes": 11344, "sha256": "f765bd7f758a1d17c27e84124cd09fb316937e45147256adc886e2e3a40d2804"},
+    {"name": "NOTICE", "sizeBytes": 228, "sha256": "153ceabef55e788e45944bb22ce8641eacd49e1ad98b05b5e42823d3a5a13dbf"},
+    {"name": "SECURITY.md", "sizeBytes": 1717, "sha256": "edf2e5e310b20b3f041736d90b8029cacaedfbbdf9ca6f6ff0ea38e1045f7b29"},
+    {"name": "CONTRIBUTING.md", "sizeBytes": 4542, "sha256": "8fa7b612fcfab44e0a75a27b5821848e9190b675075aa9374b3cf4d338f43b44"},
+    {"name": "THIRD_PARTY_NOTICES.md", "sizeBytes": 5824, "sha256": "9135a6275632cfae79e8287e7e24b76a9aea143a1cee94372b9052b40a42271e"},
+    {"name": "binary-dependencies.spdx.json", "sizeBytes": 3059, "sha256": "8921e032c504c5bad3fc4662827c51ad726018f82d744d71fd8865abc11c9fbd"}
+  ],
+  "archive": {
+    "path": "/Users/matt/MartianMedusa/software/.codex-builds/mmxisf-viewer-20260914-53c4845/mmXISF-Viewer-PoC-0.1.0-macOS-arm64-53c4845.zip",
+    "sizeBytes": 2671596,
+    "sha256": "2c126034b3d64272474311c941924a1f21c41ab2f83ddc3db479f605d4c6288a",
+    "extractedExecutableSha256": "f9221343c4abaa20ae52bd47314ec80f13df1d6b6e5ff860fc1ca35d3a58be33",
+    "extractedBinarySbomSha256": "8921e032c504c5bad3fc4662827c51ad726018f82d744d71fd8865abc11c9fbd"
+  },
+  "testLog": {
+    "path": "/Users/matt/MartianMedusa/software/.codex-builds/mmxisf-viewer-20260914-53c4845/build/Testing/Temporary/LastTest.log",
+    "sizeBytes": 11708,
+    "sha256": "29c5145939974e30993f9f065ed1615abf24021d94bf0b35f7c6e35e20be9e51"
+  },
+  "limitations": [
+    "This is a local development bundle, not a frozen release-candidate artifact.",
+    "The application is ad-hoc signed, has no TeamIdentifier, and is not notarized.",
+    "Only macOS arm64 is built; no universal binary is claimed.",
+    "The dependency versions were revalidated from a retained exact installed graph, not rebuilt from a fresh vcpkg checkout in this gate.",
+    "The archive was verified after extraction, but no native launch or operator acceptance was performed because UI automation is excluded.",
+    "No tag, release, upload, publication, or production-readiness claim is authorized."
+  ]
+}

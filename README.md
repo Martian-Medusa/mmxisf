@@ -346,10 +346,14 @@ open "artifacts/mmXISF Viewer PoC.app"
 ```
 
 The optional AppKit target is macOS-only and does not enter the standalone
-library. The generated local bundle embeds Expat, LZ4, OpenSSL Crypto, zlib,
-and Zstandard when they resolve to non-system dynamic libraries. Its
-current preview scope is the first supported uncompressed, zlib-, LZ4-, or
-Zstandard-compressed local/embedded Gray/RGB block in Planar or Normal layout,
+library or its production-readiness claim. The generated local bundle embeds
+Expat, LZ4, OpenSSL Crypto, zlib, and Zstandard when they resolve to non-system
+dynamic libraries. Its sealed Resources directory includes the project license,
+notice, security and contribution policies, third-party notices, and the exact
+generated binary SPDX SBOM. A viewer-enabled test validates those resources,
+the SBOM, and the complete deep code signature. Its current preview scope is the
+first supported uncompressed, zlib-, LZ4-, or Zstandard-compressed
+local/embedded Gray/RGB block in Planar or Normal layout,
 with UInt8, UInt16, UInt32, Float32, or Float64 samples. The metadata inspector
 can still open a broader set of headers and displays inventoried extension
 elements/attributes, validated ancillary core objects, and ICC profile

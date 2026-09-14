@@ -75,6 +75,18 @@ in
 These add development evidence; they do not freeze a candidate or replace the
 final time-sensitive vulnerability and complete-toolchain review.
 
+The later viewer-only distribution rehearsal at exact clean source commit
+`53c4845857eaeed7bfd610c7f41a170862a633e1` embeds the exact binary SBOM,
+project license and notice, security/contribution policies, and third-party
+notices inside the sealed application. Its production dependency floor,
+warnings-as-errors build, 13/13 tests, resource contract, system-only runtime
+linkage, strict deep ad-hoc signature, ZIP extraction, and extracted signature
+all passed. Exact identities are retained in
+[`security-audits/2026-09-14-viewer-macos-arm64-53c4845.json`](security-audits/2026-09-14-viewer-macos-arm64-53c4845.json).
+The app remains a local arm64 development artifact: it is neither Developer ID
+signed nor notarized, and no publication is authorized. These are viewer-only
+distribution gates and do not block the reusable C++ library's readiness.
+
 1. Dependency versions are resolved by the target system or CI package manager.
    The generated binary SBOM provides exact provenance, but a cross-toolchain
    binary is not claimed to be reproducible from the source archive alone.

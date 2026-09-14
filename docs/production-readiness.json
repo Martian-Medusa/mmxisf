@@ -172,13 +172,6 @@
       "note": "No candidate source archive, final hashes, tag, or release assets have been approved."
     },
     {
-      "id": "distribution.viewer-signing-notarization",
-      "status": "NOT_TESTED",
-      "requiredFor": ["standaloneProduction"],
-      "evidence": "docs/SUPPLY_CHAIN_AUDIT.md",
-      "note": "The macOS viewer is a local ad-hoc-signed development artifact, not a notarized release bundle."
-    },
-    {
       "id": "pfi.native-operator-acceptance",
       "status": "NOT_TESTED",
       "requiredFor": ["pfiProduction"],

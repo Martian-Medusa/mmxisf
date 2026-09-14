@@ -342,6 +342,19 @@ open; it does not turn historical evidence into exact-candidate evidence.
   `docs/performance-runs/2026-09-14-linux-amd64-1489bc1.json`. This advances the
   supported-host review to **LIMITED**; the profile is unfrozen and Windows
   remains unmeasured, so no portable SLA or candidate claim is made.
+- Exact clean commit `53c4845857eaeed7bfd610c7f41a170862a633e1`
+  produced an updated macOS arm64 viewer using the retained production vcpkg
+  graph. The sealed app now includes `LICENSE`, `NOTICE`, `SECURITY.md`,
+  `CONTRIBUTING.md`, `THIRD_PARTY_NOTICES.md`, and its exact binary SPDX SBOM.
+  The warnings-as-errors build and 13/13 suite passed, including a new
+  fail-closed bundle-resource/SBOM/signature contract. The 2,671,596-byte ZIP
+  has SHA-256
+  `2c126034b3d64272474311c941924a1f21c41ab2f83ddc3db479f605d4c6288a`;
+  after extraction the deep signature and exact executable/SBOM hashes passed.
+  This materially hardens the requested runnable PoC, but it remains ad-hoc
+  signed, unnotarized, unlaunched in this gate, unpublished, and not a frozen
+  candidate. The viewer is an optional add-on; its signing or notarization does
+  not block the standalone C++ library's production-readiness claim.
 - Exact-head run
   [`34799336562`](https://github.com/Martian-Medusa/mmxisf/actions/runs/34799336562)
   created no runner or build steps for commit
