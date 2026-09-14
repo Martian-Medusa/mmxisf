@@ -25,6 +25,16 @@ coverage-guided local campaign additionally requires a Clang installation with
 its matching libFuzzer and sanitizer runtimes; never combine a successful local
 result with a Windows/Linux support claim.
 
+The versioned `tools/run_long_fuzz_campaign.sh` runner is shared by CI and
+direct compatible-host runs. It defaults to the declared 900-second, 1 MiB
+input, 10-second per-input, and 4 GiB RSS limits, refuses to overwrite prior
+evidence, builds with matching Clang ASan/UBSan/libFuzzer, prepares the complete
+versioned seed corpus, and retains the full log plus evolved corpus and crash
+directory. On a Docker-capable Linux amd64 host,
+`tools/run_linux_long_fuzz_docker.sh` applies the pinned Ubuntu image and LLVM
+symbolizer around the same runner. The viewer is explicitly disabled in both
+paths.
+
 ## Long campaign
 
 The `fuzz-long` workflow is intentionally manual. It runs one reader libFuzzer

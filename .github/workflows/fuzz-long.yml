@@ -20,39 +20,12 @@ jobs:
           persist-credentials: false
       - name: Install toolchain
         run: sudo apt-get update && sudo apt-get install -y clang libexpat1-dev liblz4-dev libssl-dev libzstd-dev zlib1g-dev
-      - name: Configure ASan and UBSan libFuzzer
+      - name: Build and run 15-minute coverage-guided campaign
         env:
-          CC: clang
-          CXX: clang++
-        run: >-
-          cmake -S . -B build-fuzz-long
-          -DMMXISF_BUILD_TESTS=OFF
-          -DMMXISF_BUILD_TOOLS=OFF
-          -DMMXISF_BUILD_FUZZER=ON
-          -DMMXISF_BUILD_FUZZ_SMOKE=OFF
-          -DCMAKE_BUILD_TYPE=Debug
-      - name: Build fuzz target
-        run: cmake --build build-fuzz-long --parallel
-      - name: Prepare versioned seed corpus
-        run: |
-          mkdir -p build-fuzz-long/corpus build-fuzz-long/artifacts
-          for seed in tests/fuzz_seed*.xisf.b64; do
-            base64 --decode "$seed" > "build-fuzz-long/corpus/$(basename "$seed" .b64)"
-          done
-          for seed in tests/interop/*.xisf.b64; do
-            base64 --decode "$seed" > "build-fuzz-long/corpus/interop-$(basename "$seed" .b64)"
-          done
-      - name: Run 15-minute coverage-guided campaign
-        run: >-
-          build-fuzz-long/mmxisf_fuzz_header
-          -max_total_time=900
-          -max_len=1048576
-          -timeout=10
-          -rss_limit_mb=4096
-          -print_final_stats=1
-          -dict=tests/fuzz_header.dict
-          -artifact_prefix=build-fuzz-long/artifacts/
-          build-fuzz-long/corpus
+          MMXISF_FUZZ_CC: clang
+          MMXISF_FUZZ_CXX: clang++
+          MMXISF_FUZZ_BUILD_JOBS: 2
+        run: tools/run_long_fuzz_campaign.sh
       - name: Retain minimized failure input
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
