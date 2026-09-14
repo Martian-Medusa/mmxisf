@@ -48,8 +48,11 @@ Every prepared package is independently checked by
 validator binds the expected commit and project version to the exact archive
 name, byte size, SHA-256, checksum-file contents, extraction prefix,
 determinism result, and current support-profile state/ref/hash. It rejects any
-manifest that claims publication authorization. Its positive and mutation
-contracts run in every test-enabled build.
+manifest that claims publication authorization. CI additionally enables
+`MMXISF_VERIFY_GIT_ARCHIVE=ON`, which reproduces the archive from the expected
+commit and requires byte identity instead of trusting a self-consistent
+manifest/hash pair. Its positive and mutation contracts run in every
+test-enabled build.
 
 For a frozen candidate, create the approved annotated `vX.Y.Z-rc.N` ref once at
 the exact tested commit, never move it, and repeat source preparation with

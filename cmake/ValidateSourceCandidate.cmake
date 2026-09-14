@@ -4,6 +4,12 @@ if(NOT DEFINED MMXISF_SOURCE_DIR OR NOT DEFINED MMXISF_CANDIDATE_DIR)
   message(FATAL_ERROR
     "MMXISF_SOURCE_DIR and MMXISF_CANDIDATE_DIR are required")
 endif()
+if(NOT DEFINED MMXISF_VERIFY_GIT_ARCHIVE)
+  set(MMXISF_VERIFY_GIT_ARCHIVE OFF)
+endif()
+if(NOT "${MMXISF_VERIFY_GIT_ARCHIVE}" MATCHES "^(ON|OFF)$")
+  message(FATAL_ERROR "MMXISF_VERIFY_GIT_ARCHIVE must be ON or OFF")
+endif()
 
 set(_manifest_path "${MMXISF_CANDIDATE_DIR}/source-candidate.json")
 if(NOT EXISTS "${_manifest_path}")
@@ -128,6 +134,51 @@ string(JSON _determinism GET "${_manifest}" determinismCheck)
 if(NOT _determinism STREQUAL "PASS_TWO_BYTE_IDENTICAL_ARCHIVES")
   message(FATAL_ERROR
     "Invalid source-candidate determinism result: ${_determinism}")
+endif()
+
+if(MMXISF_VERIFY_GIT_ARCHIVE)
+  execute_process(
+    COMMAND git rev-parse "${_commit}^{commit}"
+    WORKING_DIRECTORY "${MMXISF_SOURCE_DIR}"
+    RESULT_VARIABLE _git_commit_result
+    OUTPUT_VARIABLE _git_commit
+    ERROR_VARIABLE _git_commit_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(NOT _git_commit_result EQUAL 0 OR NOT _git_commit STREQUAL _commit)
+    message(FATAL_ERROR
+      "Expected commit is unavailable from the source Git repository: "
+      "${_git_commit_error}")
+  endif()
+  set(_git_archive
+    "${MMXISF_CANDIDATE_DIR}/.${_archive_name}.git-verification")
+  if(EXISTS "${_git_archive}")
+    message(FATAL_ERROR
+      "Refusing to overwrite Git archive verification path: ${_git_archive}")
+  endif()
+  execute_process(
+    COMMAND git archive --format=tar.gz "--prefix=${_expected_prefix}"
+      "--output=${_git_archive}" "${_commit}"
+    WORKING_DIRECTORY "${MMXISF_SOURCE_DIR}"
+    RESULT_VARIABLE _git_archive_result
+    ERROR_VARIABLE _git_archive_error
+  )
+  if(NOT _git_archive_result EQUAL 0)
+    file(REMOVE "${_git_archive}")
+    message(FATAL_ERROR
+      "Could not reproduce source candidate from Git: ${_git_archive_error}")
+  endif()
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E compare_files
+      "${_archive_path}" "${_git_archive}"
+    RESULT_VARIABLE _git_archive_compare_result
+  )
+  file(REMOVE "${_git_archive}")
+  if(NOT _git_archive_compare_result EQUAL 0)
+    message(FATAL_ERROR
+      "Source-candidate archive is not byte-identical to the expected Git "
+      "commit")
+  endif()
 endif()
 
 message(STATUS

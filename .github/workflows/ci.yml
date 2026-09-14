@@ -291,6 +291,7 @@ jobs:
           -DMMXISF_SOURCE_DIR=${{ github.workspace }}
           -DMMXISF_CANDIDATE_DIR=${{ github.workspace }}/dist/source-candidate
           -DMMXISF_EXPECTED_COMMIT=${{ github.sha }}
+          -DMMXISF_VERIFY_GIT_ARCHIVE=ON
           -P cmake/ValidateSourceCandidate.cmake
       - name: Upload source package, checksum, and identity manifest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
