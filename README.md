@@ -9,9 +9,15 @@ PFI, PixInsight, PCL, or Qt.
 > exact source passes macOS arm64 and Linux amd64 static/shared production
 > graphs, sanitizers, consumers, export checks, reproducibility, and a
 > 15-minute coverage-guided fuzz campaign. Windows-target MinGW/Wine passes as
-> compatibility evidence; native Windows amd64/MSVC, complete toolchain
-> security disposition, public security intake, and release-asset verification
-> remain open. The bounded PFI product route and two-source native PixInsight
+> compatibility evidence, and native Windows Server 2025 amd64/MSVC passes the
+> functional, packaging, dependency, SBOM, and export gates. The MSVC static
+> library's cross-directory byte identity remains a documented limitation; no
+> Windows binary or portable binary-reproducibility claim is published. The
+> public repository has private security reporting and hardened Actions
+> controls. The source-only prerelease is published and independently verified;
+> the machine-checked ledger reports standalone beta 17/17 and standalone
+> production 18/18 gates PASS within the frozen profile.
+> The bounded PFI product route and two-source native PixInsight
 > parity evidence pass separately; operator acceptance and rollback remain
 > open. Version `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and

@@ -4,23 +4,28 @@
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   SUPPORT_PROFILE_FROZEN_RC1;
-  EXACT_CANDIDATE_MACOS_LINUX_PASS_WINDOWS_TARGET_PASS_NATIVE_MSVC_PENDING;
+  EXACT_CANDIDATE_MACOS_LINUX_WINDOWS_MSVC_PASS;
   EXACT_CANDIDATE_LONG_FUZZ_PASS;
   EXACT_CANDIDATE_PUBLIC_API_REVIEW_PASS;
-  EXACT_CANDIDATE_DIRECT_DEPENDENCY_AUDIT_PASS_TOOLCHAIN_LIMITED;
+  EXACT_CANDIDATE_SOURCE_RELEASE_SECURITY_PASS;
+  PUBLIC_REPOSITORY_CONTROLS_PASS;
   PFI_PRODUCT_ROUTING_PASS_BOUNDED;
   PFI_SECURE_STATIC_PROVIDER_GATE_PASS;
   PFI_NATIVE_PROVIDER_SCIENTIFIC_ROUTE_PARITY_PASS;
   PIXINSIGHT_WRITER_PROPERTIES_PASS;
   ISOLATED_MACOS_DEPENDENCY_BASELINE_PASS;
   EXACT_HEAD_LINUX_PRODUCTION_GATE_PASS;
-  PUBLICATION_NOT_AUTHORIZED
+  SOURCE_ONLY_PRERELEASE_PUBLISHED_AND_VERIFIED;
+  STANDALONE_BETA_READY;
+  STANDALONE_PRODUCTION_READY
 - Started: 2026-09-14
-- Publication status: private repository; `v0.1.0-rc.1` candidate tag; no release
+- Publication status: public repository; immutable `v0.1.0-rc.1` candidate tag;
+  source-only prerelease published and independently verified
 
 The machine-checked `docs/production-readiness.json` ledger currently derives
-`NOT_READY` independently for standalone beta (13/17 gates PASS), standalone
-production (13/18), and PFI production (18/25). It prevents a documentation-
+`READY` independently for standalone beta (17/17 gates PASS) and standalone
+production (18/18), while PFI production remains `NOT_READY` (23/25). It
+prevents a documentation-
 only readiness claim while required candidate, interoperability, security,
 distribution, or product gates remain open; it does not turn historical
 evidence into exact-candidate evidence.
@@ -55,13 +60,15 @@ evidence into exact-candidate evidence.
   named PE export surface, and requires byte-identical repeated libraries. It
   is an inexpensive compatibility signal, not a substitute for native MSVC on
   a supported Windows host.
-- A viewer-free native Windows amd64 PowerShell gate now packages the complete
+- A viewer-free native Windows amd64 PowerShell gate packages the complete
   MSVC path into one fail-closed command: exact vcpkg-baseline verification,
   dependency floors, warnings-as-errors static/shared suites, direct and
   relocated installed consumers, embedded consumers, SBOM checks, MSVC DLL
-  export inspection, and distinct-build binary identity. Its parser has
-  positive, unexpected-export, and empty-export contracts on every host; the
-  native gate itself remains NOT_TESTED until a Windows amd64 host runs it.
+  export inspection, and distinct-build binary-identity measurement. Its parser
+  has positive, unexpected-export, and empty-export contracts on every host.
+  Exact RC1 native Windows Server 2025 amd64/MSVC execution passed the complete
+  functional gate; the non-identical repeated static `.lib` is retained as an
+  explicit non-blocking limitation for the source-only release.
 - Installed packages include Apache-2.0 `LICENSE`, `NOTICE`, `SECURITY.md`, and
   `THIRD_PARTY_NOTICES.md`.
 - A checked SPDX 2.3 source-dependency SBOM names all five direct libraries,
@@ -744,24 +751,34 @@ evidence into exact-candidate evidence.
   libraries. The exact candidate also passed the system-graph ASan/UBSan 19/19,
   20,000-mutation smoke, and ThreadSanitizer 19/19 suites on both hosts.
   Windows-target MinGW static 19/19 and shared 20/20 plus consumers, exports,
-  SBOMs, and reproducibility passed under Wine. Native Windows amd64/MSVC is
-  still NOT_TESTED, so the exact cross-platform gate is **LIMITED**, not PASS.
+  SBOMs, and reproducibility passed under Wine. Native Windows Server 2025
+  amd64/MSVC then passed static 18/18 and shared 19/19 plus direct/relocated
+  installed consumers, embedded consumers, dependency floors, binary SBOMs,
+  and the exact 39-symbol export surface. Repeated shared import and runtime
+  libraries were byte-identical; the repeated static `.lib` was not. Because
+  the release is source-only and makes no portable binary-reproducibility claim,
+  the functional cross-platform gate is **PASS** with that limitation recorded.
   Full evidence is retained in
-  `docs/quality-runs/2026-09-14-rc1-cross-platform.json`.
+  `docs/quality-runs/2026-09-14-rc1-cross-platform.json` and
+  `docs/quality-runs/2026-09-15-rc1-windows-amd64-msvc.json`.
 - The exact-candidate public API diff review is **PASS**. All nine installed
   public headers are byte-identical to the audited baseline; macOS, Linux, and
   MinGW shared builds retain exactly 39 allowed `mmxisf` exports; installed and
   relocated consumers pass; and the RC1 release notes state the pre-1.0
-  no-ABI-promise policy. The review is retained in
-  `docs/quality-runs/2026-09-14-rc1-public-api-review.json` and does not replace
-  the native Windows platform gate.
+  no-ABI-promise policy. Native MSVC independently passes the same 39-symbol
+  export contract. The review is retained in
+  `docs/quality-runs/2026-09-14-rc1-public-api-review.json`.
 - The six exact RC1 binary SBOMs bind Expat 2.8.4, zlib 1.3.2#2, LZ4 1.10.0,
   Zstandard 1.5.7, and OpenSSL 3.6.4. Their refreshed official-upstream review
   passes, including an API-scoped disposition for the open deprecated-unsafe-
-  LZ4 report. The complete compiler, SDK, linker, container-package, and native
-  MSVC audit remains incomplete, so
-  `docs/security-audits/2026-09-14-rc1-binary-advisory-review.json` is
-  deliberately **LIMITED** rather than a production PASS.
+  LZ4 report. The subsequent dated source-release review inventories the native
+  Windows build environment, disposes the reviewed DiaSymReader/PDB advisory as
+  outside the project and distributed dependency graph, and verifies the public
+  repository controls. Because the release ships only source, checksum,
+  manifest, and source SBOM, the release-scope security gate is **PASS** without
+  claiming that every build-host package is vulnerability-free. Evidence is in
+  `docs/security-audits/2026-09-15-rc1-source-release-security-review.json` and
+  `docs/security-audits/2026-09-15-public-repository-controls.json`.
 - The exact frozen candidate completed the versioned 15-minute Linux amd64
   Clang 18 ASan/UBSan/libFuzzer campaign with an available LLVM symbolizer.
   It executed 2,387,632 inputs in 901 seconds, reached `cov: 15738` and
@@ -773,17 +790,15 @@ evidence into exact-candidate evidence.
   `security.exact-candidate-long-fuzz` for RC1 without claiming universal parser
   safety.
 
-## Still required for public beta
+## Publication closure and deferred product gates
 
-- Run the maintained exact-candidate native Windows amd64/MSVC gate. macOS
-  arm64, Linux amd64, and Windows-target MinGW/Wine evidence now pass locally;
-  routine hosted runs remain paused for runner-budget policy.
-- Enable a private vulnerability-reporting channel before publication.
-- Complete the compiler, SDK, linker, container-package, and native MSVC
-  security disposition. The exact five-library production graph and refreshed
-  upstream dependency review now pass, but the complete toolchain audit does
-  not.
-- With separate owner approval, publish the deterministic source archive and
-  checksum as release assets, download them again, and verify their identity
-  and installed-package consumer. The tag exists, but no GitHub Release or
-  asset publication has been authorized.
+- The owner-approved deterministic source-only prerelease asset set is
+  published. Archive, checksum, candidate manifest, and source-dependency SPDX
+  SBOM were downloaded independently; every SHA-256 matched both the prepared
+  asset and GitHub digest. The immutable remote tag target, manifest/archive,
+  Git-archive byte identity, extracted warnings-as-errors build, 19/19 tests,
+  install, and installed-package consumer 2/2 all passed. Exact evidence is in
+  `docs/quality-runs/2026-09-15-rc1-release-verification.json`.
+- PFI native operator acceptance and rollback remain separate deferred product
+  gates. They will be exercised only after PFI 0.14 completes its first QA and
+  do not block the standalone source prerelease.

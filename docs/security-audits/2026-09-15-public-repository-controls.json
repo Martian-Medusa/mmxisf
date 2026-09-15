@@ -1,0 +1,35 @@
+{
+  "schema": "mmxisf.public-repository-controls/1.0.0",
+  "reviewedAtUtc": "2026-09-14T23:02:54Z",
+  "repository": "Martian-Medusa/mmxisf",
+  "visibility": "public",
+  "result": "PASS",
+  "securityIntake": {
+    "privateVulnerabilityReporting": "ENABLED",
+    "policy": "SECURITY.md",
+    "openDependabotAlerts": 0,
+    "openSecretScanningAlerts": 0
+  },
+  "automatedControls": {
+    "dependabotSecurityUpdates": "ENABLED",
+    "secretScanning": "ENABLED",
+    "secretScanningPushProtection": "ENABLED",
+    "defaultWorkflowPermissions": "READ_ONLY",
+    "actionsCanApprovePullRequests": false,
+    "allowedActions": "SELECTED",
+    "actionShaPinningRequired": true
+  },
+  "mainHistoryProtection": {
+    "rulesetId": 23378267,
+    "name": "Protect main history",
+    "enforcement": "ACTIVE",
+    "deletionBlocked": true,
+    "nonFastForwardPushBlocked": true,
+    "ordinaryFastForwardPushAllowed": true
+  },
+  "limitations": [
+    "Zero open alerts is a dated GitHub API observation, not proof that no unknown or unpublished vulnerability exists.",
+    "The repository accepts direct fast-forward pushes to main; pull requests are supported but are not mandatory for the current maintainer workflow.",
+    "Security response is best effort under the pre-1.0 policy and does not establish a service-level agreement."
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema": "mmxisf.exact-candidate-quality-run/1.0.0",
   "recordedAtUtc": "2026-09-14T20:47:44Z",
-  "result": "LIMITED_NATIVE_WINDOWS_MSVC_NOT_TESTED",
+  "result": "PASS_WITH_DOCUMENTED_WINDOWS_REPRODUCIBILITY_LIMITATION",
   "publicationAuthorized": false,
   "candidate": {
     "repository": "https://github.com/Martian-Medusa/mmxisf.git",
@@ -126,13 +126,30 @@
       "retainedGateDirectory": "/home/matt/mmxisf-gates/fd62b5b2a023/work/mmxisf-0.1.0/build-vcpkg-mingw-amd64-rc1"
     },
     "windowsAmd64Msvc": {
-      "status": "NOT_TESTED",
-      "reason": "No native Windows amd64/MSVC execution environment was available. MinGW/Wine is not substituted for this gate."
+      "status": "PASS_FUNCTIONAL_WITH_REPRODUCIBILITY_LIMITATION",
+      "evidence": "docs/quality-runs/2026-09-15-rc1-windows-amd64-msvc.json",
+      "host": "GitHub-hosted Windows Server 2025 Datacenter amd64",
+      "toolchain": "Visual Studio Enterprise 2026; MSVC 19.51.36256.0; CMake 4.4.3; C++20",
+      "staticTests": "PASS_18_OF_18",
+      "sharedTests": "PASS_19_OF_19",
+      "installedConsumers": "PASS_2_OF_2_STATIC_AND_SHARED",
+      "relocatedConsumers": "PASS_2_OF_2_STATIC_AND_SHARED",
+      "embeddedConsumers": "PASS_1_OF_1_STATIC_AND_SHARED",
+      "sharedExports": "PASS_39_OF_39_NO_UNEXPECTED_EXPORTS",
+      "productionDependencyBaseline": "PASS",
+      "performanceCheckpoint": "RECORDED_HOST_CHECKPOINT_NOT_PORTABLE_SLA",
+      "viewerBuilt": false,
+      "reproducibility": {
+        "static": "LIMITED_NON_IDENTICAL",
+        "sharedImportLibrary": "PASS_BYTE_IDENTICAL",
+        "sharedDll": "PASS_BYTE_IDENTICAL",
+        "policy": "MEASURED_NON_BLOCKING_SOURCE_ONLY"
+      }
     }
   },
   "limitations": [
-    "The exact candidate has not run on a native Windows amd64 host with MSVC.",
     "The exact candidate completed ASan/UBSan, 20,000-mutation smoke, and ThreadSanitizer gates on macOS arm64 and Linux amd64, but not on native Windows.",
+    "The native Windows static MSVC library was not byte-identical across distinct build directories. Functional build, test, install, relocation, embedding, export, dependency, and SBOM gates passed; the source-only release distributes no Windows binary and makes no portable binary-reproducibility claim.",
     "The optional viewer was excluded and does not contribute to this standalone reusable-library result.",
     "No GitHub Release or release asset was created by these tests."
   ]

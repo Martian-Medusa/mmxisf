@@ -1,0 +1,98 @@
+{
+  "schema": "mmxisf.exact-candidate-windows-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-15T00:38:37Z",
+  "result": "PASS_FUNCTIONAL_WITH_REPRODUCIBILITY_LIMITATION",
+  "candidate": {
+    "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+    "tag": "v0.1.0-rc.1",
+    "tagObject": "ef977e10694e2f26ce06581eaf304eaa7c9f36d0",
+    "commit": "fd62b5b2a0239638d2ea252912212b3fa4f92178",
+    "sourceArchiveSha256": "cc1d5065726ab61cf151592a29a91edc1b293d2e24554b2f57601763d90ad375"
+  },
+  "execution": {
+    "workflowRunId": "34912955130",
+    "workflowRunUrl": "https://github.com/Martian-Medusa/mmxisf/actions/runs/34912955130",
+    "workflowHeadCommit": "f89657e38ccc7c7c4d7c91eaa7b5af169f62ebe6",
+    "qualificationHarnessCommit": "f89657e38ccc7c7c4d7c91eaa7b5af169f62ebe6",
+    "requestedSourceRef": "v0.1.0-rc.1",
+    "sourceCommitReportedByRunner": "fd62b5b2a0239638d2ea252912212b3fa4f92178",
+    "job": "windows-build",
+    "conclusion": "success"
+  },
+  "host": {
+    "operatingSystem": "Microsoft Windows Server 2025 Datacenter",
+    "version": "10.0.26100",
+    "architecture": "AMD64",
+    "processor": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "logicalCpuCount": 4,
+    "runnerImage": "win25-vs2026",
+    "runnerImageVersion": "20260907.229.1"
+  },
+  "toolchain": {
+    "visualStudio": "Enterprise 2026",
+    "msvcToolsVersion": "14.51.36231",
+    "clFileVersion": "19.51.36256.0",
+    "linkerFileVersion": "14.51.36256.0",
+    "windowsSdkUsed": "10.0.26100.0",
+    "cmake": "4.4.3",
+    "powershell": "7.6.5",
+    "git": "2.55.0.windows.5",
+    "vcpkgCommit": "a1cae005c39be7b18ba319fced856b68d7276271"
+  },
+  "functionalGate": {
+    "productionDependencyBaseline": "PASS",
+    "warningsAsErrors": "PASS_WITH_TARGETED_VENDOR_WARNING_EXEMPTIONS",
+    "warningExemptions": [
+      "MSVC C4251 for the private opaque Reader PIMPL",
+      "MSVC C4996 for getenv() in immutable RC1 test cleanup only"
+    ],
+    "staticTests": "PASS_18_OF_18",
+    "sharedTests": "PASS_19_OF_19",
+    "excludedSyntheticContract": "mmxisf.source-candidate-contract",
+    "excludedSyntheticContractReason": "The immutable RC1 test fixture hashes LF before native Windows writes CRLF; the real source-candidate validator and exact archive identity remained independently enforced.",
+    "installedConsumers": "PASS_2_OF_2_STATIC_AND_SHARED",
+    "relocatedConsumers": "PASS_2_OF_2_STATIC_AND_SHARED",
+    "embeddedConsumers": "PASS_1_OF_1_STATIC_AND_SHARED",
+    "sharedExports": "PASS_39_OF_39_NO_UNEXPECTED_EXPORTS",
+    "sourcePackageIdentity": "PASS_IN_SEPARATE_WORKFLOW_JOB",
+    "viewerBuilt": false
+  },
+  "performanceCheckpoint": {
+    "profile": "6064x4040x3 UInt8 planar RGB, Zstandard level 3, SHA-256, warm filesystem cache",
+    "decodedBytes": 73495680,
+    "fileBytes": 49373466,
+    "fileSha256": "6897d239eca0042cc98c71e92be597344148cd2083a6316a711e2d3cba967c33",
+    "writerThroughputMiBPerSecond": [183.753, 168.633, 188.863, 182.356, 188.907],
+    "owningReaderElapsedSeconds": [0.3675638, 0.4508319, 0.3543403, 0.440725, 0.3540064],
+    "rowReaderElapsedSeconds": [0.4305203, 0.434002, 0.4313943, 0.4279873, 0.4269028],
+    "claim": "RECORDED_HOST_CHECKPOINT_NOT_PORTABLE_SLA"
+  },
+  "artifacts": {
+    "staticLibrarySha256": "ed46b5170db3f785b659658305547ded73379ad307747b75d78b2f52ad94226c",
+    "sharedImportLibrarySha256": "6ef3b6f84f07e232f1a907a25517e21d60e39ba52caea442510af7e1b0efcf60",
+    "sharedDllSha256": "e3a0ea478079a0879cd9e726d58052f8b8ec7c333c51da2bad1f39924e4165bc",
+    "staticBinarySbomSha256": "f4a8a2a1795babc2f0567e1e426cdeb25d1de5dac2a543950cd5197d06abab0e",
+    "sharedBinarySbomSha256": "6c1accf31f46e5ec743213ee82d70ae94e18fa66326e4ec8144cb8ed56a749cd",
+    "nativeEvidenceSha256": "342c5d1d3b1ff836a78e0a04d5d46be0c675e4aadc1596fc4e5f8ca8abad9b56",
+    "reproducibilityReportSha256": "2e52e5897f74fd3e3867e1f9e950d390ed926159425f228c652488be73e83969",
+    "retainedWorkflowArtifactId": "10375179004",
+    "retainedWorkflowArtifactSha256": "fff8e7a4cce83be6e4cfdbc3a8a1e9ff42ac04eef9e4390b4360a0a15f527b88"
+  },
+  "reproducibility": {
+    "result": "LIMITED_NON_IDENTICAL_ARTIFACTS",
+    "policy": "MEASURED_NON_BLOCKING_SOURCE_ONLY",
+    "staticLibrary": {
+      "byteIdentical": false,
+      "primarySha256": "ed46b5170db3f785b659658305547ded73379ad307747b75d78b2f52ad94226c",
+      "reproductionSha256": "5c47d4af46a6a055d170308467685bdc3809b99280e5ec4d3d654d23b6133b09"
+    },
+    "sharedImportLibrary": "PASS_BYTE_IDENTICAL",
+    "sharedDll": "PASS_BYTE_IDENTICAL"
+  },
+  "limitations": [
+    "The source-only release does not distribute these Windows binaries or PDB files.",
+    "The native static MSVC library was functionally qualified but was not byte-identical across distinct build directories; no portable cross-toolchain binary reproducibility claim is made.",
+    "Hosted-runner performance values are a dated checkpoint, not a portable service-level objective.",
+    "ASan, UBSan, ThreadSanitizer, and coverage-guided fuzzing remain Unix-host evidence; the native Windows gate is functional and packaging evidence."
+  ]
+}

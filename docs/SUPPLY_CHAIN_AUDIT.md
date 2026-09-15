@@ -1,12 +1,12 @@
 # Supply-chain and license audit
 
-- Audit date: 2026-09-14 (refreshed for `v0.1.0-rc.1`)
+- Audit date: 2026-09-15 (refreshed for `v0.1.0-rc.1`)
 - Scope: source-only public-beta candidate preparation
-- Result: source/license review **CONDITIONAL PASS**; legacy local macOS
+- Result: source/license review **PASS**; legacy local macOS
   development binaries **BLOCKED / UPGRADE REQUIRED**; isolated pinned macOS
-  arm64 dependency graph **PASS**; public security intake and exact frozen-
-  candidate direct-dependency audit **PASS**; complete toolchain audit and
-  public security intake remain gated
+  arm64, Linux amd64, and native Windows amd64/MSVC dependency graphs **PASS**;
+  public security intake, exact frozen-candidate dependency review, and dated
+  source-only release security disposition **PASS**
 
 ## Reviewed controls
 
@@ -83,9 +83,15 @@ production-graph gates. All bind the same five versions from vcpkg commit
 review passes those direct dependencies and retains the LZ4 unsafe-API scope
 check in
 [`security-audits/2026-09-14-rc1-binary-advisory-review.md`](security-audits/2026-09-14-rc1-binary-advisory-review.md).
-The overall exact-binary vulnerability gate remains **LIMITED** because the
-complete compiler, SDK, linker, container package set, and native Windows/MSVC
-toolchain have not received a final disposition.
+The exact candidate subsequently passed the native Windows Server 2025
+amd64/MSVC functional and package gate. Its complete runner/toolchain inventory,
+the public-repository controls, the distributed source-only asset set, and the
+dated advisory disposition are recorded in
+[`security-audits/2026-09-15-rc1-source-release-security-review.json`](security-audits/2026-09-15-rc1-source-release-security-review.json).
+That review closes the security gate only for the source-only prerelease: no
+Windows or other platform binary, PDB, viewer, compiler, SDK, linker, or PFI
+artifact is distributed, and no universal toolchain-vulnerability claim is
+made. Any later binary distribution requires a new artifact-specific review.
 
 The later viewer-only distribution rehearsal at exact clean source commit
 `53c4845857eaeed7bfd610c7f41a170862a633e1` embeds the exact binary SBOM,
@@ -111,17 +117,21 @@ distribution gates and do not block the reusable C++ library's readiness.
    rebuilt from a controlled supported environment at or above the documented
    floor, baseline enforcement enabled, a fresh exact-version vulnerability
    review, signing, notarization, hashes, and a retained binary SBOM.
-3. GitHub vulnerability alerts are disabled for the current private repository.
-   GitHub private vulnerability reporting is unavailable while the repository
-   is private. Enable dependency alerts now if desired, and enable the private
-   reporting form when the repository becomes public.
-4. Run an exact-version vulnerability audit for all candidate binaries and the
-   build toolchain immediately before release. The old host-graph audit remains
-   evidence of a failed baseline; the later exact provider-dependency review is
-   a passing development snapshot. Neither substitutes for the time-sensitive
-   frozen-candidate check.
-5. Native PixInsight interoperability and the release-candidate long fuzz run
-   remain independent mandatory gates.
+3. The repository is public. Private vulnerability reporting, Dependabot
+   security updates, secret scanning with push protection, read-only default
+   workflow permissions, selected Actions, and full-SHA action pinning are
+   enabled. The dated control snapshot is retained in
+   [`security-audits/2026-09-15-public-repository-controls.json`](security-audits/2026-09-15-public-repository-controls.json).
+4. The exact source-only asset set has a dated vulnerability and build-host
+   disposition. Refresh it for any later publication date, changed dependency,
+   toolchain, binary distribution, or newly relevant advisory.
+5. Native PixInsight reader/writer interoperability and the release-candidate
+   long fuzz campaign passed as independent gates; their bounded evidence does
+   not imply universal XISF compatibility or parser safety.
 
-No tag, release, binary publication, security-support promise, or reproducible
-binary claim is authorized by this audit.
+This audit authorizes no binary publication, security-support service level, or
+portable reproducible-binary claim. The repository owner separately authorized
+the source-only `v0.1.0-rc.1` prerelease. It is published, and independent
+post-publication download, SHA-256, immutable-tag, archive-identity, build,
+install, and installed-package-consumer verification passed as recorded in
+[`quality-runs/2026-09-15-rc1-release-verification.json`](quality-runs/2026-09-15-rc1-release-verification.json).

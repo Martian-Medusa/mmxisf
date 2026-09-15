@@ -32,12 +32,18 @@ function(mmxisf_expect_readiness_rejection name content expected)
   endif()
 endfunction()
 
-string(REPLACE
-  "\"standaloneBeta\": \"NOT_READY\""
-  "\"standaloneBeta\": \"READY\""
-  _false_ready "${_valid_json}")
-mmxisf_expect_readiness_rejection(false-ready "${_false_ready}"
-  "conflicts with derived NOT_READY")
+string(JSON _current_beta_claim GET "${_valid_json}" claims standaloneBeta)
+if(_current_beta_claim STREQUAL "READY")
+  set(_mutated_beta_claim NOT_READY)
+  set(_expected_beta_claim READY)
+else()
+  set(_mutated_beta_claim READY)
+  set(_expected_beta_claim NOT_READY)
+endif()
+string(JSON _false_beta_claim SET "${_valid_json}" claims standaloneBeta
+  "\"${_mutated_beta_claim}\"")
+mmxisf_expect_readiness_rejection(false-beta-claim "${_false_beta_claim}"
+  "conflicts with derived ${_expected_beta_claim}")
 
 string(JSON _invalid_ref SET "${_valid_json}"
   candidate state "\"FROZEN\"")

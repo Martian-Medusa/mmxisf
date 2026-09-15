@@ -1,0 +1,75 @@
+{
+  "schema": "mmxisf.published-release-verification/1.0.0",
+  "verifiedAtUtc": "2026-09-15T00:48:00Z",
+  "result": "PASS",
+  "release": {
+    "repository": "https://github.com/Martian-Medusa/mmxisf",
+    "url": "https://github.com/Martian-Medusa/mmxisf/releases/tag/v0.1.0-rc.1",
+    "name": "mmxisf 0.1.0-rc.1",
+    "tag": "v0.1.0-rc.1",
+    "publishedAtUtc": "2026-09-15T00:44:40Z",
+    "draft": false,
+    "prerelease": true,
+    "distribution": "SOURCE_ONLY"
+  },
+  "tagIdentity": {
+    "tagObject": "ef977e10694e2f26ce06581eaf304eaa7c9f36d0",
+    "peeledCommit": "fd62b5b2a0239638d2ea252912212b3fa4f92178",
+    "result": "PASS_REMOTE_IMMUTABLE_TARGET"
+  },
+  "downloadedAssets": [
+    {
+      "name": "mmxisf-0.1.0-source-fd62b5b2a023.tar.gz",
+      "assetId": 564549484,
+      "sizeBytes": 355737,
+      "sha256": "cc1d5065726ab61cf151592a29a91edc1b293d2e24554b2f57601763d90ad375",
+      "githubDigestMatch": true,
+      "preparedAssetMatch": true
+    },
+    {
+      "name": "mmxisf-0.1.0-source-fd62b5b2a023.tar.gz.sha256",
+      "assetId": 564549483,
+      "sizeBytes": 106,
+      "sha256": "e8b774471ce0e21bc07b09827601f1d2e4f4998b7f2520ef7745e44b6a1023bb",
+      "githubDigestMatch": true,
+      "preparedAssetMatch": true,
+      "archiveChecksumVerification": "PASS"
+    },
+    {
+      "name": "source-candidate.json",
+      "assetId": 564549487,
+      "sizeBytes": 641,
+      "sha256": "6cfbfb2a76cb96f2d0d6101ba820daa78e0e8b186f2fd8806204f9951ca4f958",
+      "githubDigestMatch": true,
+      "preparedAssetMatch": true
+    },
+    {
+      "name": "mmxisf-0.1.0-source-dependencies.spdx.json",
+      "assetId": 564549486,
+      "sizeBytes": 2943,
+      "sha256": "b4be6bead1e7a465b2c56e931c96e3d4b1de7feb52a42c9ec0df37c4102f7875",
+      "githubDigestMatch": true,
+      "preparedAssetMatch": true
+    }
+  ],
+  "candidateValidation": {
+    "manifestAndArchive": "PASS",
+    "expectedCommit": "PASS",
+    "supportProfileBinding": "PASS",
+    "gitArchiveByteIdentity": "PASS"
+  },
+  "downloadedArchiveConsumerGate": {
+    "host": "macOS arm64; AppleClang 21.0.0; system dependency compatibility graph",
+    "warningsAsErrorsBuild": "PASS",
+    "archiveTests": "PASS_19_OF_19",
+    "install": "PASS",
+    "installedPackageConsumer": "PASS_2_OF_2",
+    "viewerBuilt": false,
+    "result": "PASS"
+  },
+  "limitations": [
+    "The post-download build used the local macOS system dependency graph only to revalidate archive usability and installed-package consumption. Production dependency floors were already qualified independently on the exact candidate for macOS, Linux, and native Windows.",
+    "The source-candidate manifest intentionally records PREPARED_NOT_PUBLISHED and publicationAuthorized false because it proves the fail-closed preparation state; owner authorization and the published release are external records.",
+    "No binary, viewer, or PFI artifact is part of this release."
+  ]
+}
