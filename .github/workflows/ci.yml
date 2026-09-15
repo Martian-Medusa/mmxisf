@@ -1,12 +1,9 @@
 name: ci
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # The complete cross-platform matrix is deliberately manual while hosted
+  # runner minutes are constrained. Local macOS/Linux gates are the routine
+  # development path; dispatch this workflow for selected release checkpoints.
   workflow_dispatch:
     inputs:
       include_viewer:
