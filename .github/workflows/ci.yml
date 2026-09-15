@@ -236,7 +236,6 @@ jobs:
         run: |
           $evidenceDirectory = Join-Path $env:GITHUB_WORKSPACE "windows-evidence"
           New-Item -ItemType Directory -Path $evidenceDirectory | Out-Null
-          $benchmarkFile = Join-Path $evidenceDirectory "benchmark-rgb.xisf"
           $strictBuildRoot = Join-Path $env:GITHUB_WORKSPACE "build-vcpkg-windows-amd64"
           $reproducibilityReportPath = Join-Path $strictBuildRoot "windows-reproducibility.json"
           $writer = Join-Path $strictBuildRoot "static\Release\mmxisf-writer-benchmark.exe"
@@ -249,7 +248,9 @@ jobs:
           $reproducibility = Get-Content -Raw -LiteralPath $reproducibilityReportPath | ConvertFrom-Json
 
           $writerRuns = @()
+          $benchmarkFiles = @()
           foreach ($iteration in 1..5) {
+            $benchmarkFile = Join-Path $evidenceDirectory "benchmark-rgb-$iteration.xisf"
             $lines = & $writer $benchmarkFile
             if ($LASTEXITCODE -ne 0) { throw "Writer benchmark run $iteration failed" }
             $values = @{}
@@ -263,8 +264,10 @@ jobs:
               fileBytes = [uint64]$values.file_bytes
               fileSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $benchmarkFile).Hash.ToLowerInvariant()
             }
+            $benchmarkFiles += $benchmarkFile
           }
 
+          $benchmarkFile = $benchmarkFiles[0]
           $owningReaderSeconds = @()
           $rowReaderSeconds = @()
           foreach ($iteration in 1..5) {
