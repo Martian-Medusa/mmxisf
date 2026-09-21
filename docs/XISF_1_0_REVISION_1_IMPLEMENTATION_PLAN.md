@@ -49,9 +49,10 @@ installed/relocated/embedded consumers, reproducibility, Clang ASan/UBSan,
 ThreadSanitizer, 20,000 deterministic mutations, and generated documentation.
 A dedicated source-bound `zstd+sh` eight-subblock writer fixture passed in
 PixInsight 1.9.5 arm64 with all 256 deterministic samples and the exact pixel
-hash recovered. The separate current block-Property fixture still needs its
-native run. Native Windows/MSVC, exact-candidate coverage-guided fuzzing, and
-frozen candidate evidence remain pending. The local Command Line Tools
+hash recovered. The separate current block-Property fixture also passed in
+PixInsight 1.9.5 arm64 with exact pixels, F64Matrix, UI16Vector, and String
+Property values. Native Windows/MSVC, exact-candidate coverage-guided fuzzing,
+and frozen candidate evidence remain pending. The local Command Line Tools
 installation does not include a compatible libFuzzer runtime, so
 coverage-guided fuzzing is deferred to qualified Clang/Linux or full Xcode;
 deterministic sanitizer smoke remains PASS.
@@ -573,8 +574,8 @@ Avoid public-header changes for purely internal global-shuffle correction.
 8. Run local macOS qualification and the mllse Linux gate. **Complete for the
    unfrozen implementation commits; repeat only on the frozen candidate.**
 9. Run the prepared PixInsight black-box fixtures manually and retain their
-   JSON results. **Revision 1 eight-subblock path complete; current
-   block-Property fixture pending.**
+   JSON results. **Complete: both source-bound fixtures passed PixInsight 1.9.5
+   arm64.**
 10. Freeze the exact RC2 candidate only after the matrix and evidence are
     complete.
 11. Run native Windows/MSVC once on that exact candidate.

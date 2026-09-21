@@ -42,7 +42,8 @@ metadata policy.
 
 The corrected global-shuffle eight-subblock writer path passed source-bound
 native PixInsight 1.9.5 arm64 validation with all 256 exact samples on
-2026-09-21. Release qualification remains fail-closed pending the current
-block-Property native PixInsight fixture plus exact-candidate macOS/Linux,
+2026-09-21. The current block-Property fixture also passed native PixInsight
+1.9.5 arm64 with exact pixels, F64Matrix, UI16Vector, and String Property.
+Release qualification remains fail-closed pending exact-candidate macOS/Linux,
 native Windows/MSVC, fuzz, and frozen-candidate gates. Four current writer
 fixtures also passed a fresh independent public-API replay on 2026-09-21.

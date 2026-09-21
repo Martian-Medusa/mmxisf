@@ -2,7 +2,7 @@
 
 - Status: REVISION1_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
   NATIVE_PIXINSIGHT_REVISION1_SUBBLOCKS_PASS;
-  NATIVE_PIXINSIGHT_CURRENT_PROPERTIES_PENDING
+  NATIVE_PIXINSIGHT_CURRENT_PROPERTIES_PASS
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
 - Publication status: public repository; immutable `v0.1.0-rc.1` remains the
@@ -154,14 +154,15 @@
   matrix, vector `[513,1027]`, String value, UInt16 Gray representation, and
   working-sample pixel SHA-256. Sanitized historical evidence is retained in
   `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
-  The current source identity still requires a fresh native run; the historical
-  observation is not current-fixture qualification.
+  The current Revision 1 fixture separately passed PixInsight 1.9.5 arm64 with
+  exact source identity, pixels, matrix, vector, and String value; its
+  source-bound result is retained in
+  `docs/quality-runs/2026-09-21-pixinsight-writer-properties-macos-arm64.json`.
 
 ## Still required for M6
 
-- Run the remaining source-bound PixInsight block-Property validator on the
-  current fixture, then repeat macOS/Linux, native Windows/MSVC, and
-  coverage-guided fuzzing against one frozen RC2 candidate. Hosted CI is not
-  required for intermediate commits.
+- Freeze one RC2 candidate, then repeat macOS/Linux, native Windows/MSVC, and
+  coverage-guided fuzzing against that exact source. Hosted CI is not required
+  for intermediate commits.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.

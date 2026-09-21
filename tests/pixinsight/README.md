@@ -52,8 +52,10 @@ this automation passed the predecessor fixture in PixInsight 1.9.4 arm64; the
 sanitized result is retained in
 `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
 The current Revision 1 fixture changes only the same-length `Image/@id` from
-`native-validation` to `native_validation`, but its new source identity still
-requires a fresh native PASS before release qualification.
+`native-validation` to `native_validation`. This current source identity passed
+in PixInsight 1.9.5 arm64 on 2026-09-21. The sanitized source-bound result is
+retained in
+`docs/quality-runs/2026-09-21-pixinsight-writer-properties-macos-arm64.json`.
 
 ## Revision 1 global-shuffle subblocks
 

@@ -69,20 +69,19 @@ The compiled writer test regenerates and verifies its stronger self-round-trip
 contract; the external package is not a project dependency.
 
 The `mmxisf-writer-native-properties` fixture is a separate source-bound input
-for manual PixInsight validation. It contains one 2x2 UInt16 Gray image and
+for PixInsight validation. It contains one 2x2 UInt16 Gray image and
 image-scoped `F64Matrix`, `UI16Vector`, and String Properties with exact owned
 values. `tests/pixinsight/MMXISFWriterNativeValidation.js` requires native
-recovery of those values and the exact working-sample pixel hash. Until that
-manual script produces a PASS record, the manifest and M6 status retain native
-writer Property interoperability as pending.
+recovery of those values and the exact working-sample pixel hash.
 
 The Revision 1 migration changed only this fixture's same-length `Image/@id`
 from `native-validation` to `native_validation`. The historical PixInsight
 record remains bound to the predecessor source hash; the current hash therefore
 requires a new native run.
-The current fixture also passed a 2026-09-21 independent public-API read with
-exact pixels, matrix, vector, String value, and descriptors; that result does
-not replace the separate native PixInsight gate.
+The current fixture passed both a 2026-09-21 independent public-API read and a
+source-bound PixInsight 1.9.5 arm64 run with exact pixels, matrix, vector,
+String value, and descriptors. The native result is retained separately under
+`docs/quality-runs`.
 
 The `mmxisf-writer-revision1-subblocks` fixture isolates the normative
 Revision 1 shuffle change. Its complete 512-byte UInt16 image block is shuffled

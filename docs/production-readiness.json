@@ -22,7 +22,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, the unfrozen exact-implementation Linux system-graph gate, and native PixInsight 1.9.5 acceptance of the corrected eight-subblock zstd+shuffle writer path are complete. This gate remains fail-closed until the current block-Property fixture passes native PixInsight and frozen-candidate macOS/Linux, native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
+      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, the unfrozen exact-implementation Linux system-graph gate, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and current block-Property fixture are complete. This gate remains fail-closed until frozen-candidate macOS/Linux, native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -89,10 +89,10 @@
     },
     {
       "id": "interop.pixinsight-writer-properties",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json",
-      "note": "The predecessor synthetic 2x2 UInt16 Gray fixture passed source-bound PixInsight 1.9.4 arm64 recovery. Revision 1 changed only its same-length Image/@id, preserving all pixel, Property, compressed, and checksum bytes, but the new source SHA-256 still requires a fresh native PASS before qualification."
+      "evidence": "docs/quality-runs/2026-09-21-pixinsight-writer-properties-macos-arm64.json",
+      "note": "PixInsight 1.9.5 arm64 on macOS opened the current source-bound Revision 1 fixture and recovered exact UInt16 Gray pixels, native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], and String Property. This proves native writer/Property interoperability for the exact fixture only; broader Property coverage, PFI parity, and product enablement remain outside its authority."
     },
     {
       "id": "pfi.backend-selection-policy",

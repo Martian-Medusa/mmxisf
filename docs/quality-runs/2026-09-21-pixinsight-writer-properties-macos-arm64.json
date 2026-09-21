@@ -1,0 +1,52 @@
+{
+  "schema": "mmxisf.writer-native-validation/1.0.0",
+  "recordedAtUtc": "2026-09-21T09:59:07Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "7dd583422c8f3ac1266e06f35648b4ff936c4504",
+  "candidateFrozen": false,
+  "publicationAuthorized": false,
+  "runtime": {
+    "programName": "PixInsight Core 1.9.5 (arm64)",
+    "version": "1.9.5.0",
+    "platform": "macOS",
+    "engine": "PJSR V8"
+  },
+  "validator": {
+    "path": "tests/pixinsight/MMXISFWriterNativeValidation.js",
+    "sha256": "c1d4c69553cf1016f82aae0434a6d43eea706eb4c28013a35822875ceb11fe5e"
+  },
+  "fixture": {
+    "encodedPath": "tests/interop/mmxisf-writer-native-properties.xisf.b64",
+    "materializedSizeBytes": 12292,
+    "materializedSha256": "e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d"
+  },
+  "result": {
+    "status": "PASS",
+    "image": {
+      "width": 2,
+      "height": 2,
+      "channels": 1,
+      "sampleFormat": "UInt16",
+      "colorSpace": "Gray",
+      "pixelSha256": "ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb"
+    },
+    "properties": {
+      "Test:Matrix": [[1, 2], [3, 4]],
+      "Test:Vector": [513, 1027],
+      "Test:Label": "mmxisf native writer validation"
+    }
+  },
+  "sourceEvidence": {
+    "localFileName": "mmxisf-writer-native-validation-20260921T095907Z.json",
+    "sha256": "49386e6aa86622438edb4b853d02ee1d0eb0e686024f35e468ee0c9650bdce3a"
+  },
+  "authority": {
+    "writerInterop": "OBSERVED_NATIVE_HOST",
+    "pfiScientificParity": "NOT_ASSESSED",
+    "productEnablement": "NOT_AUTHORIZED"
+  },
+  "limitations": [
+    "This PASS covers the exact source-bound synthetic UInt16 Gray fixture and its F64Matrix, UI16Vector, and String Properties.",
+    "It does not generalize to every Property type, codec, sample format, XISF consumer, PFI workflow, or scientific result."
+  ]
+}
