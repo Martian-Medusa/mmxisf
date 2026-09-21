@@ -348,6 +348,34 @@ void check_native_properties_writer_fixture(const std::filesystem::path &path) {
          "native Property writer fixture pixels changed");
 }
 
+void check_revision1_subblocks_writer_fixture(
+    const std::filesystem::path &path) {
+  auto bytes = load_base64(path);
+  expect(sha256_hex(bytes) ==
+             "cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64",
+         "Revision 1 subblock fixture identity changed");
+  auto opened = mmxisf::Reader::open_source(
+      std::make_shared<MemorySource>(std::move(bytes)));
+  expect(opened.has_value(), "Revision 1 subblock fixture did not open");
+  const auto &images = opened.value().document().images();
+  expect(images.size() == 1 &&
+             images[0].geometry == std::vector<std::uint64_t>{16, 16, 1} &&
+             images[0].sample_format == mmxisf::SampleFormat::uint16 &&
+             images[0].color_space == "Gray" &&
+             images[0].compression == "zstd+sh:512:2" &&
+             images[0].subblocks ==
+                 "49,64:49,64:49,64:49,64:49,64:49,64:49,64:49,64" &&
+             images[0].checksum ==
+                 "sha-256:a9f50cbfaf9fadafeb80d0db7a76ea090ef3290d18b411f0f6ef6d5401408214",
+         "Revision 1 subblock descriptor changed");
+  auto decoded = opened.value().read_image(0);
+  expect(decoded && decoded.value().checksum_verification ==
+                        mmxisf::ChecksumVerification::verified &&
+             sha256_hex(decoded.value().pixels) ==
+                 "3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317",
+         "Revision 1 globally shuffled subblocks changed pixels");
+}
+
 } // namespace
 
 int main() {
@@ -426,6 +454,8 @@ int main() {
     check_codec_writer_fixture(root / "mmxisf-writer-codecs.xisf.b64");
     check_native_properties_writer_fixture(
         root / "mmxisf-writer-native-properties.xisf.b64");
+    check_revision1_subblocks_writer_fixture(
+        root / "mmxisf-writer-revision1-subblocks.xisf.b64");
     std::cout << "PASS: independent producer and consumer interop matrix\n";
     return 0;
   } catch (const std::exception &exception) {

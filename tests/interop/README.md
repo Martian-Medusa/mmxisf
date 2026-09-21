@@ -84,6 +84,18 @@ The current fixture also passed a 2026-09-21 independent public-API read with
 exact pixels, matrix, vector, String value, and descriptors; that result does
 not replace the separate native PixInsight gate.
 
+The `mmxisf-writer-revision1-subblocks` fixture isolates the normative
+Revision 1 shuffle change. Its complete 512-byte UInt16 image block is shuffled
+once and only then divided into eight independently Zstandard-compressed
+64-byte regions. The compiled test binds the exact descriptor, file hash,
+checksum, and decoded pixel hash. The source-bound
+`tests/pixinsight/MMXISFRevision1SubblocksValidation.js` script is the separate
+native-consumer gate for this corrected writer path. Public API replay with
+independent package `xisf` 0.9.7 exposes the exact compression and eight-pair
+`subblocks` descriptors, but its image API decodes only 32 samples and fails
+the required 1x16x16 reshape. This is recorded as `LIMITED`, not as evidence
+against the Revision 1 algorithm or as an independent-consumer PASS.
+
 The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
 writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
 serialized checksum and recovers source-order pixel SHA-256

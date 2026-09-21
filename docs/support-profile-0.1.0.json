@@ -6,7 +6,7 @@
   "candidateRef": "",
   "matrix": {
     "path": "docs/conformance/xisf-1.0-matrix.json",
-    "sha256": "d7f77ade7811829b8389bb3cdf62fefa5bdd336f29b2901481ce356371afdcfa"
+    "sha256": "3db450bc3116f3c69d698c30990b039f3ab779974ac4584d39394fa8a943d443"
   },
   "productBoundary": {
     "kind": "REUSABLE_CPP_LIBRARY",

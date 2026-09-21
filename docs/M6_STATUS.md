@@ -1,11 +1,11 @@
 # M6 progress: deterministic monolithic writer
 
-- Status: BYTE_SINK_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
-  NATIVE_PIXINSIGHT_PROPERTIES_PASS;
-  CI_REVALIDATION_BLOCKED_ACCOUNT_BILLING
+- Status: REVISION1_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
+  NATIVE_PIXINSIGHT_REVISION1_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
-- Publication status: private repository; no tag or release
+- Publication status: public repository; immutable `v0.1.0-rc.1` remains the
+  historical document-1.00 prerelease; Revision 1 changes are not released
 
 ## Foundation scope
 
@@ -28,8 +28,9 @@
 - Per-image zlib, LZ4, LZ4HC, and Zstandard compression, optional byte shuffle,
   and SHA-1/256/512 plus SHA3-256/512 checksums over exact serialized
   attachment bytes.
-- Deterministic sample-aligned compression subblocks with a 16 MiB default,
-  bounded count, per-subblock shuffle scratch, and cancellation checkpoints.
+- Deterministic compression subblocks with a 16 MiB default, bounded count,
+  whole-block byte shuffle before subblock division as required by Revision 1,
+  bounded per-subblock codec buffers, and cancellation checkpoints.
 - Independent decoded and serialized per-image/cumulative byte budgets.
 - Canonical XML field order, XML 1.0 UTF-8 validation/escaping, fixed zero
   padding, power-of-two attachment alignment, and fixed-point block planning.
@@ -115,11 +116,12 @@
 - An eight-subblock Zstandard+shuffle+SHA-256 writer case is byte-deterministic,
   reopens in `mmxisf`, verifies its checksum before decompression, and recovers
   all 512 source bytes exactly. Zero/undersized subblock sizes and exhausted
-  subblock-count budgets fail explicitly. Independent package `xisf` 0.9.7
-  exposes the exact eight-pair `subblocks` descriptor through its public
-  metadata API but its image API decodes only the first pair and then fails its
-  reshape. This is recorded as LIMITED external-consumer evidence, not a PASS;
-  native PixInsight validation remains required before release.
+  subblock-count budgets fail explicitly. Its exact Revision 1 serialization
+  is committed with SHA-256
+  `cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64`;
+  compiled tests bind all eight subblock pairs, the checksum, and decoded pixel
+  hash. A source-bound manual PixInsight validator is committed, but native
+  acceptance remains required before release.
 - A separate eight-subblock Zstandard+shuffle+SHA3-512 case exercises the
   bounded spool-file digest path and reopens with exact bytes and explicit
   verified-integrity state.
@@ -138,26 +140,26 @@
   reopenable file, fifteen explicit I/O failures, and no leaked temporary. This
   compiled regression guards the exclusive-create/no-overwrite contract.
 - A committed 12,292-byte source-bound native-validation fixture (SHA-256
-  `b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6`)
+  `e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d`)
   contains one 2x2 UInt16 Gray image plus image-scoped `F64Matrix`,
   `UI16Vector`, and String Properties. The compiled interoperability test
   verifies its exact matrix/vector source bytes, checksum state, metadata
   bindings, and pixel hash in Release, ASan/UBSan, and ThreadSanitizer builds.
   A source-hashed PJSR script under `tests/pixinsight` requires exact native
-  values and working-sample pixels. Its absolute-path automation variant ran in
-  a disposable PixInsight 1.9.4 arm64 process without Computer Use. PixInsight
-  recovered the exact 2x2 matrix, vector `[513,1027]`, String value, UInt16 Gray
-  representation, and working-sample pixel SHA-256. The source identity was
-  stable before and after access. Sanitized evidence is retained in
+  values and working-sample pixels. Its predecessor, differing only by the now
+  invalid hyphenated Image identifier, ran in a disposable PixInsight 1.9.4
+  arm64 process without Computer Use. PixInsight recovered the exact 2x2
+  matrix, vector `[513,1027]`, String value, UInt16 Gray representation, and
+  working-sample pixel SHA-256. Sanitized historical evidence is retained in
   `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
-  This is native interoperability for the exact fixture, not generalized
-  Property coverage or product/scientific authority.
+  The current source identity still requires a fresh native run; the historical
+  observation is not current-fixture qualification.
 
 ## Still required for M6
 
-- Restore the GitHub Actions account billing/spending limit and complete the
-  exact-head Linux/macOS/Windows, fuzz, and installed-package matrix. The
-  immediately preceding static/shared platform matrix passed; the latest
-  attempted pushed head created no runner because of the account-level block.
+- Run the two prepared source-bound PixInsight validators on the current
+  Revision 1 fixtures, then repeat macOS/Linux, native Windows/MSVC, and
+  coverage-guided fuzzing against one frozen RC2 candidate. Hosted CI is not
+  required for intermediate commits.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any
   portable performance claim.

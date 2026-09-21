@@ -92,7 +92,7 @@
     {"id":"writer.scalar-properties","section":"11.1","feature":"validated direct Boolean, integer, real, and complex Properties","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"},
     {"id":"writer.block-properties","section":"8.4.4, 10.3, 10.5, 10.6, 11.1","feature":"validated attached vector and matrix Properties with compression and integrity","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4","note":"Self-reader and independent xisf 0.9.7 public API PASS for single-block Zstandard+shuffle+SHA-256; native PixInsight pending."},
     {"id":"writer.compression-integrity","section":"10.5, 10.6","feature":"requested lossless codec, byte shuffle, and checksum output","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"},
-    {"id":"writer.compression-subblocks","section":"10.6","feature":"bounded subblocks split from a globally byte-shuffled stream","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4","note":"Revision 1 algorithm has deterministic self-reader and independent-oracle coverage; native PixInsight qualification is pending."},
+    {"id":"writer.compression-subblocks","section":"10.6","feature":"bounded subblocks split from a globally byte-shuffled stream","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4","note":"Revision 1 algorithm has deterministic self-reader and independent-oracle coverage. A source-bound eight-subblock zstd+shuffle fixture and manual validator are committed; native PixInsight qualification is pending."},
     {"id":"writer.deterministic","section":"product requirement","feature":"byte-deterministic output with volatile metadata fixed","pfi":"DEFERRED","baselineDecoder":"DEFERRED","target":"0.4"}
   ]
 }

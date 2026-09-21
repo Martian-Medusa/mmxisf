@@ -1,0 +1,49 @@
+{
+  "schema": "mmxisf.local-quality-run/1.0.0",
+  "recordedAtUtc": "2026-09-21T09:37:00Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "6d621cbb815f44218be29311e378e33f9abe92d3",
+  "sourceState": "HASH_VERIFIED_EXACT_GIT_ARCHIVE",
+  "candidateFrozen": false,
+  "publicationAuthorized": false,
+  "source": {
+    "archive": "mmxisf-r1-6d621cb.tar.gz",
+    "archiveSizeBytes": 391240,
+    "archiveSha256": "d0d4c4d3938b36df849facd7c61e31ee65f3c51e1932fd089d8d21b8045755c0",
+    "remoteHashVerification": "PASS",
+    "supportProfileState": "PREPARED",
+    "candidateRef": ""
+  },
+  "host": {
+    "name": "mllse",
+    "operatingSystem": "Linux 6.8.0-139-generic",
+    "architecture": "x86_64"
+  },
+  "buildEnvironment": {
+    "containerImageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+    "containerPlatform": "linux/amd64",
+    "primaryCompiler": "GCC 13.3.0",
+    "sanitizerCompiler": "Clang 18.1.3",
+    "cmake": "3.28.3",
+    "languageStandard": "C++20",
+    "dependencyMode": "Ubuntu system packages",
+    "viewerBuilt": false
+  },
+  "results": {
+    "staticWarningsAsErrors": "PASS_19_OF_19",
+    "sharedWarningsAsErrors": "PASS_20_OF_20",
+    "installedAndRelocatedConsumers": "PASS_STATIC_AND_SHARED_2_OF_2",
+    "embeddedConsumers": "PASS_STATIC_AND_SHARED_1_OF_1",
+    "binaryReproducibility": "PASS_STATIC_AND_SHARED_DISTINCT_BUILD_DIRECTORIES",
+    "addressAndUndefinedBehaviorSanitizers": "PASS_19_OF_19",
+    "threadSanitizer": "PASS_19_OF_19",
+    "deterministicFuzzSmoke": "PASS_20000_CASES",
+    "generatedApiDocumentation": "PASS",
+    "overall": "PASS"
+  },
+  "cleanup": {
+    "remoteWorkingDirectory": "/home/matt/mmxisf-gates/rev1-6d621cb-DbvoRd",
+    "status": "REMOVED_AND_ABSENCE_VERIFIED"
+  },
+  "authority": "Supplemental unfrozen Revision 1 Linux compatibility evidence for the exact source commit. System dependencies are not production-floor evidence and this does not replace frozen RC2, native Windows/MSVC, coverage-guided fuzz, or PixInsight qualification."
+}

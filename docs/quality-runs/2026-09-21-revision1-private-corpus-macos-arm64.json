@@ -1,0 +1,24 @@
+{
+  "schema": "mmxisf.private-corpus-run/1.0.0",
+  "recordedAtUtc": "2026-09-21T09:42:56Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "6d621cbb815f44218be29311e378e33f9abe92d3",
+  "candidateFrozen": false,
+  "publicationAuthorized": false,
+  "host": {
+    "operatingSystem": "macOS 27.0",
+    "architecture": "arm64"
+  },
+  "corpus": {
+    "root": "/Users/matt/PixInsight",
+    "redistributed": false,
+    "fileNamesRecorded": false,
+    "xisfFileCount": 21
+  },
+  "results": {
+    "headerInspection": "PASS_21_OF_21",
+    "firstImageDecode": "PASS_21_OF_21",
+    "failures": 0
+  },
+  "authority": "Private local regression evidence for current available files only. This run proves parser acceptance and first-image decode without modifying inputs; it does not establish native PixInsight parity, exact historical pixel/metadata hashes, full multi-image decode, PFI scientific parity, or public fixture provenance."
+}

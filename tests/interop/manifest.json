@@ -170,6 +170,18 @@
       "expectedArtifact": "Current Revision 1 fixture awaits a new source-bound PixInsight PASS. Its byte-identical predecessor apart from Image/@id passed PixInsight 1.9.4 arm64 with exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb."
     },
     {
+      "id": "mmxisf-writer-revision1-subblocks",
+      "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-revision1-subblocks.xisf.b64"},
+      "sha256": "cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64",
+      "origin": "SYNTHETIC",
+      "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0+1f2a93531542add2218fb6c098f9a9875e9cc538"},
+      "generationProcedure": "Invoke Writer::write_file with a deterministic 16x16 little-endian Planar UInt16 Gray array whose sample value is (index modulo 32) times 127, Zstandard compression, byte shuffle, SHA-256, and compression_subblock_bytes=64. Revision 1 requires shuffling the complete 512-byte block before splitting the shuffled stream into eight independently compressed 64-byte subblocks.",
+      "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
+      "conformanceRows": ["writer.compression-subblocks", "writer.compression-integrity", "compression.subblocks", "compression.zstd-shuffle", "checksum.sha256", "checksum.before-decompression", "image.uint16", "image.gray", "image.planar"],
+      "expectedOutcome": "ACCEPT",
+      "expectedArtifact": "mmxisf verifies descriptor compression=zstd+sh:512:2, eight exact subblock pairs 49,64, stored-block checksum sha-256:a9f50cbfaf9fadafeb80d0db7a76ea090ef3290d18b411f0f6ef6d5401408214, and decoded-pixel SHA-256 3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317. Independent xisf 0.9.7 exposes the exact compression/subblocks descriptors but fails image reshape after decoding only the first 32 samples, so its result is LIMITED. A fresh source-bound PixInsight run is required for native Revision 1 writer interoperability."
+    },
+    {
       "id": "mmxisf-writer-sha3-rgb",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-sha3-rgb.xisf.b64"},
       "sha256": "fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa",

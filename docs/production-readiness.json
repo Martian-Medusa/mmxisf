@@ -22,7 +22,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections and local macOS regression gates are complete. This gate remains fail-closed until fresh independent-consumer and native PixInsight interoperability, supported-platform quality gates, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
+      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, and the unfrozen exact-implementation Linux system-graph gate are complete. A dedicated eight-subblock zstd+shuffle fixture and source-bound PixInsight validator are prepared. This gate remains fail-closed until native PixInsight interoperability, frozen-candidate macOS/Linux and native Windows/MSVC gates, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -36,7 +36,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-14-linux-amd64-28aef67.json",
-      "note": "Exact development commit 28aef678ebc104aa924f38d929bdbe15edb6db03 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 18/18, shared 19/19, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. Distinct repeated static and shared builds were byte-identical in the pinned environment. Supplemental exact-head commit feedc2c98fbf1d547a213f991d39c69f1fa9876f was transferred as a hash-verified deterministic archive to mllse and passed the complete system-graph gate: static 19/19, shared 20/20, ASan/UBSan and TSan 19/19, 20,000 mutations, all consumers, docs, exports, and reproducibility. Its Ubuntu system dependencies are compatibility evidence, not production-floor evidence. Both results remain unfrozen and viewer-free."
+      "note": "Exact development commit 28aef678ebc104aa924f38d929bdbe15edb6db03 passed a deterministic extracted-source Ubuntu 24.04 amd64 production-dependency replay: GCC static 18/18, shared 19/19, installed and relocated consumers 2/2, and embedded consumers 1/1 for both linkage forms. Distinct repeated static and shared builds were byte-identical in the pinned environment. Supplemental Revision 1 commit 6d621cbb815f44218be29311e378e33f9abe92d3 passed the viewer-free system-graph gate from hash-verified archive d0d4c4d3938b36df849facd7c61e31ee65f3c51e1932fd089d8d21b8045755c0: static 19/19, shared 20/20, installed/relocated/embedded consumers, ASan/UBSan and TSan 19/19, 20,000 mutations, docs, exports, and reproducibility. See docs/quality-runs/2026-09-21-revision1-linux-amd64-6d621cb.json. System dependencies are compatibility evidence, not production-floor evidence; both results remain unfrozen and viewer-free."
     },
     {
       "id": "quality.exact-candidate-cross-platform",

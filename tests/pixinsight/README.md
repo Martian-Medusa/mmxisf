@@ -11,8 +11,8 @@ Materialize the committed fixture locally:
 
 ```sh
 mkdir -p artifacts/native-validation
-base64 --decode tests/interop/mmxisf-writer-native-properties.xisf.b64 \
-  > artifacts/native-validation/mmxisf-writer-native-properties.xisf
+base64 --decode -i tests/interop/mmxisf-writer-native-properties.xisf.b64 \
+  -o artifacts/native-validation/mmxisf-writer-native-properties.xisf
 shasum -a 256 artifacts/native-validation/mmxisf-writer-native-properties.xisf
 ```
 
@@ -54,3 +54,32 @@ sanitized result is retained in
 The current Revision 1 fixture changes only the same-length `Image/@id` from
 `native-validation` to `native_validation`, but its new source identity still
 requires a fresh native PASS before release qualification.
+
+## Revision 1 global-shuffle subblocks
+
+Materialize the dedicated eight-subblock writer fixture:
+
+```sh
+mkdir -p artifacts/native-validation
+base64 --decode -i tests/interop/mmxisf-writer-revision1-subblocks.xisf.b64 \
+  -o artifacts/native-validation/mmxisf-writer-revision1-subblocks.xisf
+shasum -a 256 \
+  artifacts/native-validation/mmxisf-writer-revision1-subblocks.xisf
+```
+
+The required source SHA-256 is
+`cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64`.
+In PixInsight, run:
+
+```text
+run -x=auto "/absolute/path/to/tests/pixinsight/MMXISFRevision1SubblocksValidation.js"
+```
+
+Select the materialized XISF and an evidence directory. The script requires a
+16x16 UInt16 Gray image, all 256 exact samples, and working-sample pixel
+SHA-256
+`3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317`.
+The source descriptor is bound to `zstd+sh:512:2` and eight independently
+compressed subblocks. A PASS establishes native PixInsight acceptance of this
+specific corrected Revision 1 writer path; it does not establish PFI parity or
+authorize product enablement.

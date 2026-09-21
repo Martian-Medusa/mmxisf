@@ -41,13 +41,24 @@ installed/relocated/embedded consumers, reproducibility checks, ASan/UBSan,
 viewer regression gate. Four representative generated headers validate against
 the pinned official Revision 1 XSD.
 
-This is not yet an RC2 qualification result. The four current writer fixtures
+This is not yet an RC2 qualification result. Four current writer fixtures
 passed a fresh black-box replay through the documented public API of PyPI
-`xisf` 0.9.7. Native PixInsight, Linux, native Windows/MSVC, exact-candidate
-coverage-guided fuzzing, and frozen candidate evidence remain pending. The
-local Command Line Tools installation does not include a compatible libFuzzer
-runtime, so coverage-guided fuzzing is deferred to a qualified Clang/Linux or
-full-Xcode environment; the deterministic ASan/UBSan smoke remains PASS.
+`xisf` 0.9.7. The exact implementation commit also passed the complete
+viewer-free Linux system-dependency gate on `mllse`: GCC static/shared,
+installed/relocated/embedded consumers, reproducibility, Clang ASan/UBSan,
+ThreadSanitizer, 20,000 deterministic mutations, and generated documentation.
+A dedicated source-bound `zstd+sh` eight-subblock writer fixture and manual
+PixInsight validator are committed for the corrected path. Native PixInsight,
+native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen
+candidate evidence remain pending. The local Command Line Tools installation
+does not include a compatible libFuzzer runtime, so coverage-guided fuzzing is
+deferred to qualified Clang/Linux or full Xcode; deterministic sanitizer smoke
+remains PASS.
+
+The 21 XISF files currently present in the private local PixInsight corpus pass
+header inspection and first-image decode on the corrected implementation. This
+is current availability-based regression evidence, not a claim that the older
+28-file inventory is still present or that native/PFI parity was repeated.
 
 ## Normative sources and clean-room boundary
 
@@ -465,13 +476,19 @@ hosted-runner minutes on routine intermediate commits.
 
 ### PixInsight black-box acceptance
 
-At least one current PixInsight 1.9.5 file must exercise:
+The committed source-bound writer fixture
+`tests/interop/mmxisf-writer-revision1-subblocks.xisf.b64` and
+`tests/pixinsight/MMXISFRevision1SubblocksValidation.js` must receive a PASS in
+current PixInsight. It exercises:
 
 - Zstandard plus byte shuffle;
-- multiple compression subblocks;
-- Gray or RGB floating-point pixels with deterministic verification data;
-- standard `AstrometricSolution:` metadata if PixInsight emits it;
+- eight independently compressed subblocks after whole-block shuffle;
+- Gray UInt16 pixels with deterministic per-sample verification data;
 - exact header provenance and file SHA-256.
+
+Standard `AstrometricSolution:` metadata and a Gray/RGB floating-point native
+producer file remain separate corpus coverage when PixInsight emits them; they
+are not required to prove the corrected writer's subblock ordering.
 
 If creating or verifying this fixture requires PixInsight UI interaction, stop
 and provide the user with a short manual procedure. Do not use computer-use
@@ -481,8 +498,9 @@ fixtures.
 ### Existing corpus regression
 
 - reopen and decode the retained uncompressed PFI Gray/RGB files;
-- confirm that all 28 currently inventoried `/Users/matt/PixInsight/*.xisf`
-  inputs still open within their declared profile;
+- confirm that every currently available `/Users/matt/PixInsight/*.xisf` input
+  still opens within its declared profile; the 2026-09-21 inventory contains
+  21 files and passes 21/21 header and first-image decode checks;
 - repeat exact pixel/metadata hashes for the retained PFI parity sources;
 - do not modify PFI or count these checks as PFI operator acceptance.
 
@@ -551,8 +569,10 @@ Avoid public-header changes for purely internal global-shuffle correction.
 5. Implement and review R1-2 and R1-3 before any secondary metadata work.
 6. Run focused tests and sanitizers.
 7. Execute R1-4 through R1-7 in small reviewable commits.
-8. Run local macOS qualification and the mllse Linux gate.
-9. Obtain the PixInsight black-box fixture/manual verification if required.
+8. Run local macOS qualification and the mllse Linux gate. **Complete for the
+   unfrozen implementation commits; repeat only on the frozen candidate.**
+9. Run the prepared PixInsight black-box fixture manually and retain its JSON
+   result.
 10. Freeze the exact RC2 candidate only after the matrix and evidence are
     complete.
 11. Run native Windows/MSVC once on that exact candidate.
