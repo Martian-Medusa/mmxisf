@@ -38,7 +38,8 @@ public API and returned the exact source values, dtypes, geometries, Planar
 storage, little-endian order, and floating-point bounds. The fixture is also a
 fuzz seed and its file and per-image pixel hashes are asserted in compiled
 tests. The current serialization was regenerated after Revision 1 identifier
-validation was enabled.
+validation was enabled and was re-read through the same independent public API
+on 2026-09-21 with exact shapes, dtypes, and values.
 
 The `mmxisf-writer-metadata` fixture covers deterministic direct metadata
 serialization without exposing raw XML: image-scoped String and TimePoint
@@ -46,7 +47,8 @@ Properties, an image FITS keyword, and an XISF-unit String Property. The same
 independent consumer preserved the exact Property values, FITS value/comment,
 scope split, and UInt16 pixels through its public metadata and image APIs.
 The current serialization was regenerated after Revision 1 identifier
-validation was enabled.
+validation was enabled and was re-read through the same independent public API
+on 2026-09-21 with exact pixels and metadata values.
 
 The `mmxisf-writer-codecs` fixture covers zlib, LZ4, LZ4HC, and Zstandard
 output, both shuffled and unshuffled blocks, and SHA-1/256/512 declarations.
@@ -78,6 +80,9 @@ The Revision 1 migration changed only this fixture's same-length `Image/@id`
 from `native-validation` to `native_validation`. The historical PixInsight
 record remains bound to the predecessor source hash; the current hash therefore
 requires a new native run.
+The current fixture also passed a 2026-09-21 independent public-API read with
+exact pixels, matrix, vector, String value, and descriptors; that result does
+not replace the separate native PixInsight gate.
 
 The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
 writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
@@ -89,4 +94,5 @@ returned channels-last values `[[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]]` as a
 that the independent package itself verified the digest.
 The Revision 1 migration changed only its same-length `Image/@id` from
 `sha3-rgb` to `sha3_rgb`; compressed pixels and the declared digest are
-unchanged.
+unchanged. A 2026-09-21 independent public-API replay recovered the exact RGB
+values and digest descriptor from the current source hash.

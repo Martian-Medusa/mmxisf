@@ -41,8 +41,9 @@ installed/relocated/embedded consumers, reproducibility checks, ASan/UBSan,
 viewer regression gate. Four representative generated headers validate against
 the pinned official Revision 1 XSD.
 
-This is not yet an RC2 qualification result. A fresh native PixInsight run,
-independent-consumer replay, Linux, native Windows/MSVC, exact-candidate
+This is not yet an RC2 qualification result. The four current writer fixtures
+passed a fresh black-box replay through the documented public API of PyPI
+`xisf` 0.9.7. Native PixInsight, Linux, native Windows/MSVC, exact-candidate
 coverage-guided fuzzing, and frozen candidate evidence remain pending. The
 local Command Line Tools installation does not include a compatible libFuzzer
 runtime, so coverage-guided fuzzing is deferred to a qualified Clang/Linux or

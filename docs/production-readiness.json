@@ -61,10 +61,10 @@
     },
     {
       "id": "interop.independent-consumer-writer",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "tests/independent_producer_test.cpp",
-      "note": "The Revision 1 fixture identities changed after identifier validation and require a fresh independent public-API consumer replay. Historical predecessor results remain useful but are not promoted to the current source hashes."
+      "evidence": "docs/quality-runs/2026-09-21-revision1-independent-consumer-macos-arm64.json",
+      "note": "PyPI xisf 0.9.7 read the four exact Revision 1 writer fixtures through documented public APIs in an isolated temporary environment and recovered all declared shapes, dtypes, pixels, selected metadata, block Properties, and current image identifiers. This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
     },
     {
       "id": "interop.pixinsight-reader-gray",

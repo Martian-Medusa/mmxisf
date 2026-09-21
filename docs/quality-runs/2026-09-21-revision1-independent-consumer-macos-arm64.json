@@ -1,0 +1,55 @@
+{
+  "schema": "mmxisf.independent-consumer-run/1.0.0",
+  "recordedAtUtc": "2026-09-21T09:11:37Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "1f2a93531542add2218fb6c098f9a9875e9cc538",
+  "candidateFrozen": false,
+  "publicationAuthorized": false,
+  "consumer": {
+    "name": "PyPI xisf",
+    "version": "0.9.7",
+    "documentedPublicApi": [
+      "XISF.__init__",
+      "XISF.get_file_metadata",
+      "XISF.get_images_metadata",
+      "XISF.read_image"
+    ],
+    "sdistSha256": "fcc8d33b3c45461abb0d71b3cd1207c08548ee11f51d4aaa5615f19cc54e1724",
+    "license": "GPL-3.0",
+    "implementationSourceInspected": false,
+    "projectBuildRuntimeOrTestDependency": false,
+    "executionEnvironment": "isolated temporary virtual environment"
+  },
+  "host": {
+    "operatingSystem": "macOS 27.0 (26A428)",
+    "architecture": "arm64"
+  },
+  "fixtures": [
+    {
+      "id": "mmxisf-writer-multi-scalars",
+      "sha256": "228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423",
+      "result": "PASS",
+      "observed": "four images; shapes 2x2x1, 1x2x1, 1x1x3, 1x1x1; dtypes UInt8, UInt32, Float32, Float64; exact values and Revision 1 image identifiers"
+    },
+    {
+      "id": "mmxisf-writer-metadata",
+      "sha256": "08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3",
+      "result": "PASS",
+      "observed": "exact 2x2 UInt16 pixels, image String and TimePoint Properties, FITS EXPTIME value/comment, unit String Property, and Revision 1 image identifier"
+    },
+    {
+      "id": "mmxisf-writer-native-properties",
+      "sha256": "e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d",
+      "result": "PASS",
+      "observed": "exact 2x2 UInt16 pixels, F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String Property, compression/checksum descriptors, and Revision 1 image identifier"
+    },
+    {
+      "id": "mmxisf-writer-sha3-rgb",
+      "sha256": "fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa",
+      "result": "PASS",
+      "observed": "exact 2x2x3 UInt16 RGB values and sha3-256 descriptor; the independent consumer exposes the digest but is not claimed to verify it"
+    }
+  ],
+  "result": "PASS_4_OF_4",
+  "authority": "Independent black-box public-API acceptance and value identity for the exact fixtures only; not native PixInsight evidence, universal format conformance, or a license/dependency change."
+}
