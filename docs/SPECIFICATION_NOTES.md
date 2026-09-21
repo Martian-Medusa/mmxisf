@@ -1,7 +1,7 @@
 # Specification interpretation notes
 
-These notes record ambiguities or cross-section tensions in the pinned XISF 1.0
-specification. They do not modify the specification.
+These notes record compatibility decisions and profile boundaries for the
+pinned XISF 1.0 Revision 1 specification. They do not modify the specification.
 
 ## SN-001: inline pixel-block wording
 
@@ -69,19 +69,29 @@ version `1.0`, and an explicit UTF-8 encoding; it rejects other versions,
 encodings, and `standalone` declarations. This compatibility choice changes no
 decoded text semantics and has dedicated positive and negative tests.
 
-## SN-005: table examples serialize String cells with `value`
+## SN-005: legacy table String cells serialized with `value`
 
 - Sections: 11.1, 11.3
-- Status: compatibility exception retained without coercion
+- Status: legacy compatibility retained without coercion
 
-Section 11.1 requires String properties to use character data or a data block,
-not a `value` attribute. Section 11.3 says that Cells serialize values exactly
-like Properties except for omitted `id`, `type`, and `format` attributes, but
-its normative Messier catalog example serializes all String cells with a
-`value` attribute.
+Revision 1 corrects the String Cell examples to use character data. Older
+producers and the document-1.00 examples used a `value` attribute for String
+cells, so this form remains a compatibility input rather than a current
+specification ambiguity.
 
-The table inspection profile accepts all three demonstrated String Cell forms:
+The table inspection profile accepts all three observed String Cell forms:
 `value`, character data, and a data block. It records the form and exact value,
 does not coerce between forms, and does not extend this exception to ordinary
 String Properties. This is the narrowest behavior compatible with both the
-prose and the official table example.
+current normative form and retained legacy files.
+
+## SN-006: RGB working-space validation level
+
+- Sections: 8.5, 11.8
+- Status: structural inspection only
+
+Revision 1 defines luminance coefficients as values derived from the primary
+chromaticities and the D50 reference white. The current profile validates that
+`x`, `y`, and `Y` are finite normalized triples and preserves their exact text,
+but it does not claim numerical derived-D50 verification or perform color
+transforms. The conformance matrix classifies this object as `INSPECT_ONLY`.

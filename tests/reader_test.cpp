@@ -1414,17 +1414,17 @@ int main() {
 
   const std::vector<std::byte> shuffled_zlib_subblocks{
       std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x64},
-      std::byte{0x66}, std::byte{0x62}, std::byte{0x01}, std::byte{0x00},
-      std::byte{0x00}, std::byte{0x19}, std::byte{0x00}, std::byte{0x0b},
-      std::byte{0x78}, std::byte{0x9c}, std::byte{0x63}, std::byte{0x65},
-      std::byte{0x67}, std::byte{0xe3}, std::byte{0x00}, std::byte{0x00},
-      std::byte{0x00}, std::byte{0x41}, std::byte{0x00}, std::byte{0x1b}};
+      std::byte{0x66}, std::byte{0x05}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x11}, std::byte{0x00}, std::byte{0x0a}, std::byte{0x78},
+      std::byte{0x9c}, std::byte{0x63}, std::byte{0x67}, std::byte{0x62},
+      std::byte{0x61}, std::byte{0xe3}, std::byte{0x00}, std::byte{0x00},
+      std::byte{0x00}, std::byte{0x50}, std::byte{0x00}, std::byte{0x1c}};
   const auto shuffled_zlib_subblocks_path = write_fixture(
       "mmxisf-m3-zlib-shuffled-subblocks.xisf",
       std::string(
           "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
           "<Image geometry=\"4:1:1\" sampleFormat=\"UInt16\" "
-          "compression=\"zlib+sh:8:2\" subblocks=\"12,4:12,4\" "
+          "compression=\"zlib+sh:8:2\" subblocks=\"11,3:13,5\" "
           "location=\"attachment:1024:24\"/>") +
           valid_metadata() + "</xisf>",
       shuffled_zlib_subblocks);
@@ -1436,12 +1436,17 @@ int main() {
     const std::vector<std::byte> expected{
         std::byte{1}, std::byte{2}, std::byte{3}, std::byte{4},
         std::byte{5}, std::byte{6}, std::byte{7}, std::byte{8}};
+    auto image = shuffled_zlib_subblock_reader.value().read_image(0);
+    expect(image && image.value().pixels == expected,
+           "globally shuffled unaligned subblocks decode exact bytes");
+
     CollectingRowSink row_sink;
     auto rows =
         shuffled_zlib_subblock_reader.value().read_image_rows(0, row_sink);
-    expect(rows && row_sink.rows.size() == 1 &&
-               row_sink.rows[0].bytes == expected,
-           "shuffled subblocks assemble one exact planar row");
+    expect(!rows &&
+               rows.error().code == mmxisf::ErrorCode::unsupported_feature &&
+               row_sink.rows.empty(),
+           "globally shuffled multi-subblock row delivery fails closed");
   }
 
   struct Lz4CodecCase {
@@ -2727,33 +2732,34 @@ int main() {
   }
 
   const auto nested_extension_path = write_fixture(
-      "mmxisf-nested-extension-inventory.xisf",
+      "mmxisf-root-extension-inventory.xisf",
       std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
                   "xmlns:ext=\"urn:mmxisf:test\" "
                   "xmlns:aux=\"urn:mmxisf:aux\" version=\"1.0\">"
-                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
-                  "location=\"attachment:1024:1\">"
                   "<ext:Capture ext:mode=\"science\" plain=\"yes\">"
-                  "pre<![CDATA[mid]]><aux:Child aux:key=\"v\">payload"
-                  "</aux:Child>post</ext:Capture></Image>") +
+                  "pre<![CDATA[mid]]>post</ext:Capture>"
+                  "<aux:Child aux:key=\"v\" plain=\"x\">payload"
+                  "</aux:Child>"
+                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                  "location=\"attachment:1024:1\"/>") +
           valid_metadata() + "</xisf>",
       {std::byte{0x2a}});
   auto nested_extension = mmxisf::Reader::open_file(nested_extension_path);
   expect(nested_extension.has_value(),
-         "nested extension inventory fixture opens");
+         "root extension inventory fixture opens");
   if (nested_extension) {
     const auto &extensions =
         nested_extension.value().document().extension_elements();
     expect(extensions.size() == 2,
-           "nested extensions are inventoried in document order");
+           "root extensions are inventoried in document order");
     if (extensions.size() == 2) {
       const auto &capture = extensions[0];
       const auto &child = extensions[1];
       expect(capture.namespace_uri == "urn:mmxisf:test" &&
-                 capture.name == "Capture" && capture.image_index == 0 &&
+                 capture.name == "Capture" && !capture.image_index &&
                  !capture.parent_extension_index &&
                  capture.text == "premidpost",
-             "extension direct text and image association are preserved");
+             "root extension direct text and association are preserved");
       const auto mode =
           std::find_if(capture.attributes.begin(), capture.attributes.end(),
                        [](const mmxisf::XmlAttribute &attribute) {
@@ -2769,13 +2775,29 @@ int main() {
                  plain != capture.attributes.end() && plain->value == "yes",
              "qualified and unqualified extension attributes are distinct");
       expect(child.namespace_uri == "urn:mmxisf:aux" && child.name == "Child" &&
-                 child.parent_namespace_uri == "urn:mmxisf:test" &&
-                 child.parent_name == "Capture" &&
-                 child.parent_extension_index == 0 && child.image_index == 0 &&
-                 child.text == "payload",
-             "nested extension parent link and direct text are preserved");
+                 child.parent_namespace_uri ==
+                     "http://www.pixinsight.com/xisf" &&
+                 child.parent_name == "xisf" && !child.parent_extension_index &&
+                 !child.image_index && child.text == "payload",
+             "root extension parent and direct text are preserved");
     }
   }
+
+  const auto forbidden_nested_extension_path = write_fixture(
+      "mmxisf-forbidden-nested-extension.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "xmlns:ext=\"urn:mmxisf:test\" version=\"1.0\">"
+                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                  "location=\"attachment:1024:1\">"
+                  "<ext:Capture/></Image>") +
+          valid_metadata() + "</xisf>",
+      {std::byte{0x2a}});
+  auto forbidden_nested_extension =
+      mmxisf::Reader::open_file(forbidden_nested_extension_path);
+  expect(!forbidden_nested_extension &&
+             forbidden_nested_extension.error().code ==
+                 mmxisf::ErrorCode::invalid_xisf,
+         "extension elements inside core elements are rejected");
 
   mmxisf::ReaderOptions one_extension;
   one_extension.max_extension_elements = 1;
@@ -3440,6 +3462,37 @@ int main() {
     }
   }
 
+  const auto future_table_path = write_fixture(
+      "mmxisf-table-future-field-type.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+          "location=\"embedded\"><Data encoding=\"hex\">2a</Data>"
+          "<Table id=\"FutureData\"><Structure>"
+          "<Field id=\"future\" type=\"FutureScalar\"/>"
+          "</Structure><Row><Cell value=\"opaque\"/></Row></Table>"
+          "</Image>") +
+          valid_metadata() + "</xisf>");
+  auto future_table = mmxisf::Reader::open_file(future_table_path);
+  expect(
+      future_table &&
+          future_table.value().document().table_structures().size() == 1 &&
+          future_table.value().document().tables().size() == 1 &&
+          future_table.value()
+                  .document()
+                  .table_structures()[0]
+                  .fields[0]
+                  .type == "FutureScalar" &&
+          future_table.value().document().tables()[0].rows[0].cells[0].value ==
+              "opaque",
+      "unknown Table Field types retain bounded raw descriptors");
+  if (future_table) {
+    auto supported_image = future_table.value().read_image(0);
+    expect(supported_image && supported_image.value().pixels.size() == 1 &&
+               supported_image.value().pixels[0] == std::byte{0x2a},
+           "unknown Table Field types do not hide supported images");
+  }
+
   const auto expect_table_resource_limit = [&](mmxisf::ReaderOptions options,
                                                const char *message) {
     auto opened = mmxisf::Reader::open_file(table_path, options);
@@ -3734,7 +3787,11 @@ int main() {
           "<Property id=\"Test:Vector\" type=\"F64Vector\" length=\"1\" "
           "location=\"inline:base64\">AAAAAAAAAAA=</Property>"
           "<Property id=\"Test:Matrix\" type=\"F64Matrix\" rows=\"1\" "
-          "columns=\"1\" location=\"inline:base64\">AAAAAAAAAAA=</Property>") +
+          "columns=\"1\" location=\"inline:base64\">AAAAAAAAAAA=</Property>"
+          "<Property id=\"Test:EmptyVector\" type=\"F64Vector\" length=\"0\" "
+          "location=\"inline:base64\"></Property>"
+          "<Property id=\"Test:EmptyMatrix\" type=\"F64Matrix\" rows=\"0\" "
+          "columns=\"3\" location=\"inline:base64\"></Property>") +
           valid_metadata() + "</xisf>");
   auto property_forms = mmxisf::Reader::open_file(property_forms_path);
   expect(property_forms.has_value(),
@@ -3742,6 +3799,11 @@ int main() {
   if (property_forms) {
     expect(property_forms.value().document().metadata()[2].value == " value ",
            "String Property whitespace remains significant");
+    auto empty_vector = property_forms.value().read_property_block(6);
+    auto empty_matrix = property_forms.value().read_property_block(7);
+    expect(empty_vector && empty_vector.value().bytes.empty() && empty_matrix &&
+               empty_matrix.value().bytes.empty(),
+           "empty vector and matrix inline blocks decode as zero bytes");
   }
 
   struct PropertyValueCase {
@@ -3776,6 +3838,10 @@ int main() {
       PropertyValueCase{"float-nan", "Float64", "NaN"},
       PropertyValueCase{"float-positive-infinity", "Float64", "+Inf"},
       PropertyValueCase{"float-negative-infinity", "Float64", "-Inf"},
+      PropertyValueCase{"float-lowercase-nan", "Float64", "nan"},
+      PropertyValueCase{"float-negative-lowercase-nan", "Float64", "-nan"},
+      PropertyValueCase{"float-lowercase-infinity", "Float64", "inf"},
+      PropertyValueCase{"float-negative-lowercase-infinity", "Float64", "-inf"},
       PropertyValueCase{"complex", "Complex64", "( 1.5, -2e0 )"},
   };
   for (const auto &test : valid_property_values) {
@@ -3829,8 +3895,7 @@ int main() {
       PropertyValueCase{"uint128-overflow", "UInt128",
                         "340282366920938463463374607431768211456"},
       PropertyValueCase{"float-trailing-dot", "Float64", "1."},
-      PropertyValueCase{"float-unsigned-infinity", "Float64", "Inf"},
-      PropertyValueCase{"float-lowercase-nan", "Float64", "nan"},
+      PropertyValueCase{"float-uppercase-unsigned-infinity", "Float64", "Inf"},
       PropertyValueCase{"float-empty-exponent", "Float64", "1e"},
       PropertyValueCase{"complex-no-parentheses", "Complex64", "1,2"},
       PropertyValueCase{"complex-no-comma", "Complex64", "(1 2)"},
@@ -3893,8 +3958,6 @@ int main() {
           "<Property id=\"p\" type=\"F64Matrix\" rows=\"1\" "
           "location=\"inline:base64\"/>"},
       InvalidPropertyFormCase{
-          "unknown-type", "<Property id=\"p\" type=\"Custom\" value=\"1\"/>"},
-      InvalidPropertyFormCase{
           "invalid-identifier",
           "<Property id=\"bad-id\" type=\"Int32\" value=\"1\"/>"},
   };
@@ -3908,6 +3971,105 @@ int main() {
     expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
            test.name);
   }
+
+  const auto unknown_property_path = write_fixture(
+      "mmxisf-unknown-property-type.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">"
+                  "<Property id=\"p\" type=\"Custom\" value=\"1\"/>") +
+          valid_metadata() + "</xisf>");
+  auto unknown_property = mmxisf::Reader::open_file(unknown_property_path);
+  expect(unknown_property &&
+             unknown_property.value().document().metadata()[0].type ==
+                 "Custom" &&
+             unknown_property.value().document().metadata()[0].value == "1",
+         "unknown Property types remain inspectable without hiding the unit");
+
+  const auto astrometric_properties_path = write_fixture(
+      "mmxisf-astrometric-solution-properties.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">"
+                  "<Image geometry=\"1:1:1\" sampleFormat=\"UInt8\" "
+                  "location=\"path(pixels.bin)\">"
+                  "<Property id=\"AstrometricSolution:ProjectionSystem\" "
+                  "type=\"String\">Gnomonic</Property>"
+                  "<Property "
+                  "id=\"AstrometricSolution:ReferenceCelestialCoordinates\" "
+                  "type=\"F64Vector\" length=\"2\" "
+                  "location=\"inline:base64\">"
+                  "AAAAAAAAAAAAAAAAAAAAAA==</Property></Image>") +
+          valid_metadata() + "</xisf>");
+  auto astrometric_properties =
+      mmxisf::Reader::open_file(astrometric_properties_path);
+  expect(astrometric_properties &&
+             astrometric_properties.value().document().metadata()[0].name ==
+                 "AstrometricSolution:ProjectionSystem" &&
+             astrometric_properties.value().document().metadata()[0].value ==
+                 "Gnomonic",
+         "AstrometricSolution scalar metadata remains inspectable");
+  if (astrometric_properties) {
+    auto coordinates = astrometric_properties.value().read_property_block(1);
+    expect(coordinates && coordinates.value().bytes.size() == 16,
+           "AstrometricSolution vector metadata uses generic typed decoding");
+  }
+
+  const auto revision1_metadata_path = write_fixture(
+      "mmxisf-revision1-standard-metadata.xisf",
+      std::string(
+          "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+          "<Property id=\"XISF:BlockAlignmentSize\" type=\"UInt16\" "
+          "value=\"4096\"/>"
+          "<Property id=\"XISF:ChecksumAlgorithms\" type=\"String\">"
+          "sha256,sha3-256</Property>"
+          "<Property id=\"XISF:MaxInlineBlockSize\" type=\"UInt16\" "
+          "value=\"1024\"/>"
+          "<Property id=\"XISF:OutputHints\" type=\"String\">"
+          "compression-codec zstd</Property>") +
+          valid_metadata() + "</xisf>");
+  auto revision1_metadata = mmxisf::Reader::open_file(revision1_metadata_path);
+  expect(revision1_metadata &&
+             revision1_metadata.value().document().metadata().size() == 6,
+         "Revision 1 standard metadata Properties remain available");
+  if (revision1_metadata) {
+    const auto &entries = revision1_metadata.value().document().metadata();
+    expect(entries[0].name == "XISF:BlockAlignmentSize" &&
+               entries[0].type == "UInt16" && entries[0].value == "4096" &&
+               entries[1].name == "XISF:ChecksumAlgorithms" &&
+               entries[1].type == "String" &&
+               entries[1].value == "sha256,sha3-256" &&
+               entries[2].name == "XISF:MaxInlineBlockSize" &&
+               entries[2].type == "UInt16" && entries[2].value == "1024" &&
+               entries[3].name == "XISF:OutputHints" &&
+               entries[3].type == "String" &&
+               entries[3].value == "compression-codec zstd",
+           "Revision 1 standard metadata retains exact types and values");
+  }
+
+  const auto invalid_image_id_path = write_fixture(
+      "mmxisf-invalid-image-id.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">"
+                  "<Image id=\"bad-id\" geometry=\"1:1:1\" "
+                  "sampleFormat=\"UInt8\" location=\"path(pixels.bin)\"/>") +
+          valid_metadata() + "</xisf>");
+  auto invalid_image_id = mmxisf::Reader::open_file(invalid_image_id_path);
+  expect(!invalid_image_id &&
+             invalid_image_id.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "Image identifiers enforce Revision 1 syntax");
+
+  const auto duplicate_image_id_path = write_fixture(
+      "mmxisf-duplicate-image-id.xisf",
+      std::string("<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\">"
+                  "<Image id=\"science\" geometry=\"1:1:1\" "
+                  "sampleFormat=\"UInt8\" location=\"path(a.bin)\"/>"
+                  "<Image id=\"science\" geometry=\"1:1:1\" "
+                  "sampleFormat=\"UInt8\" location=\"path(b.bin)\"/>") +
+          valid_metadata() + "</xisf>");
+  auto duplicate_image_id = mmxisf::Reader::open_file(duplicate_image_id_path);
+  expect(!duplicate_image_id &&
+             duplicate_image_id.error().code == mmxisf::ErrorCode::invalid_xisf,
+         "Image identifiers are unique within the XISF unit");
 
   const auto duplicate_image_property_path = write_fixture(
       "mmxisf-duplicate-image-property.xisf",

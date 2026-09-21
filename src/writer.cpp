@@ -250,6 +250,33 @@ bool is_valid_property_identifier(std::string_view value) {
   return !expect_start;
 }
 
+bool is_valid_image_identifier(std::string_view value) {
+  const auto is_ascii_letter = [](char character) {
+    return (character >= 'A' && character <= 'Z') ||
+           (character >= 'a' && character <= 'z');
+  };
+  if (value.empty() ||
+      (value.front() != '_' && !is_ascii_letter(value.front()))) {
+    return false;
+  }
+  return std::all_of(value.begin() + 1, value.end(), [&](char character) {
+    return character == '_' || is_ascii_letter(character) ||
+           (character >= '0' && character <= '9');
+  });
+}
+
+bool is_empty_property_container(const MetadataWriteEntry &entry) {
+  if (entry.value_form != MetadataWriteValueForm::data_block ||
+      !entry.block_bytes.empty()) {
+    return false;
+  }
+  const auto category = classify_property_type(entry.type);
+  return (category == PropertyCategory::vector && entry.length &&
+          *entry.length == 0) ||
+         (category == PropertyCategory::matrix && entry.rows && entry.columns &&
+          (*entry.rows == 0 || *entry.columns == 0));
+}
+
 std::string_view trim_xml_whitespace(std::string_view text) {
   constexpr std::string_view whitespace = " \t\r\n";
   const auto first = text.find_first_not_of(whitespace);
@@ -377,7 +404,8 @@ bool is_valid_integer_value(std::string_view text, bool is_signed,
 
 bool is_valid_floating_point_value(std::string_view text) {
   text = trim_xml_whitespace(text);
-  if (text == "NaN" || text == "+Inf" || text == "-Inf") {
+  if (text == "NaN" || text == "+Inf" || text == "-Inf" || text == "nan" ||
+      text == "-nan" || text == "inf" || text == "-inf") {
     return true;
   }
   if (text.empty()) {
@@ -522,6 +550,18 @@ make_metadata_xml(const MetadataWriteEntry &entry,
            "\"/>";
   }
   if (entry.value_form == MetadataWriteValueForm::data_block) {
+    if (is_empty_property_container(entry)) {
+      std::string result = "<Property id=\"" + escaped_name.value() +
+                           "\" type=\"" + entry.type + "\"";
+      if (entry.length) {
+        result += " length=\"0\"";
+      } else {
+        result += " rows=\"" + std::to_string(*entry.rows) + "\" columns=\"" +
+                  std::to_string(*entry.columns) + "\"";
+      }
+      result += " location=\"inline:base64\"></Property>";
+      return result;
+    }
     if (property_block == nullptr || prepared_block == nullptr) {
       return make_error(ErrorCode::internal_error,
                         "Writer Property block layout is missing");
@@ -678,17 +718,27 @@ bool is_valid_checksum_algorithm(ChecksumAlgorithm algorithm) {
   return false;
 }
 
-Result<std::vector<std::byte>> shuffle_bytes(std::span<const std::byte> input,
-                                             std::size_t item_size) {
-  if (item_size == 0 || input.size() % item_size != 0) {
+Result<std::vector<std::byte>> shuffled_range(std::span<const std::byte> input,
+                                              std::size_t item_size,
+                                              std::size_t shuffled_offset,
+                                              std::size_t shuffled_size) {
+  if (item_size == 0 || shuffled_offset > input.size() ||
+      shuffled_size > input.size() - shuffled_offset) {
     return make_error(ErrorCode::invalid_argument,
                       "Writer byte shuffle has invalid item geometry");
   }
   const auto item_count = input.size() / item_size;
-  std::vector<std::byte> output(input.size());
-  for (std::size_t byte = 0; byte < item_size; ++byte) {
-    for (std::size_t item = 0; item < item_count; ++item) {
-      output[byte * item_count + item] = input[item * item_size + byte];
+  const auto shuffled_prefix_size = item_count * item_size;
+  std::vector<std::byte> output(shuffled_size);
+  for (std::size_t local_offset = 0; local_offset < shuffled_size;
+       ++local_offset) {
+    const auto global_offset = shuffled_offset + local_offset;
+    if (global_offset < shuffled_prefix_size) {
+      const auto byte_index = global_offset / item_count;
+      const auto item_index = global_offset % item_count;
+      output[local_offset] = input[item_index * item_size + byte_index];
+    } else {
+      output[local_offset] = input[global_offset];
     }
   }
   return output;
@@ -1233,11 +1283,9 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       chunk_limit = std::min<std::uint64_t>(chunk_limit,
                                             std::numeric_limits<uLong>::max());
     }
-    chunk_limit -= chunk_limit % request.item_size;
-    if (chunk_limit < request.item_size) {
-      return make_error(
-          ErrorCode::invalid_argument,
-          "Writer compression subblock size is smaller than one item");
+    if (chunk_limit == 0 || request.item_size == 0) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer compression geometry is invalid");
     }
 
     std::vector<std::pair<std::uint64_t, std::uint64_t>> subblocks;
@@ -1279,7 +1327,10 @@ Result<PreparedBlock> prepare_block(const std::filesystem::path &destination,
       std::vector<std::byte> shuffled;
       std::span<const std::byte> compression_input = input;
       if (request.byte_shuffle) {
-        auto result = shuffle_bytes(input, request.item_size);
+        auto result =
+            shuffled_range(request.bytes, request.item_size,
+                           static_cast<std::size_t>(input_offset),
+                           static_cast<std::size_t>(uncompressed_size));
         if (!result) {
           return result.error();
         }
@@ -1424,6 +1475,14 @@ write_impl(const std::filesystem::path &destination_or_scratch,
                       "Writer creator application exceeds metadata budget");
   }
 
+  std::unordered_set<std::string> image_ids;
+  for (const auto &image : images) {
+    if (!image.id.empty() && (!is_valid_image_identifier(image.id) ||
+                              !image_ids.emplace(image.id).second)) {
+      return make_error(ErrorCode::invalid_argument,
+                        "Writer Image id must have valid syntax and be unique");
+    }
+  }
   std::unordered_set<std::string> unit_property_ids{"XISF:CreationTime",
                                                     "XISF:CreatorApplication"};
   std::vector<std::unordered_set<std::string>> image_property_ids(
@@ -1517,19 +1576,16 @@ write_impl(const std::filesystem::path &destination_or_scratch,
         std::uint64_t element_count = 0;
         const auto category = classify_property_type(entry.type);
         if (category == PropertyCategory::vector) {
-          if (!entry.length || *entry.length == 0 || entry.rows ||
-              entry.columns) {
-            return make_error(
-                ErrorCode::invalid_argument,
-                "Writer vector Properties require a nonzero length only");
+          if (!entry.length || entry.rows || entry.columns) {
+            return make_error(ErrorCode::invalid_argument,
+                              "Writer vector Properties require a length only");
           }
           element_count = *entry.length;
         } else if (category == PropertyCategory::matrix) {
-          if (entry.length || !entry.rows || !entry.columns ||
-              *entry.rows == 0 || *entry.columns == 0) {
+          if (entry.length || !entry.rows || !entry.columns) {
             return make_error(
                 ErrorCode::invalid_argument,
-                "Writer matrix Properties require nonzero rows and columns");
+                "Writer matrix Properties require rows and columns");
           }
           if (!checked_multiply(*entry.rows, *entry.columns, element_count)) {
             return make_error(ErrorCode::overflow,
@@ -1578,6 +1634,15 @@ write_impl(const std::filesystem::path &destination_or_scratch,
           return make_error(
               ErrorCode::invalid_argument,
               "Writer Property byte shuffle requires compression");
+        }
+        if (is_empty_property_container(entry) &&
+            (entry.byte_order != ByteOrder::little || !entry.format.empty() ||
+             entry.compression != CompressionCodec::none ||
+             entry.byte_shuffle || entry.checksum != ChecksumAlgorithm::none)) {
+          return make_error(
+              ErrorCode::invalid_argument,
+              "Writer empty vector and matrix Properties require a plain "
+              "inline block");
         }
         auto escaped_format = escape_xml(entry.format, true);
         if (!escaped_format) {
@@ -1740,6 +1805,9 @@ write_impl(const std::filesystem::path &destination_or_scratch,
     if (entry.value_form != MetadataWriteValueForm::data_block) {
       continue;
     }
+    if (is_empty_property_container(entry)) {
+      continue;
+    }
     if (cumulative_serialized_property_bytes >
         options.max_cumulative_serialized_property_bytes) {
       return make_error(
@@ -1784,7 +1852,8 @@ write_impl(const std::filesystem::path &destination_or_scratch,
   std::vector<BlockLocation> metadata_blocks(metadata.size());
   const auto property_block_count = static_cast<std::size_t>(std::count_if(
       metadata.begin(), metadata.end(), [](const MetadataWriteEntry &entry) {
-        return entry.value_form == MetadataWriteValueForm::data_block;
+        return entry.value_form == MetadataWriteValueForm::data_block &&
+               !is_empty_property_container(entry);
       }));
   const auto plan_blocks =
       [&](std::uint64_t first_offset) -> Result<std::uint64_t> {
@@ -1825,6 +1894,9 @@ write_impl(const std::filesystem::path &destination_or_scratch,
     }
     for (std::size_t index = 0; index < metadata.size(); ++index) {
       if (metadata[index].value_form != MetadataWriteValueForm::data_block) {
+        continue;
+      }
+      if (is_empty_property_container(metadata[index])) {
         continue;
       }
       auto result = plan_one(metadata_blocks[index],
@@ -1956,6 +2028,9 @@ write_impl(const std::filesystem::path &destination_or_scratch,
     if (metadata[index].value_form != MetadataWriteValueForm::data_block) {
       continue;
     }
+    if (is_empty_property_container(metadata[index])) {
+      continue;
+    }
     auto padding = metadata_blocks[index].offset - output_position;
     while (padding != 0) {
       const auto count = static_cast<std::size_t>(
@@ -2013,7 +2088,8 @@ write_impl(const std::filesystem::path &destination_or_scratch,
   summary.image_blocks = std::move(image_blocks);
   summary.property_blocks.reserve(property_block_count);
   for (std::size_t index = 0; index < metadata.size(); ++index) {
-    if (metadata[index].value_form == MetadataWriteValueForm::data_block) {
+    if (metadata[index].value_form == MetadataWriteValueForm::data_block &&
+        !is_empty_property_container(metadata[index])) {
       summary.property_blocks.push_back(std::move(metadata_blocks[index]));
     }
   }

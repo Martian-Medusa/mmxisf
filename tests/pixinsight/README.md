@@ -17,7 +17,7 @@ shasum -a 256 artifacts/native-validation/mmxisf-writer-native-properties.xisf
 ```
 
 The required source SHA-256 is
-`b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6`.
+`e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d`.
 In PixInsight, run:
 
 ```text
@@ -48,6 +48,9 @@ node tools/build_pixinsight_writer_validation.mjs \
 
 The builder rejects relative fixture/evidence paths and preserves the manual
 script as the source of truth. The evidence path is create-only. On 2026-09-14,
-this automation passed the exact committed fixture in PixInsight 1.9.4 arm64;
-the sanitized result is retained in
+this automation passed the predecessor fixture in PixInsight 1.9.4 arm64; the
+sanitized result is retained in
 `docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json`.
+The current Revision 1 fixture changes only the same-length `Image/@id` from
+`native-validation` to `native_validation`, but its new source identity still
+requires a fresh native PASS before release qualification.

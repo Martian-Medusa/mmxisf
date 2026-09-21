@@ -56,6 +56,13 @@ or staging-limit failures occur before any callback.
 
 ## Memory bounds
 
+The low-copy row API intentionally returns `unsupported_feature` before the
+first callback for byte-shuffled compressed images that declare more than one
+subblock. XISF Revision 1 shuffles the complete logical data block before
+subblock division, so a subblock cannot be independently unshuffled into source
+row order. `Reader::read_image` and `read_image_into` support this combination
+with bounded per-subblock scratch and global-offset scatter.
+
 `ImageRowReadOptions::max_row_bytes` independently caps the source row and the
 planar output row. `max_subblock_bytes` caps each compressed and decoded
 subblock staging buffer. Byte-shuffled input can require a compressed buffer, a

@@ -2,7 +2,10 @@
 
 ## Normative and first-party sources
 
-- XISF 1.0 specification: <https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html>
+- XISF 1.0 Revision 1 announcement:
+  <https://pixinsight.net/dev/index.php?articles/xisf-1-0-specification-revision-1.22/>
+- XISF 1.0 Revision 1 specification:
+  <https://pixinsight.com/doc/docs/XISF-1.0-spec/XISF-1.0-spec.html>
 - PixInsight XISF landing page: <https://pixinsight.com/xisf/>
 - Official XISF specification source: <https://gitlab.com/pixinsight/XISF-specification>
 - PixInsight staff clarification of monolithic attached blocks and header-driven
@@ -10,10 +13,13 @@
 - PixInsight staff clarification of XISF left-to-right, top-to-bottom pixel
   order: <https://pixinsight.com/forum/index.php?threads/astrometric-solution-is-written-flipped-to-fits-and-xisf-file.20446/>
 
-The official document and its source repository were accessed during M0. The
-final XISF 1.0 source is pinned in `docs/specification-baseline.json` to commit
-`7fd38ebc999c0dc18d7cdce3032407b20cada9ea` from 2017-04-17. The source itself
-is not vendored; the repository records derived requirements and hashes.
+The official document and source repository were reverified on 2026-09-21.
+The XISF 1.0 Revision 1 document (version 1.01, September 2026) is pinned in
+`docs/specification-baseline.json` to commit
+`9dbdd650bbc4b7e51884f6bceeb7607be5f678a3`. The record includes a deterministic
+source-tree manifest, root PIDoc hash, and official XSD hash. The source and XSD
+are not vendored or used as runtime dependencies; this repository records only
+derived requirements, provenance, and hashes.
 
 - pugixml manual used for XML-parser risk evaluation:
   <https://pugixml.org/docs/manual.html>

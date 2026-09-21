@@ -294,7 +294,8 @@ bool is_valid_integer_value(std::string_view text, bool is_signed,
 
 bool is_valid_floating_point_value(std::string_view text) {
   text = trim_xml_whitespace(text);
-  if (text == "NaN" || text == "+Inf" || text == "-Inf") {
+  if (text == "NaN" || text == "+Inf" || text == "-Inf" || text == "nan" ||
+      text == "-nan" || text == "inf" || text == "-inf") {
     return true;
   }
   if (text.empty()) {
@@ -803,6 +804,7 @@ struct XmlBuilder {
 
   std::string version;
   std::vector<ImageInfo> images;
+  std::unordered_set<std::string> image_ids;
   std::vector<std::vector<std::byte>> embedded_blocks;
   std::vector<std::vector<std::byte>> inline_metadata_blocks;
   std::vector<std::vector<std::byte>> inline_icc_profile_blocks;
@@ -924,8 +926,8 @@ bool consume_table_text_bytes(XmlBuilder &state, std::size_t count,
   const auto limit = state.options.max_table_text_bytes;
   const auto available = limit - std::min(state.table_text_bytes, limit);
   if (count > available) {
-    state.fail(ErrorCode::resource_limit,
-               "Table text byte limit exceeded", std::string(element));
+    state.fail(ErrorCode::resource_limit, "Table text byte limit exceeded",
+               std::string(element));
     return false;
   }
   state.table_text_bytes += count;
@@ -1160,6 +1162,11 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
 
   std::optional<std::size_t> extension_index;
   if (state.depth > 1 && !is_xisf_element) {
+    if (state.depth != 2 || parent != "xisf") {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Extension elements must be direct children of xisf", name);
+      return;
+    }
     if (state.extension_elements.size() >=
         state.options.max_extension_elements) {
       state.fail(ErrorCode::resource_limit,
@@ -1312,9 +1319,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                      "Table structure reference limit exceeded", name);
           return;
         }
-        state.table_structure_references.push_back(
-            TableStructureReferenceEvent{*state.open_table_index,
-                                         std::string(*reference)});
+        state.table_structure_references.push_back(TableStructureReferenceEvent{
+            *state.open_table_index, std::string(*reference)});
       }
       if ((parent == "Image" && state.current_image()) ||
           parent == "Metadata") {
@@ -1358,8 +1364,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       return;
     }
     if (state.tables.size() >= state.options.max_tables) {
-      state.fail(ErrorCode::resource_limit, "Table count limit exceeded",
-                 name);
+      state.fail(ErrorCode::resource_limit, "Table count limit exceeded", name);
       return;
     }
     const auto identity = attribute(attributes, "id");
@@ -1372,10 +1377,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     table.uid = std::string(attribute(attributes, "uid").value_or(""));
     table.image_index = image_index;
     table.id = std::string(*identity);
-    table.caption =
-        std::string(attribute(attributes, "caption").value_or(""));
-    table.comment =
-        std::string(attribute(attributes, "comment").value_or(""));
+    table.caption = std::string(attribute(attributes, "caption").value_or(""));
+    table.comment = std::string(attribute(attributes, "comment").value_or(""));
     const auto parse_declared_extent = [&](std::string_view attribute_name,
                                            std::optional<std::uint64_t> &out) {
       const auto value = attribute(attributes, attribute_name);
@@ -1410,8 +1413,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     if (image_index) {
       if (state.table_binding_events.size() >=
           state.options.max_table_bindings) {
-        state.fail(ErrorCode::resource_limit,
-                   "Table binding limit exceeded", name);
+        state.fail(ErrorCode::resource_limit, "Table binding limit exceeded",
+                   name);
         return;
       }
       state.table_binding_events.push_back(
@@ -1436,8 +1439,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     const auto uid = attribute(attributes, "uid");
     if (root_child && !uid) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Standalone Structure requires a uid", name, "uid");
+      state.fail(ErrorCode::invalid_xisf, "Standalone Structure requires a uid",
+                 name, "uid");
       return;
     }
     if (table_child &&
@@ -1448,8 +1451,7 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     TableStructureInfo structure;
     structure.uid = std::string(uid.value_or(""));
-    structure.table_index =
-        table_child ? state.open_table_index : std::nullopt;
+    structure.table_index = table_child ? state.open_table_index : std::nullopt;
     if (!consume_table_text_bytes(state, structure.uid.size(), name)) {
       return;
     }
@@ -1461,8 +1463,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
                                          structure_index);
     }
     if (root_child) {
-      state.standalone_structure_uids.emplace(
-          state.table_structures.back().uid, structure_index);
+      state.standalone_structure_uids.emplace(state.table_structures.back().uid,
+                                              structure_index);
     } else {
       state.tables[*state.open_table_index].structure_index = structure_index;
     }
@@ -1476,26 +1478,22 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       return;
     }
     if (state.table_field_count >= state.options.max_table_fields) {
-      state.fail(ErrorCode::resource_limit,
-                 "Table field limit exceeded", name);
+      state.fail(ErrorCode::resource_limit, "Table field limit exceeded", name);
       return;
     }
     const auto identity = attribute(attributes, "id");
     const auto type = attribute(attributes, "type");
     if (!identity || !is_valid_property_identifier(*identity) || !type ||
-        classify_property_type(*type) == PropertyCategory::unknown) {
+        type->empty() || *type == "Table") {
       state.fail(ErrorCode::invalid_xisf,
-                 "Field requires a valid id and non-Table property type",
-                 name);
+                 "Field requires a valid id and non-Table property type", name);
       return;
     }
     TableFieldInfo field;
     field.id = std::string(*identity);
     field.type = std::string(*type);
-    field.format =
-        std::string(attribute(attributes, "format").value_or(""));
-    field.header =
-        std::string(attribute(attributes, "header").value_or(""));
+    field.format = std::string(attribute(attributes, "format").value_or(""));
+    field.header = std::string(attribute(attributes, "header").value_or(""));
     const auto copied_bytes = field.id.size() + field.type.size() +
                               field.format.size() + field.header.size();
     if (!consume_table_text_bytes(state, copied_bytes, name)) {
@@ -1510,8 +1508,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
   if (is_xisf_element && name == "Row") {
     if (parent != "Table" || !state.open_table_index ||
         state.open_table_row_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Row must be a direct child of Table", name);
+      state.fail(ErrorCode::invalid_xisf, "Row must be a direct child of Table",
+                 name);
       return;
     }
     if (state.table_row_count >= state.options.max_table_rows) {
@@ -1528,13 +1526,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
   if (is_xisf_element && name == "Cell") {
     if (parent != "Row" || !state.open_table_index ||
         !state.open_table_row_index || state.open_table_cell_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Cell must be a direct child of Row", name);
+      state.fail(ErrorCode::invalid_xisf, "Cell must be a direct child of Row",
+                 name);
       return;
     }
     if (state.table_cell_count >= state.options.max_table_cells) {
-      state.fail(ErrorCode::resource_limit, "Table cell limit exceeded",
-                 name);
+      state.fail(ErrorCode::resource_limit, "Table cell limit exceeded", name);
       return;
     }
     if (attribute(attributes, "id") || attribute(attributes, "type") ||
@@ -1570,16 +1567,13 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       if (cell.block.kind == BlockKind::unknown ||
           cell.block.kind == BlockKind::embedded) {
         state.fail(ErrorCode::invalid_xisf,
-                   "Cell has an invalid data block location", name,
-                   "location");
+                   "Cell has an invalid data block location", name, "location");
         return;
       }
       if (cell.block.kind == BlockKind::inline_data &&
-          cell.block.raw != "inline:base64" &&
-          cell.block.raw != "inline:hex") {
+          cell.block.raw != "inline:base64" && cell.block.raw != "inline:hex") {
         state.fail(ErrorCode::unsupported_feature,
-                   "Unsupported inline Cell block encoding", name,
-                   "location");
+                   "Unsupported inline Cell block encoding", name, "location");
         return;
       }
       cell.value_form = TableCellInfo::ValueForm::data_block;
@@ -1588,8 +1582,8 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
     }
     const auto byte_order = byte_order_attribute.value_or("little");
     if (byte_order != "little" && byte_order != "big") {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Cell has an invalid byteOrder", name, "byteOrder");
+      state.fail(ErrorCode::invalid_xisf, "Cell has an invalid byteOrder", name,
+                 "byteOrder");
       return;
     }
     cell.byte_order = byte_order == "big" ? ByteOrder::big : ByteOrder::little;
@@ -2258,6 +2252,12 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
       }
     }
     image.id = std::string(attribute(attributes, "id").value_or(""));
+    if (!image.id.empty() && (!is_valid_unique_id(image.id) ||
+                              !state.image_ids.emplace(image.id).second)) {
+      state.fail(ErrorCode::invalid_xisf,
+                 "Image id must have valid syntax and be unique", name, "id");
+      return;
+    }
     const auto pixel_storage =
         attribute(attributes, "pixelStorage").value_or("Planar");
     if (pixel_storage != "Planar" && pixel_storage != "Normal") {
@@ -2510,8 +2510,10 @@ void XMLCALL start_element(void *user_data, const XML_Char *qualified_name,
         }
         break;
       case PropertyCategory::unknown:
-        reject_form("Property declares an unknown XISF type", "type");
-        return;
+        // Conforming decoders ignore Property types they do not recognize.
+        // Preserve the descriptor for inspection; typed block access reports
+        // unsupported_feature when no element layout is known.
+        break;
       }
     }
     const auto metadata_index = state.metadata.size();
@@ -2616,19 +2618,19 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
     state.text_metadata_index.reset();
   } else if (is_xisf_element && name == "Cell") {
     if (!state.open_table_cell_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Unexpected closing Cell element", name);
+      state.fail(ErrorCode::invalid_xisf, "Unexpected closing Cell element",
+                 name);
       return;
     }
     state.open_table_cell_index.reset();
   } else if (is_xisf_element && name == "Row") {
     if (!state.open_table_index || !state.open_table_row_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Unexpected closing Row element", name);
+      state.fail(ErrorCode::invalid_xisf, "Unexpected closing Row element",
+                 name);
       return;
     }
-    const auto &row = state.tables[*state.open_table_index]
-                          .rows[*state.open_table_row_index];
+    const auto &row =
+        state.tables[*state.open_table_index].rows[*state.open_table_row_index];
     if (row.cells.empty()) {
       state.fail(ErrorCode::invalid_xisf,
                  "Table Row must contain at least one Cell", name);
@@ -2649,8 +2651,8 @@ void XMLCALL end_element(void *user_data, const XML_Char *qualified_name) {
     state.open_structure_index.reset();
   } else if (is_xisf_element && name == "Table") {
     if (!state.open_table_index) {
-      state.fail(ErrorCode::invalid_xisf,
-                 "Unexpected closing Table element", name);
+      state.fail(ErrorCode::invalid_xisf, "Unexpected closing Table element",
+                 name);
       return;
     }
     state.open_table_index.reset();
@@ -2919,9 +2921,8 @@ Result<ParsedHeader> parse_header(std::string_view xml,
     }
     const auto target = state.standalone_structure_uids.find(event.reference);
     if (target == state.standalone_structure_uids.end()) {
-      return make_error(
-          ErrorCode::invalid_xisf,
-          "Table Reference must target a standalone Structure");
+      return make_error(ErrorCode::invalid_xisf,
+                        "Table Reference must target a standalone Structure");
     }
     state.tables[event.table_index].structure_index = target->second;
     state.tables[event.table_index].structure_by_reference = true;
@@ -2938,8 +2939,7 @@ Result<ParsedHeader> parse_header(std::string_view xml,
       return make_error(ErrorCode::invalid_xisf,
                         "Table rows attribute does not match its Row count");
     }
-    if (table.declared_columns &&
-        *table.declared_columns != fields.size()) {
+    if (table.declared_columns && *table.declared_columns != fields.size()) {
       return make_error(
           ErrorCode::invalid_xisf,
           "Table columns attribute does not match its Structure field count");
@@ -2981,9 +2981,8 @@ Result<ParsedHeader> parse_header(std::string_view xml,
         case PropertyCategory::vector:
           if (cell.value_form != TableCellInfo::ValueForm::data_block ||
               !cell.length || cell.rows || cell.columns) {
-            return make_error(
-                ErrorCode::invalid_xisf,
-                "Vector Table Cell requires length and location");
+            return make_error(ErrorCode::invalid_xisf,
+                              "Vector Table Cell requires length and location");
           }
           break;
         case PropertyCategory::matrix:
@@ -2995,8 +2994,10 @@ Result<ParsedHeader> parse_header(std::string_view xml,
           }
           break;
         case PropertyCategory::unknown:
-          return make_error(ErrorCode::invalid_xisf,
-                            "Table Field declares an unknown property type");
+          // Revision 1 requires forward-compatible availability: retain the
+          // bounded Field and Cell descriptors, but do not apply type-specific
+          // coercion to an unknown future Field type.
+          break;
         }
       }
     }
@@ -3492,9 +3493,7 @@ Result<CompressionPlan> parse_compression_plan(
         pair.find(',', comma + 1) != std::string_view::npos ||
         !parse_unsigned(pair.substr(0, comma), subblock.compressed_size) ||
         !parse_unsigned(pair.substr(comma + 1), subblock.uncompressed_size) ||
-        subblock.compressed_size == 0 || subblock.uncompressed_size == 0 ||
-        (plan.byte_shuffled &&
-         subblock.uncompressed_size % plan.item_size != 0)) {
+        subblock.compressed_size == 0 || subblock.uncompressed_size == 0) {
       return make_error(ErrorCode::invalid_block,
                         "Invalid compression subblock descriptor");
     }
@@ -4218,26 +4217,35 @@ Result<bool> verify_image_checksum_streaming(const ByteSource &source,
   return true;
 }
 
-Result<std::size_t> unshuffle_bytes(std::span<const std::byte> shuffled,
-                                    std::span<std::byte> output,
-                                    std::size_t item_size,
-                                    std::stop_token stop_token) {
-  if (item_size == 0 || shuffled.size() != output.size() ||
-      shuffled.size() % item_size != 0) {
+Result<std::size_t>
+scatter_unshuffled_bytes(std::span<const std::byte> shuffled,
+                         std::span<std::byte> output, std::size_t item_size,
+                         std::size_t shuffled_offset,
+                         std::stop_token stop_token) {
+  if (item_size == 0 || shuffled_offset > output.size() ||
+      shuffled.size() > output.size() - shuffled_offset) {
     return make_error(ErrorCode::invalid_block,
                       "Invalid byte-shuffled block geometry");
   }
-  const auto item_count = shuffled.size() / item_size;
+  const auto item_count = output.size() / item_size;
+  const auto shuffled_prefix_size = item_count * item_size;
   constexpr std::size_t kCancellationInterval = 1U << 20U;
-  for (std::size_t item = 0; item < item_count; ++item) {
-    if (item % kCancellationInterval == 0 && stop_token.stop_requested()) {
+  for (std::size_t local_offset = 0; local_offset < shuffled.size();
+       ++local_offset) {
+    if (local_offset % kCancellationInterval == 0 &&
+        stop_token.stop_requested()) {
       return make_error(ErrorCode::cancelled, "Block read was cancelled");
     }
-    for (std::size_t byte = 0; byte < item_size; ++byte) {
-      output[item * item_size + byte] = shuffled[byte * item_count + item];
+    const auto global_offset = shuffled_offset + local_offset;
+    if (global_offset < shuffled_prefix_size) {
+      const auto byte_index = global_offset / item_count;
+      const auto item_index = global_offset % item_count;
+      output[item_index * item_size + byte_index] = shuffled[local_offset];
+    } else {
+      output[global_offset] = shuffled[local_offset];
     }
   }
-  return output.size();
+  return shuffled.size();
 }
 
 Result<std::size_t> decode_compressed_block(
@@ -4259,7 +4267,6 @@ Result<std::size_t> decode_compressed_block(
         static_cast<std::size_t>(subblock.uncompressed_size);
     const auto input = std::span<const std::byte>(serialized)
                            .subspan(input_offset, compressed_size);
-    auto output = destination.subspan(output_offset, uncompressed_size);
     if (compression.byte_shuffled) {
       shuffled.resize(uncompressed_size);
       auto decoded = decompress_subblock(compression.codec, input, shuffled,
@@ -4267,13 +4274,15 @@ Result<std::size_t> decode_compressed_block(
       if (!decoded) {
         return decoded.error();
       }
-      auto unshuffled = unshuffle_bytes(
-          shuffled, output, static_cast<std::size_t>(compression.item_size),
+      auto unshuffled = scatter_unshuffled_bytes(
+          shuffled, destination,
+          static_cast<std::size_t>(compression.item_size), output_offset,
           stop_token);
       if (!unshuffled) {
         return unshuffled.error();
       }
     } else {
+      auto output = destination.subspan(output_offset, uncompressed_size);
       auto decoded = decompress_subblock(compression.codec, input, output,
                                          compression.max_zstd_window_bytes);
       if (!decoded) {
@@ -4319,8 +4328,7 @@ Result<std::size_t> transform_pixel_storage_from_buffer(
       const auto input_byte =
           plan.image->byte_order == output_byte_order
               ? byte
-              : component_offset + component_size - (byte % component_size) -
-                    1;
+              : component_offset + component_size - (byte % component_size) - 1;
       destination[output_offset + byte] = source[input_offset + input_byte];
     }
   }
@@ -4377,11 +4385,10 @@ Result<std::size_t> transform_pixel_storage(const ByteSource &source,
           static_cast<std::size_t>(output_index * plan.sample_size);
       for (std::size_t byte = 0; byte < sample_size; ++byte) {
         const auto component_offset = (byte / component_size) * component_size;
-        const auto input_byte =
-            plan.image->byte_order == output_byte_order
-                ? byte
-                : component_offset + component_size -
-                      (byte % component_size) - 1;
+        const auto input_byte = plan.image->byte_order == output_byte_order
+                                    ? byte
+                                    : component_offset + component_size -
+                                          (byte % component_size) - 1;
         destination[output_offset + byte] = staging[input_offset + input_byte];
       }
     }
@@ -4769,8 +4776,7 @@ Result<std::size_t> Reader::read_image_into(std::size_t image_index,
     if (plan.value().sample_size > 1 &&
         output_byte_order.value() != plan.value().image->byte_order) {
       return swap_byte_order_in_place(
-          output,
-          static_cast<std::size_t>(plan.value().endian_component_size),
+          output, static_cast<std::size_t>(plan.value().endian_component_size),
           stop_token);
     }
     return copied.value();
@@ -4850,6 +4856,13 @@ Reader::read_image_rows(std::size_t image_index, ImageRowSink &destination,
               "Compressed image subblock exceeds the staging limit");
         }
       }
+    }
+    if (plan.value().compression.byte_shuffled &&
+        plan.value().compression.subblocks.size() > 1) {
+      return make_error(
+          ErrorCode::unsupported_feature,
+          "Row delivery is unavailable for globally shuffled multi-subblock "
+          "images");
     }
 
     auto verified = verify_image_checksum_streaming(

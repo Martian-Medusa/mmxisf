@@ -136,7 +136,10 @@ channel rows. It hashes the exact delivery pass again before returning success,
 so a source change cannot silently detach the summary from delivered bytes.
 Normal source rows are split by channel without a full-frame layout buffer. Its
 row and subblock buffers are independently bounded; shuffled input can require
-multiple buffers and does not imply a total-memory ceiling.
+multiple buffers and does not imply a total-memory ceiling. Because Revision 1
+defines shuffle across the complete logical block, the row API rejects shuffled
+multi-subblock inputs before delivery; owning and caller-buffer reads support
+them with global-offset scatter.
 
 ## Concurrency
 

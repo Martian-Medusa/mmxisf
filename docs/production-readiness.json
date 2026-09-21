@@ -1,21 +1,28 @@
 {
   "schemaVersion": 2,
   "candidate": {
-    "state": "FROZEN",
-    "ref": "v0.1.0-rc.1"
+    "state": "UNFROZEN",
+    "ref": ""
   },
   "claims": {
-    "standaloneBeta": "READY",
-    "standaloneProduction": "READY",
+    "standaloneBeta": "NOT_READY",
+    "standaloneProduction": "NOT_READY",
     "pfiProduction": "NOT_READY"
   },
   "gates": [
     {
-      "id": "candidate.support-profile-frozen",
+      "id": "candidate.support-profile-prepared",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/support-profile-0.1.0.json",
-      "note": "The standalone reusable-C++-library profile classifies all 74 conformance rows and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.1 candidate ref. Publication identity remains a separate gate."
+      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Revision 1 work is PREPARED and intentionally has no candidate ref. The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence."
+    },
+    {
+      "id": "specification.revision1-qualification",
+      "status": "NOT_TESTED",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
+      "note": "Revision 1 source corrections and local macOS regression gates are complete. This gate remains fail-closed until fresh independent-consumer and native PixInsight interoperability, supported-platform quality gates, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -54,10 +61,10 @@
     },
     {
       "id": "interop.independent-consumer-writer",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "tests/independent_producer_test.cpp",
-      "note": "Independent public-API consumers decode deterministic writer fixtures and verify exact values and descriptors."
+      "note": "The Revision 1 fixture identities changed after identifier validation and require a fresh independent public-API consumer replay. Historical predecessor results remain useful but are not promoted to the current source hashes."
     },
     {
       "id": "interop.pixinsight-reader-gray",
@@ -75,10 +82,10 @@
     },
     {
       "id": "interop.pixinsight-writer-properties",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-14-pixinsight-writer-properties-macos-arm64.json",
-      "note": "A source-bound synthetic 2x2 UInt16 Gray file written by mmxisf passed native PixInsight 1.9.4 arm64 recovery of its F64 matrix, UI16 vector, String Property, representation, and exact working-sample pixel hash. The source remained byte-identical during capture; this is exact-fixture interoperability rather than universal writer or Property coverage."
+      "note": "The predecessor synthetic 2x2 UInt16 Gray fixture passed source-bound PixInsight 1.9.4 arm64 recovery. Revision 1 changed only its same-length Image/@id, preserving all pixel, Property, compressed, and checksum bytes, but the new source SHA-256 still requires a fresh native PASS before qualification."
     },
     {
       "id": "pfi.backend-selection-policy",

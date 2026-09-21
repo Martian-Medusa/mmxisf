@@ -2,11 +2,11 @@
   "schema": "mmxisf.support-profile/1.1.0",
   "profileId": "STANDALONE_MONOLITHIC_0_1",
   "profileVersion": "0.1.0",
-  "state": "FROZEN",
-  "candidateRef": "v0.1.0-rc.1",
+  "state": "PREPARED",
+  "candidateRef": "",
   "matrix": {
     "path": "docs/conformance/xisf-1.0-matrix.json",
-    "sha256": "cfd74ea0a2d314f00e1a572442559426f2707957a0c5e417abbb5ba06c978ca9"
+    "sha256": "d7f77ade7811829b8389bb3cdf62fefa5bdd336f29b2901481ce356371afdcfa"
   },
   "productBoundary": {
     "kind": "REUSABLE_CPP_LIBRARY",
@@ -68,6 +68,7 @@
       "image.gray",
       "image.rgb",
       "image.bounds",
+      "image.identifier",
       "metadata.properties-scalar",
       "metadata.string-timepoint",
       "metadata.vector-matrix",
@@ -86,7 +87,10 @@
       "xml.core-elements",
       "xml.extensions",
       "xml.digital-signature",
+      "compression.unknown-codec",
       "metadata.table-structure",
+      "metadata.unknown-property",
+      "metadata.astrometric-solution",
       "metadata.rgb-working-space",
       "metadata.display-function",
       "metadata.cfa",
@@ -98,7 +102,7 @@
       "block.absolute-path",
       "block.relative-path",
       "block.url",
-      "compression.unknown-codec",
+      "reader.row-shuffled-multisubblock",
       "image.dimensions-nd",
       "image.cielab"
     ],
@@ -111,6 +115,8 @@
     "CIELab pixels are inspectable but image decoding requires a color conversion outside this profile.",
     "Table cell data blocks are descriptors only and are not decoded into typed values.",
     "The reader preserves scientific sample precision and applies no display, ICC, CFA, orientation, or stretch transform.",
+    "The low-copy row API rejects globally shuffled images with multiple compression subblocks; owning and caller-buffer reads support them.",
+    "RGB working-space inspection validates finite normalized vectors but does not claim derived-D50 consistency or execute color transforms.",
     "The writer emits attached planar little-endian Gray/RGB images and rejects Normal or big-endian image output.",
     "The optional viewer and the PFI adapter have separate lifecycle and acceptance gates."
   ]

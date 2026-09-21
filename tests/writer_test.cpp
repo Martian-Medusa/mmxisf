@@ -178,7 +178,7 @@ mmxisf::WriterOptions options() {
 
 mmxisf::ImageWriteView gray_image(std::span<const std::byte> pixels) {
   mmxisf::ImageWriteView image;
-  image.id = "gray&science";
+  image.id = "gray_science";
   image.width = 2;
   image.height = 2;
   image.channels = 1;
@@ -213,7 +213,7 @@ void test_deterministic_gray_round_trip() {
   expect(document.images().size() == 1 && document.metadata().size() == 2,
          "writer document shape changed");
   const auto &descriptor = document.images()[0];
-  expect(descriptor.id == "gray&science" &&
+  expect(descriptor.id == "gray_science" &&
              descriptor.geometry == std::vector<std::uint64_t>{2, 2, 1} &&
              descriptor.sample_format == mmxisf::SampleFormat::uint16 &&
              descriptor.color_space == "Gray" &&
@@ -301,7 +301,7 @@ void test_multi_image_scalar_round_trip() {
                .sample_format = mmxisf::SampleFormat::uint32,
                .color_space = "Gray",
                .pixels = uint32_pixels};
-  images[2] = {.id = "f32-rgb",
+  images[2] = {.id = "f32_rgb",
                .width = 1,
                .height = 1,
                .channels = 3,
@@ -344,7 +344,7 @@ void test_multi_image_scalar_round_trip() {
          "multi-image writer file-size summary changed");
   const auto serialized = read_file(path);
   expect(sha256(serialized) ==
-             "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+             "228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423",
          "multi-image writer deterministic external-oracle anchor changed");
 
   auto opened = mmxisf::Reader::open_file(path);
@@ -411,7 +411,7 @@ void test_declared_metadata_round_trip() {
          "declared metadata output is not deterministic");
   const auto serialized = read_file(first_path);
   expect(sha256(serialized) ==
-             "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+             "08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3",
          "metadata writer deterministic external-oracle anchor changed");
 
   auto opened = mmxisf::Reader::open_file(first_path);
@@ -476,6 +476,22 @@ void test_scalar_metadata_round_trip() {
                                  .name = "Test:Floating",
                                  .type = "Float64",
                                  .value = "-1.25e+02"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:LowerNaN",
+                                 .type = "Float64",
+                                 .value = "nan"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:NegativeNaN",
+                                 .type = "Float64",
+                                 .value = "-nan"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:LowerInfinity",
+                                 .type = "Float64",
+                                 .value = "inf"},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:NegativeInfinity",
+                                 .type = "Float64",
+                                 .value = "-inf"},
       mmxisf::MetadataWriteEntry{.image_index = 0,
                                  .name = "Test:Complex",
                                  .type = "Complex64",
@@ -617,15 +633,15 @@ void test_block_property_subblocks_round_trip() {
   const auto metadata = mmxisf::MetadataWriteEntry{
       .image_index = 0,
       .name = "Test:CompressedVector",
-      .type = "UI16Vector",
+      .type = "F64Vector",
       .value_form = mmxisf::MetadataWriteValueForm::data_block,
-      .length = samples.size() / 2,
+      .length = samples.size() / 8,
       .block_bytes = samples,
       .compression = mmxisf::CompressionCodec::zstd,
       .byte_shuffle = true,
       .checksum = mmxisf::ChecksumAlgorithm::sha512};
   auto write_options = options();
-  write_options.compression_subblock_bytes = 16;
+  write_options.compression_subblock_bytes = 15;
   const auto path = output_path("mmxisf-writer-property-subblocks.xisf");
   auto written = mmxisf::Writer::write_file(
       path, std::span(&image, 1),
@@ -644,7 +660,7 @@ void test_block_property_subblocks_round_trip() {
   for (std::size_t index = 0; index < entries.size(); ++index) {
     if (entries[index].name == "Test:CompressedVector") {
       property_index = index;
-      expect(entries[index].compression == "zstd+sh:64:2" &&
+      expect(entries[index].compression == "zstd+sh:64:8" &&
                  !entries[index].subblocks.empty() &&
                  entries[index].checksum.starts_with("sha-512:"),
              "compressed Property descriptors changed");
@@ -674,6 +690,58 @@ void test_block_property_subblocks_round_trip() {
   expect(!stale && stale.error().code == mmxisf::ErrorCode::io_error &&
              read_file(stale_spool) == std::vector<char>{'k', 'e', 'e', 'p'},
          "writer overwrote a stale Property compression spool");
+}
+
+void test_empty_property_containers_round_trip() {
+  const std::array<std::byte, 8> pixels{};
+  const auto image = gray_image(pixels);
+  const std::array metadata{
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:EmptyVector",
+                                 .type = "F64Vector",
+                                 .value_form =
+                                     mmxisf::MetadataWriteValueForm::data_block,
+                                 .length = 0,
+                                 .block_bytes = {}},
+      mmxisf::MetadataWriteEntry{.image_index = 0,
+                                 .name = "Test:EmptyMatrix",
+                                 .type = "F64Matrix",
+                                 .value_form =
+                                     mmxisf::MetadataWriteValueForm::data_block,
+                                 .rows = 3,
+                                 .columns = 0,
+                                 .block_bytes = {}}};
+  const auto path = output_path("mmxisf-writer-empty-properties.xisf");
+  auto written = mmxisf::Writer::write_file(path, std::span(&image, 1),
+                                            metadata, options());
+  expect(written && written.value().property_blocks.empty(),
+         "empty Property containers created an attachment");
+  const auto serialized = read_file(path);
+  const std::string text(serialized.begin(), serialized.end());
+  expect(text.find("length=\"0\" location=\"inline:base64\"></Property>") !=
+                 std::string::npos &&
+             text.find("rows=\"3\" columns=\"0\" "
+                       "location=\"inline:base64\"></Property>") !=
+                 std::string::npos,
+         "empty Property containers are not serialized as empty inline blocks");
+
+  auto opened = mmxisf::Reader::open_file(path);
+  expect(opened.has_value(), "empty Property writer result did not reopen");
+  std::vector<std::size_t> empty_indices;
+  const auto &entries = opened.value().document().metadata();
+  for (std::size_t index = 0; index < entries.size(); ++index) {
+    if (entries[index].name == "Test:EmptyVector" ||
+        entries[index].name == "Test:EmptyMatrix") {
+      empty_indices.push_back(index);
+    }
+  }
+  expect(empty_indices.size() == 2,
+         "empty Property descriptors were not retained");
+  for (const auto index : empty_indices) {
+    auto decoded = opened.value().read_property_block(index);
+    expect(decoded && decoded.value().bytes.empty(),
+           "empty Property did not decode to zero bytes");
+  }
 }
 
 void test_block_property_type_matrix() {
@@ -781,13 +849,15 @@ void test_compression_shuffle_checksum_round_trip() {
                      .sample_format = mmxisf::SampleFormat::uint16,
                      .color_space = "Gray",
                      .compression = codecs[index],
-                     .byte_shuffle = index == 1 || index == 3,
+                     .byte_shuffle = index < 4,
                      .checksum = checksums[index],
                      .pixels = pixels};
   }
   const auto path = output_path("mmxisf-writer-codecs.xisf");
+  auto codec_options = options();
+  codec_options.compression_subblock_bytes = 127;
   auto written = mmxisf::Writer::write_file(
-      path, std::span<const mmxisf::ImageWriteView>(images), options());
+      path, std::span<const mmxisf::ImageWriteView>(images), codec_options);
   expect(written.has_value() &&
              written.value().image_blocks.size() == images.size(),
          "compressed writer matrix failed");
@@ -796,8 +866,13 @@ void test_compression_shuffle_checksum_round_trip() {
   expect(opened.has_value() &&
              opened.value().document().images().size() == images.size(),
          "compressed writer matrix did not reopen");
-  const std::array<std::string_view, 7> compression_prefixes{
-      "zlib:512", "lz4+sh:512:2", "lz4hc:512", "zstd+sh:512:2", "", "", ""};
+  const std::array<std::string_view, 7> compression_prefixes{"zlib+sh:512:2",
+                                                             "lz4+sh:512:2",
+                                                             "lz4hc+sh:512:2",
+                                                             "zstd+sh:512:2",
+                                                             "",
+                                                             "",
+                                                             ""};
   const std::array<std::string_view, 7> checksum_prefixes{
       "sha-1:",   "sha-256:",  "sha-512:", "sha-256:",
       "sha-256:", "sha3-256:", "sha3-512:"};
@@ -807,8 +882,8 @@ void test_compression_shuffle_checksum_round_trip() {
                descriptor.checksum.starts_with(checksum_prefixes[index]),
            "writer codec/checksum descriptor changed");
     if (codecs[index] != mmxisf::CompressionCodec::none) {
-      expect(written.value().image_blocks[index].size < pixels.size(),
-             "compressible writer fixture did not shrink");
+      expect(!descriptor.subblocks.empty(),
+             "codec fixture did not exercise compression subblocks");
     }
     auto decoded = opened.value().read_image(index);
     expect(decoded.has_value() &&
@@ -828,7 +903,7 @@ void test_compression_subblocks_round_trip() {
     pixels[sample * 2 + 1] = static_cast<std::byte>(value >> 8U);
   }
   auto image = gray_image(pixels);
-  image.id = "zstd-subblocks";
+  image.id = "zstd_subblocks";
   image.width = 16;
   image.height = 16;
   image.compression = mmxisf::CompressionCodec::zstd;
@@ -883,6 +958,39 @@ void test_compression_subblocks_round_trip() {
   first_spool += ".mmxisf-block-0-tmp";
   expect(!std::filesystem::exists(first_spool),
          "successful writer left a compression spool");
+
+  std::array<std::byte, 64> pixels32{};
+  for (std::size_t index = 0; index < pixels32.size(); ++index) {
+    pixels32[index] = static_cast<std::byte>((index * 37U + 5U) & 0xffU);
+  }
+  mmxisf::ImageWriteView image32{.id = "u32_subblocks",
+                                 .width = 4,
+                                 .height = 4,
+                                 .channels = 1,
+                                 .sample_format = mmxisf::SampleFormat::uint32,
+                                 .color_space = "Gray",
+                                 .compression = mmxisf::CompressionCodec::zstd,
+                                 .byte_shuffle = true,
+                                 .checksum = mmxisf::ChecksumAlgorithm::sha256,
+                                 .pixels = pixels32};
+  auto item4_options = options();
+  item4_options.compression_subblock_bytes = 15;
+  const auto item4_path = output_path("mmxisf-writer-u32-subblocks.xisf");
+  auto item4_written =
+      mmxisf::Writer::write_file(item4_path, image32, item4_options);
+  auto item4_opened = mmxisf::Reader::open_file(item4_path);
+  expect(item4_written && item4_opened &&
+             item4_opened.value().document().images()[0].compression ==
+                 "zstd+sh:64:4" &&
+             !item4_opened.value().document().images()[0].subblocks.empty(),
+         "four-byte global-shuffle subblock writer failed");
+  if (item4_opened) {
+    auto item4_decoded = item4_opened.value().read_image(0);
+    expect(item4_decoded &&
+               item4_decoded.value().pixels ==
+                   std::vector<std::byte>(pixels32.begin(), pixels32.end()),
+           "four-byte global-shuffle subblocks changed pixels");
+  }
 
   const auto stale_path = output_path("mmxisf-writer-subblocks-stale.xisf");
   auto stale_spool = stale_path;
@@ -953,6 +1061,24 @@ void test_rejection_and_cleanup() {
   expect(!image_count &&
              image_count.error().code == mmxisf::ErrorCode::resource_limit,
          "writer image-count budget was not enforced");
+  image = gray_image(pixels);
+  image.id = "bad-id";
+  auto invalid_image_id = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-invalid-image-id.xisf"), image, options());
+  expect(!invalid_image_id && invalid_image_id.error().code ==
+                                  mmxisf::ErrorCode::invalid_argument,
+         "writer accepted invalid Image id syntax");
+  image.id = "science";
+  two_images = {image, image};
+  auto duplicate_image_id = mmxisf::Writer::write_file(
+      output_path("mmxisf-writer-duplicate-image-id.xisf"), two_images,
+      options());
+  expect(!duplicate_image_id && duplicate_image_id.error().code ==
+                                    mmxisf::ErrorCode::invalid_argument,
+         "writer accepted duplicate Image ids");
+  image = gray_image(pixels);
+  image.id.clear();
+  two_images = {image, image};
   auto cumulative_options = options();
   cumulative_options.max_cumulative_image_bytes = pixels.size();
   auto cumulative = mmxisf::Writer::write_file(
@@ -989,6 +1115,7 @@ void test_rejection_and_cleanup() {
          "writer accepted an invalid checksum algorithm");
   image = gray_image(pixels);
   image.compression = mmxisf::CompressionCodec::zstd;
+  image.byte_shuffle = true;
   auto serialized_options = options();
   serialized_options.max_serialized_image_bytes = 1;
   auto serialized_limit = mmxisf::Writer::write_file(
@@ -998,6 +1125,7 @@ void test_rejection_and_cleanup() {
              serialized_limit.error().code == mmxisf::ErrorCode::resource_limit,
          "writer serialized image-byte budget was not enforced");
   image = gray_image(pixels);
+  image.id.clear();
   two_images = {image, image};
   serialized_options = options();
   serialized_options.max_cumulative_serialized_bytes = pixels.size();
@@ -1030,9 +1158,8 @@ void test_rejection_and_cleanup() {
   auto undersized_subblock = mmxisf::Writer::write_file(
       output_path("mmxisf-writer-undersized-subblock.xisf"), image,
       subblock_options);
-  expect(!undersized_subblock && undersized_subblock.error().code ==
-                                     mmxisf::ErrorCode::invalid_argument,
-         "writer accepted a subblock smaller than one sample");
+  expect(undersized_subblock.has_value(),
+         "writer rejected a valid globally shuffled sub-item boundary");
   subblock_options = options();
   subblock_options.compression_subblock_bytes = 2;
   subblock_options.max_compression_subblocks = 3;
@@ -1549,6 +1676,7 @@ int main() {
     test_scalar_metadata_round_trip();
     test_block_property_round_trip();
     test_block_property_subblocks_round_trip();
+    test_empty_property_containers_round_trip();
     test_block_property_type_matrix();
     test_compression_shuffle_checksum_round_trip();
     test_compression_subblocks_round_trip();

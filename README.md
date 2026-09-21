@@ -335,10 +335,11 @@ owning `RawImage` or written into a caller-owned span with cooperative
 Base64 and the specification's lowercase hexadecimal encoding. The current M3
 slice supports zlib, LZ4, LZ4HC-compatible, and Zstandard blocks, their `+sh`
 variants, validated compression subblocks, and SHA-1/256/512 plus
-SHA3-256/512 checksums. The Zstandard rows are a current PixInsight
-interoperability extension to the
-pinned 2017 XISF 1.0 baseline. Failed checksums stop processing before any
-compressed bytes reach a codec.
+SHA3-256/512 checksums. Zstandard and Zstandard+shuffle are standard required
+codecs in the pinned XISF 1.0 Revision 1 baseline. Byte shuffle is applied to
+the complete logical block before subblock division, including subblock
+boundaries that do not align to the item width. Failed checksums stop processing
+before any compressed bytes reach a codec.
 
 `Reader::read_image_rows` provides a low-copy alternative for analysis:
 caller-owned callbacks receive ephemeral planar channel rows with exact channel
@@ -346,6 +347,8 @@ and row indices. Uncompressed input uses row-sized staging, compressed input is
 decoded one bounded declared subblock at a time, and a declared checksum is
 verified in a bounded first pass before any row is delivered. The complete
 contract and example are in [`docs/ROW_READER.md`](docs/ROW_READER.md).
+The row API fails explicitly for globally shuffled multi-subblock images;
+owning and caller-buffer reads support that standard combination.
 
 `Reader::read_property_block(metadata_index, options, stop_token)` returns the
 exact bytes of a block-backed String, vector, or matrix Property. It supports

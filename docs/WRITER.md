@@ -15,7 +15,7 @@ standalone C++20 and does not depend on PFI, PixInsight, PCL, or Qt.
 - attached typed vector and matrix Properties in little- or big-endian source
   byte order;
 - zlib, LZ4, LZ4HC, and Zstandard compression, optionally with byte shuffle;
-- bounded, sample-aligned compression subblocks for large images;
+- bounded compression subblocks for large images;
 - SHA-1, SHA-256, SHA-512, SHA3-256, and SHA3-512 checksums over exact
   serialized block bytes;
 - fixed caller-supplied creation time and creator application.
@@ -74,14 +74,19 @@ image.checksum = mmxisf::ChecksumAlgorithm::sha256;
 ```
 
 Byte shuffle is valid only with compression and uses the declared sample width.
+Under XISF Revision 1, the writer shuffles the complete logical data block and
+then divides that shuffled stream into independently compressed subblocks.
+Subblock boundaries therefore need not align to the sample width. Any trailing
+bytes that do not form a complete sample remain unshuffled.
 Checksums cover the serialized attachment bytes, so the reader can reject a
 damaged block before decompression. Compression output is deterministic for a
 fixed dependency/toolchain set; dependency upgrades may legitimately change
 the compressed byte stream while preserving the decoded image.
 
-Compressed images are divided into independently compressed, sample-aligned
+The globally shuffled stream is divided into independently compressed
 subblocks. `WriterOptions::compression_subblock_bytes` defaults to 16 MiB, so
-shuffle and codec scratch memory do not scale to a complete large image.
+global-shuffle mapping and codec scratch memory do not scale to a complete
+large image.
 `max_compression_subblocks` bounds the amount of descriptor and loop work.
 Files that fit in one subblock retain the single-block representation. The
 writer checks cancellation between subblocks and emits the XISF `subblocks`

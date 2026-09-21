@@ -190,7 +190,7 @@ void check_fixture(
 void check_multi_writer_fixture(const std::filesystem::path &path) {
   auto bytes = load_base64(path);
   expect(sha256_hex(bytes) ==
-             "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+             "228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423",
          "multi-image writer fixture identity changed");
   auto opened = mmxisf::Reader::open_source(
       std::make_shared<MemorySource>(std::move(bytes)));
@@ -220,7 +220,7 @@ void check_multi_writer_fixture(const std::filesystem::path &path) {
 void check_metadata_writer_fixture(const std::filesystem::path &path) {
   auto bytes = load_base64(path);
   expect(sha256_hex(bytes) ==
-             "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+             "08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3",
          "metadata writer fixture identity changed");
   auto opened = mmxisf::Reader::open_source(
       std::make_shared<MemorySource>(std::move(bytes)));
@@ -282,7 +282,7 @@ void check_codec_writer_fixture(const std::filesystem::path &path) {
 void check_native_properties_writer_fixture(const std::filesystem::path &path) {
   auto bytes = load_base64(path);
   expect(sha256_hex(bytes) ==
-             "b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6",
+             "e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d",
          "native Property writer fixture identity changed");
   auto opened = mmxisf::Reader::open_source(
       std::make_shared<MemorySource>(std::move(bytes)));
@@ -409,7 +409,7 @@ int main() {
           "", mmxisf::SampleFormat::uint16, "RGB", 2, 2, 3, 24,
           "9ed139a002ff273082f356718eebc4b085df62d42c8463b35738e143d852c4d4"},
          {"mmxisf-writer-sha3-rgb.xisf.b64",
-          "2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5",
+          "fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa",
           "zstd+sh", mmxisf::SampleFormat::uint16, "RGB", 2, 2, 3, 24,
           "adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6",
           "sha3-256:"

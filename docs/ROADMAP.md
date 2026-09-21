@@ -155,6 +155,10 @@ cross-platform codec/fuzz gates passed at commit `5218074` in CI run
 `34781659044`, including Linux, macOS, Windows, installed consumers, and both
 20,000-case fuzz campaigns.
 
+This paragraph is historical M3 evidence. The current baseline is XISF 1.0
+Revision 1, where Zstandard is standard and required; current qualification is
+tracked in `docs/XISF_1_0_REVISION_1_REQUIREMENTS.md` and the readiness ledger.
+
 The next M4 slice turns block-backed String, vector, and matrix Properties into
 bounded raw typed reads. Attachment and inline Base64/hex locations share the
 image codec, byte-shuffle, compression-subblock, checksum, endian, and

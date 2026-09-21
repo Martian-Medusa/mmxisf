@@ -34,8 +34,9 @@ function(mmxisf_expect_profile_rejection name content expected)
 endfunction()
 
 set(_wrong_hash "${_valid}")
+string(JSON _current_matrix_hash GET "${_valid}" matrix sha256)
 string(REPLACE
-  "cfd74ea0a2d314f00e1a572442559426f2707957a0c5e417abbb5ba06c978ca9"
+  "${_current_matrix_hash}"
   "0000000000000000000000000000000000000000000000000000000000000000"
   _wrong_hash "${_wrong_hash}")
 mmxisf_expect_profile_rejection(wrong-matrix-hash "${_wrong_hash}"

@@ -37,13 +37,16 @@ Float64 Gray. Package `xisf` 0.9.7 enumerated all four through its documented
 public API and returned the exact source values, dtypes, geometries, Planar
 storage, little-endian order, and floating-point bounds. The fixture is also a
 fuzz seed and its file and per-image pixel hashes are asserted in compiled
-tests.
+tests. The current serialization was regenerated after Revision 1 identifier
+validation was enabled.
 
 The `mmxisf-writer-metadata` fixture covers deterministic direct metadata
 serialization without exposing raw XML: image-scoped String and TimePoint
 Properties, an image FITS keyword, and an XISF-unit String Property. The same
 independent consumer preserved the exact Property values, FITS value/comment,
 scope split, and UInt16 pixels through its public metadata and image APIs.
+The current serialization was regenerated after Revision 1 identifier
+validation was enabled.
 
 The `mmxisf-writer-codecs` fixture covers zlib, LZ4, LZ4HC, and Zstandard
 output, both shuffled and unshuffled blocks, and SHA-1/256/512 declarations.
@@ -71,6 +74,11 @@ recovery of those values and the exact working-sample pixel hash. Until that
 manual script produces a PASS record, the manifest and M6 status retain native
 writer Property interoperability as pending.
 
+The Revision 1 migration changed only this fixture's same-length `Image/@id`
+from `native-validation` to `native_validation`. The historical PixInsight
+record remains bound to the predecessor source hash; the current hash therefore
+requires a new native run.
+
 The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
 writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
 serialized checksum and recovers source-order pixel SHA-256
@@ -79,3 +87,6 @@ The independent package `xisf` 0.9.7 exposed the exact checksum descriptor and
 returned channels-last values `[[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]]` as a
 2x2x3 `uint16` array. That proves external acceptance and pixel identity, not
 that the independent package itself verified the digest.
+The Revision 1 migration changed only its same-length `Image/@id` from
+`sha3-rgb` to `sha3_rgb`; compressed pixels and the declared digest are
+unchanged.

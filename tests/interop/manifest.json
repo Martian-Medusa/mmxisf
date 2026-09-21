@@ -112,26 +112,26 @@
     {
       "id": "mmxisf-writer-multi-scalars",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-multi-scalars.xisf.b64"},
-      "sha256": "c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba",
+      "sha256": "228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423",
       "origin": "SYNTHETIC",
       "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
-      "generationProcedure": "Invoke the multi-image Writer::write_file overload with the four little-endian Planar UInt8 Gray, UInt32 Gray, Float32 RGB, and Float64 Gray arrays, fixed bounds and provenance anchored in tests/writer_test.cpp.",
+      "generationProcedure": "Invoke the XISF 1.0 Revision 1 multi-image Writer::write_file overload with the four little-endian Planar UInt8 Gray, UInt32 Gray, Float32 RGB, and Float64 Gray arrays, fixed bounds and provenance anchored in tests/writer_test.cpp.",
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.baseline-monolithic", "writer.deterministic", "image.multiple", "image.uint8", "image.uint32", "image.float32", "image.float64", "image.gray", "image.rgb", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "Independent public-API read: four images with shapes 2x2x1, 1x2x1, 1x1x3, and 1x1x1; dtypes uint8, uint32, float32, and float64; values [0,127,128,255], [1,2309737967], [0.5,1,-1], and [0.5] exact; serialized SHA-256 c72c577d090e49d4966b1dda8d20e9948a9d23e5ba1fae3688c3ae34ddeb42ba"
+      "expectedArtifact": "Independent public-API read: four images with shapes 2x2x1, 1x2x1, 1x1x3, and 1x1x1; dtypes uint8, uint32, float32, and float64; values [0,127,128,255], [1,2309737967], [0.5,1,-1], and [0.5] exact; serialized SHA-256 228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423"
     },
     {
       "id": "mmxisf-writer-metadata",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-metadata.xisf.b64"},
-      "sha256": "e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8",
+      "sha256": "08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3",
       "origin": "SYNTHETIC",
       "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
-      "generationProcedure": "Invoke the metadata Writer::write_file overload with one little-endian Planar UInt16 Gray image, image-scoped String and TimePoint Properties, one FITS keyword, one XISF-unit String Property, fixed provenance, and escaped text anchored in tests/writer_test.cpp.",
+      "generationProcedure": "Invoke the XISF 1.0 Revision 1 metadata Writer::write_file overload with one little-endian Planar UInt16 Gray image, image-scoped String and TimePoint Properties, one FITS keyword, one XISF-unit String Property, fixed provenance, and escaped text anchored in tests/writer_test.cpp.",
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.baseline-monolithic", "writer.declared-metadata", "writer.deterministic", "metadata.string-timepoint", "metadata.fits-keyword", "image.uint16", "image.gray", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "Independent public-API read: exact 2x2x1 uint16 pixels; image String and TimePoint Properties preserved; FITS EXPTIME value/comment preserved; XISF-unit Property preserved; serialized SHA-256 e9a64e68b495aed77da38ce900e490878ef5539a407d6aa10e9a23d562d279f8"
+      "expectedArtifact": "Independent public-API read: exact 2x2x1 uint16 pixels; image String and TimePoint Properties preserved; FITS EXPTIME value/comment preserved; XISF-unit Property preserved; serialized SHA-256 08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3"
     },
     {
       "id": "mmxisf-writer-codecs",
@@ -160,26 +160,26 @@
     {
       "id": "mmxisf-writer-native-properties",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-native-properties.xisf.b64"},
-      "sha256": "b130c2a3b65180b1bf31b64e82bf82740fd105ba8cadda4d91d4355d4a6ea7b6",
+      "sha256": "e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d",
       "origin": "SYNTHETIC",
       "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0"},
-      "generationProcedure": "Invoke Writer::write_file with a 2x2 UInt16 Gray image, image-scoped F64Matrix, UI16Vector, and String Properties, fixed little-endian source values, Zstandard+shuffle+SHA-256 matrix storage, and deterministic provenance.",
+      "generationProcedure": "Invoke Writer::write_file with a 2x2 UInt16 Gray image, image-scoped F64Matrix, UI16Vector, and String Properties, fixed little-endian source values, Zstandard+shuffle+SHA-256 matrix storage, and deterministic provenance. For Revision 1 migration, change only the same-length Image/@id from native-validation to native_validation; pixel, Property, attachment, compression, and checksum bytes are preserved.",
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.baseline-monolithic", "writer.block-properties", "writer.deterministic", "image.uint16", "image.gray", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "Source-bound PixInsight 1.9.4 arm64 PASS: exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb."
+      "expectedArtifact": "Current Revision 1 fixture awaits a new source-bound PixInsight PASS. Its byte-identical predecessor apart from Image/@id passed PixInsight 1.9.4 arm64 with exact native F64Matrix [[1,2],[3,4]], UI16Vector [513,1027], String metadata, 2x2 UInt16 Gray representation, and working-sample pixel SHA-256 ea99f710d9d0b8ba192295c969a63ed7ce8fc5743da20d2057fa2b6d2c404bfb."
     },
     {
       "id": "mmxisf-writer-sha3-rgb",
       "storage": {"kind": "GIT_TEXT", "path": "tests/interop/mmxisf-writer-sha3-rgb.xisf.b64"},
-      "sha256": "2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5",
+      "sha256": "fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa",
       "origin": "SYNTHETIC",
       "generator": {"name": "mmxisf Writer::write_file", "version": "0.1.0+1b696a627e1f11cc9e85d4e3b517a6d98a461af5"},
-      "generationProcedure": "Invoke Writer::write_file with a 2x2 little-endian Planar UInt16 RGB array whose channel planes contain 1..4, 5..8, and 9..12; fixed 2026-09-14T00:00:00Z creation time; creator 'mmxisf SHA-3 black-box oracle'; Zstandard compression; byte shuffle; and SHA3-256.",
+      "generationProcedure": "Invoke Writer::write_file with a 2x2 little-endian Planar UInt16 RGB array whose channel planes contain 1..4, 5..8, and 9..12; fixed 2026-09-14T00:00:00Z creation time; creator 'mmxisf SHA-3 black-box oracle'; Zstandard compression; byte shuffle; and SHA3-256. For Revision 1 migration, change only the same-length Image/@id from sha3-rgb to sha3_rgb; all image, compressed-block, and checksum bytes are preserved.",
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.baseline-monolithic", "writer.compression-integrity", "compression.zstd-shuffle", "checksum.sha3", "checksum.before-decompression", "image.uint16", "image.rgb", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "mmxisf verifies checksum sha3-256:1a4a14880e0c29187dc19f47cbd5e09c983450f2bc71cc029da03cef7b616f8c and source-order pixel SHA-256 adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6; independent xisf 0.9.7 public-API read returns 2x2x3 uint16 values [[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]] and exposes the exact descriptor; serialized SHA-256 2e318a9d66bd30c16029c1be0608d764a1dca3760d6d0121c951966e6739e7b5"
+      "expectedArtifact": "mmxisf verifies checksum sha3-256:1a4a14880e0c29187dc19f47cbd5e09c983450f2bc71cc029da03cef7b616f8c and source-order pixel SHA-256 adc4289fa7f0c65f72ac49b058d1368e7028ab84cd7c91eb027b4a589d21bbc6; independent xisf 0.9.7 public-API read returns 2x2x3 uint16 values [[[1,5,9],[2,6,10]],[[3,7,11],[4,8,12]]] and exposes the exact descriptor; serialized SHA-256 fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa"
     }
   ]
 }
