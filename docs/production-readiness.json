@@ -22,7 +22,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, and the unfrozen exact-implementation Linux system-graph gate are complete. A dedicated eight-subblock zstd+shuffle fixture and source-bound PixInsight validator are prepared. This gate remains fail-closed until native PixInsight interoperability, frozen-candidate macOS/Linux and native Windows/MSVC gates, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
+      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, the unfrozen exact-implementation Linux system-graph gate, and native PixInsight 1.9.5 acceptance of the corrected eight-subblock zstd+shuffle writer path are complete. This gate remains fail-closed until the current block-Property fixture passes native PixInsight and frozen-candidate macOS/Linux, native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -65,6 +65,13 @@
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-21-revision1-independent-consumer-macos-arm64.json",
       "note": "PyPI xisf 0.9.7 read the four exact Revision 1 writer fixtures through documented public APIs in an isolated temporary environment and recovered all declared shapes, dtypes, pixels, selected metadata, block Properties, and current image identifiers. This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
+    },
+    {
+      "id": "interop.pixinsight-writer-revision1-subblocks",
+      "status": "PASS",
+      "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
+      "evidence": "docs/quality-runs/2026-09-21-pixinsight-revision1-subblocks-macos-arm64.json",
+      "note": "PixInsight 1.9.5 arm64 on macOS opened the exact source-bound 16x16 UInt16 Gray fixture written as zstd+shuffle with eight independently compressed subblocks after whole-block shuffle. All 256 deterministic samples and the resulting pixel SHA-256 matched exactly. This proves native acceptance of the corrected Revision 1 writer path for this fixture only; PFI and broader format authority remain unassessed."
     },
     {
       "id": "interop.pixinsight-reader-gray",

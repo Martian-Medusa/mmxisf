@@ -1,7 +1,8 @@
 # M6 progress: deterministic monolithic writer
 
 - Status: REVISION1_IMPLEMENTED; EXTERNAL_ORACLE_PASS;
-  NATIVE_PIXINSIGHT_REVISION1_PENDING
+  NATIVE_PIXINSIGHT_REVISION1_SUBBLOCKS_PASS;
+  NATIVE_PIXINSIGHT_CURRENT_PROPERTIES_PENDING
 - Started: 2026-09-14
 - Specification baseline: pinned XISF 1.0 section 7.1
 - Publication status: public repository; immutable `v0.1.0-rc.1` remains the
@@ -120,8 +121,9 @@
   is committed with SHA-256
   `cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64`;
   compiled tests bind all eight subblock pairs, the checksum, and decoded pixel
-  hash. A source-bound manual PixInsight validator is committed, but native
-  acceptance remains required before release.
+  hash. PixInsight 1.9.5 arm64 natively recovered all 256 exact samples from
+  this source-bound fixture. The retained PASS establishes native acceptance of
+  this corrected Revision 1 path only.
 - A separate eight-subblock Zstandard+shuffle+SHA3-512 case exercises the
   bounded spool-file digest path and reopens with exact bytes and explicit
   verified-integrity state.
@@ -157,8 +159,8 @@
 
 ## Still required for M6
 
-- Run the two prepared source-bound PixInsight validators on the current
-  Revision 1 fixtures, then repeat macOS/Linux, native Windows/MSVC, and
+- Run the remaining source-bound PixInsight block-Property validator on the
+  current fixture, then repeat macOS/Linux, native Windows/MSVC, and
   coverage-guided fuzzing against one frozen RC2 candidate. Hosted CI is not
   required for intermediate commits.
 - Repeat writer measurements on dedicated non-macOS hosts before assigning any

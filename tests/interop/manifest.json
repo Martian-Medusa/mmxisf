@@ -179,7 +179,7 @@
       "redistribution": {"permitted": true, "basis": "Martian Medusa-owned implementation and deterministic numeric input; no third-party image content."},
       "conformanceRows": ["writer.compression-subblocks", "writer.compression-integrity", "compression.subblocks", "compression.zstd-shuffle", "checksum.sha256", "checksum.before-decompression", "image.uint16", "image.gray", "image.planar"],
       "expectedOutcome": "ACCEPT",
-      "expectedArtifact": "mmxisf verifies descriptor compression=zstd+sh:512:2, eight exact subblock pairs 49,64, stored-block checksum sha-256:a9f50cbfaf9fadafeb80d0db7a76ea090ef3290d18b411f0f6ef6d5401408214, and decoded-pixel SHA-256 3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317. Independent xisf 0.9.7 exposes the exact compression/subblocks descriptors but fails image reshape after decoding only the first 32 samples, so its result is LIMITED. A fresh source-bound PixInsight run is required for native Revision 1 writer interoperability."
+      "expectedArtifact": "mmxisf verifies descriptor compression=zstd+sh:512:2, eight exact subblock pairs 49,64, stored-block checksum sha-256:a9f50cbfaf9fadafeb80d0db7a76ea090ef3290d18b411f0f6ef6d5401408214, and decoded-pixel SHA-256 3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317. Independent xisf 0.9.7 exposes the exact compression/subblocks descriptors but fails image reshape after decoding only the first 32 samples, so its result is LIMITED. PixInsight 1.9.5 arm64 natively recovered all 256 exact samples; source-bound evidence is retained in docs/quality-runs/2026-09-21-pixinsight-revision1-subblocks-macos-arm64.json."
     },
     {
       "id": "mmxisf-writer-sha3-rgb",

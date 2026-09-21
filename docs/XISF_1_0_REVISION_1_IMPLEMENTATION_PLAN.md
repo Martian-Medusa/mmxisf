@@ -47,13 +47,14 @@ passed a fresh black-box replay through the documented public API of PyPI
 viewer-free Linux system-dependency gate on `mllse`: GCC static/shared,
 installed/relocated/embedded consumers, reproducibility, Clang ASan/UBSan,
 ThreadSanitizer, 20,000 deterministic mutations, and generated documentation.
-A dedicated source-bound `zstd+sh` eight-subblock writer fixture and manual
-PixInsight validator are committed for the corrected path. Native PixInsight,
-native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen
-candidate evidence remain pending. The local Command Line Tools installation
-does not include a compatible libFuzzer runtime, so coverage-guided fuzzing is
-deferred to qualified Clang/Linux or full Xcode; deterministic sanitizer smoke
-remains PASS.
+A dedicated source-bound `zstd+sh` eight-subblock writer fixture passed in
+PixInsight 1.9.5 arm64 with all 256 deterministic samples and the exact pixel
+hash recovered. The separate current block-Property fixture still needs its
+native run. Native Windows/MSVC, exact-candidate coverage-guided fuzzing, and
+frozen candidate evidence remain pending. The local Command Line Tools
+installation does not include a compatible libFuzzer runtime, so
+coverage-guided fuzzing is deferred to qualified Clang/Linux or full Xcode;
+deterministic sanitizer smoke remains PASS.
 
 The 21 XISF files currently present in the private local PixInsight corpus pass
 header inspection and first-image decode on the corrected implementation. This
@@ -478,8 +479,8 @@ hosted-runner minutes on routine intermediate commits.
 
 The committed source-bound writer fixture
 `tests/interop/mmxisf-writer-revision1-subblocks.xisf.b64` and
-`tests/pixinsight/MMXISFRevision1SubblocksValidation.js` must receive a PASS in
-current PixInsight. It exercises:
+`tests/pixinsight/MMXISFRevision1SubblocksValidation.js` received a PASS in
+PixInsight 1.9.5 arm64 on 2026-09-21. It exercises:
 
 - Zstandard plus byte shuffle;
 - eight independently compressed subblocks after whole-block shuffle;
@@ -571,8 +572,9 @@ Avoid public-header changes for purely internal global-shuffle correction.
 7. Execute R1-4 through R1-7 in small reviewable commits.
 8. Run local macOS qualification and the mllse Linux gate. **Complete for the
    unfrozen implementation commits; repeat only on the frozen candidate.**
-9. Run the prepared PixInsight black-box fixture manually and retain its JSON
-   result.
+9. Run the prepared PixInsight black-box fixtures manually and retain their
+   JSON results. **Revision 1 eight-subblock path complete; current
+   block-Property fixture pending.**
 10. Freeze the exact RC2 candidate only after the matrix and evidence are
     complete.
 11. Run native Windows/MSVC once on that exact candidate.

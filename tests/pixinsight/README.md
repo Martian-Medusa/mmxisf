@@ -83,3 +83,7 @@ The source descriptor is bound to `zstd+sh:512:2` and eight independently
 compressed subblocks. A PASS establishes native PixInsight acceptance of this
 specific corrected Revision 1 writer path; it does not establish PFI parity or
 authorize product enablement.
+
+This exact fixture passed in PixInsight 1.9.5 arm64 on 2026-09-21. The sanitized
+source-bound result is retained in
+`docs/quality-runs/2026-09-21-pixinsight-revision1-subblocks-macos-arm64.json`.

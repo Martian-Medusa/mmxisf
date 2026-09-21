@@ -1,0 +1,52 @@
+{
+  "schema": "mmxisf.pixinsight-revision1-subblocks-run/1.0.0",
+  "recordedAtUtc": "2026-09-21T09:55:39Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "8d95a9a39d77b0a595ed522e6cde21853b91bcb0",
+  "candidateFrozen": false,
+  "publicationAuthorized": false,
+  "runtime": {
+    "programName": "PixInsight Core 1.9.5 (arm64)",
+    "version": "1.9.5.0",
+    "platform": "macOS",
+    "engine": "PJSR V8"
+  },
+  "validator": {
+    "path": "tests/pixinsight/MMXISFRevision1SubblocksValidation.js",
+    "sha256": "311a2755cbee9116f40d8994a879189ee289abef77a203fb966cfdb7d44c5e7b"
+  },
+  "fixture": {
+    "encodedPath": "tests/interop/mmxisf-writer-revision1-subblocks.xisf.b64",
+    "materializedSizeBytes": 4488,
+    "materializedSha256": "cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64",
+    "compression": "zstd+sh:512:2",
+    "subblockCount": 8,
+    "decompressedBytesPerSubblock": 64
+  },
+  "result": {
+    "status": "PASS",
+    "image": {
+      "width": 16,
+      "height": 16,
+      "channels": 1,
+      "sampleFormat": "UInt16",
+      "colorSpace": "Gray",
+      "pixelSha256": "3f662f7f1bde036f2bf11f11a30139b4226f8ebe941314eeda8425f5af190317",
+      "exactSamplePattern": "(index%32)*127"
+    }
+  },
+  "sourceEvidence": {
+    "localFileName": "mmxisf-revision1-subblocks-validation-20260921T095539Z.json",
+    "sha256": "e714b070c836ee819a6304b12220ed2ad498c59c6d05978835d21e7dddeeae4f"
+  },
+  "authority": {
+    "revision1WriterInterop": "OBSERVED_NATIVE_HOST",
+    "pfiScientificParity": "NOT_ASSESSED",
+    "productEnablement": "NOT_AUTHORIZED"
+  },
+  "limitations": [
+    "This PASS covers the exact source-bound synthetic UInt16 Gray fixture and corrected global-shuffle multi-subblock writer path.",
+    "It does not generalize to every codec, sample format, metadata type, XISF consumer, PFI workflow, or scientific result.",
+    "The separate current block-Property fixture still requires its own native PixInsight PASS."
+  ]
+}

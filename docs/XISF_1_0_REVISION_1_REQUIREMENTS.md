@@ -40,6 +40,9 @@ tests. Automatic writer emission of `XISF:ChecksumAlgorithms` and
 so automatic insertion is deferred to avoid silently rewriting caller-owned
 metadata policy.
 
-Release qualification remains fail-closed pending fresh native PixInsight plus
-exact-candidate Linux, Windows, and fuzz gates. The four current writer
-fixtures passed a fresh independent public-API replay on 2026-09-21.
+The corrected global-shuffle eight-subblock writer path passed source-bound
+native PixInsight 1.9.5 arm64 validation with all 256 exact samples on
+2026-09-21. Release qualification remains fail-closed pending the current
+block-Property native PixInsight fixture plus exact-candidate macOS/Linux,
+native Windows/MSVC, fuzz, and frozen-candidate gates. Four current writer
+fixtures also passed a fresh independent public-API replay on 2026-09-21.

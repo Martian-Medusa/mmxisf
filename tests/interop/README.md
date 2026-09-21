@@ -90,11 +90,13 @@ once and only then divided into eight independently Zstandard-compressed
 64-byte regions. The compiled test binds the exact descriptor, file hash,
 checksum, and decoded pixel hash. The source-bound
 `tests/pixinsight/MMXISFRevision1SubblocksValidation.js` script is the separate
-native-consumer gate for this corrected writer path. Public API replay with
-independent package `xisf` 0.9.7 exposes the exact compression and eight-pair
-`subblocks` descriptors, but its image API decodes only 32 samples and fails
-the required 1x16x16 reshape. This is recorded as `LIMITED`, not as evidence
-against the Revision 1 algorithm or as an independent-consumer PASS.
+native-consumer gate for this corrected writer path. PixInsight 1.9.5 arm64
+recovered all 256 exact samples and their expected pixel hash on 2026-09-21;
+the source-bound result is retained under `docs/quality-runs`. Public API
+replay with independent package `xisf` 0.9.7 exposes the exact compression and
+eight-pair `subblocks` descriptors, but its image API decodes only 32 samples
+and fails the required 1x16x16 reshape. This is recorded as `LIMITED`, not as
+evidence against the Revision 1 algorithm or as an independent-consumer PASS.
 
 The `mmxisf-writer-sha3-rgb` fixture is a deterministic 2x2 Planar UInt16 RGB
 writer output using Zstandard+shuffle and SHA3-256. `mmxisf` verifies the exact
