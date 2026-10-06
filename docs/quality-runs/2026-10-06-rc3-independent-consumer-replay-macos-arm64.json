@@ -1,0 +1,132 @@
+{
+  "schema": "mmxisf.independent-consumer-run/1.0.0",
+  "recordedAtUtc": "2026-10-06T15:00:00Z",
+  "repository": "https://github.com/Martian-Medusa/mmxisf.git",
+  "sourceCommit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f",
+  "candidateFrozen": true,
+  "publicationAuthorized": false,
+  "consumer": {
+    "name": "PyPI xisf",
+    "version": "0.9.7",
+    "documentedPublicApi": [
+      "XISF.__init__",
+      "XISF.get_file_metadata",
+      "XISF.get_images_metadata",
+      "XISF.read_image"
+    ],
+    "sdistSha256": "fcc8d33b3c45461abb0d71b3cd1207c08548ee11f51d4aaa5615f19cc54e1724",
+    "license": "GPL-3.0",
+    "implementationSourceInspected": false,
+    "projectBuildRuntimeOrTestDependency": false,
+    "executionEnvironment": "isolated temporary virtual environment (Python 3.10, numpy 2.2.6, lz4 4.4.5, zstandard 0.25.0)"
+  },
+  "host": {
+    "operatingSystem": "macOS 27.0 (26A428)",
+    "architecture": "arm64"
+  },
+  "method": "Every committed fixture in tests/interop/manifest.json was decoded from its Base64 text, its SHA-256 compared with the manifest, read only through the documented public API, and compared with the manifest's decoded-pixel SHA-256 (planar order) or stated values.",
+  "fixtures": [
+    {
+      "id": "third-party-gray-u8-zstd-sh",
+      "sha256": "97b1d65ed17d088a694661be3879fe93152ed7d8fed59222552ca5a12d5365b8",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-u32-zstd-sh",
+      "sha256": "66460230fc2001b2f870dfe9b64846ddb54e74912cc1f90734f11128c41fc33b",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-f64-zstd-sh",
+      "sha256": "a929d29e24c9610b256c392b0176ff80deb17d62ab39d6e23a2321da9ef53a42",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-rgb-u8-zstd-sh",
+      "sha256": "d560db890bd9ed8b5599ee540cfaa4361a1a0f85cce430186ac71214d3585389",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-u16-zlib-sh",
+      "sha256": "7a5e97af8cb10c57ba787892df9c8050a080a3e4332612937c3f86343501e8f3",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-u16-lz4-sh",
+      "sha256": "0f1e521e612a9574c1761af9fe41b6acc825c837aa6c1162cc8e89e918f344ee",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-u16-lz4hc-sh",
+      "sha256": "f33b9cc8f397ef4d8b333b9754d72bfa88795052335a23daafc661b113873131",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-gray-u16-zstd-sh",
+      "sha256": "8c86271006085159be06906ebe05a26cebfc86cc4bc10a54dd669ca96e2afa13",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "third-party-rgb-f32-zstd-sh",
+      "sha256": "f47f4530345ab1e43e320351458f574a39f283a3211ee597ce062410ab0a66d0",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "mmxisf-writer-multi-scalars",
+      "sha256": "228bc64058c8ad740bc3a11ed80a3d48cebd25882095fbe33cfd5dfca1dbf423",
+      "fileHashMatchesManifest": true,
+      "result": "PASS"
+    },
+    {
+      "id": "mmxisf-writer-metadata",
+      "sha256": "08eb97bd91d91c9e9c9609e061cc805ea53bf908ad64a7ed50e310af55d55cb3",
+      "fileHashMatchesManifest": true,
+      "result": "READ_OK"
+    },
+    {
+      "id": "mmxisf-writer-codecs",
+      "sha256": "78911e120d89a6718765053d82e85fffd5f1c6da0739ff275f3085d7d2e7eaa5",
+      "fileHashMatchesManifest": true,
+      "result": "READ_OK"
+    },
+    {
+      "id": "mmxisf-writer-rgb-u16",
+      "sha256": "951279e808a160c7028405f30cbffaa71ba1266dba5c245dbb9adf0c4294be10",
+      "fileHashMatchesManifest": true,
+      "result": "READ_OK"
+    },
+    {
+      "id": "mmxisf-writer-native-properties",
+      "sha256": "e4cff5baa69d4cb952d95b1299fff63a3d6f24e2456a8546088487effdf8866d",
+      "fileHashMatchesManifest": true,
+      "result": "READ_OK"
+    },
+    {
+      "id": "mmxisf-writer-revision1-subblocks",
+      "sha256": "cb247d96a3b475d3189809f760552b41534f9b855df798e9e924db14f1c04f64",
+      "fileHashMatchesManifest": true,
+      "result": "LIMITED_DOCUMENTED"
+    },
+    {
+      "id": "mmxisf-writer-sha3-rgb",
+      "sha256": "fb4659c1ee1886975975a8f5c49769175ea07676967baed42e93e8eb6e1003aa",
+      "fileHashMatchesManifest": true,
+      "result": "READ_OK"
+    }
+  ],
+  "summary": {
+    "thirdPartyProducedFixtures": "9/9 PASS with exact decoded-pixel SHA-256",
+    "mmxisfWrittenFixtures": "all file hashes match; multi-scalars exact stated values; metadata, native-properties, rgb-u16, sha3-rgb, codecs read with exact pixel identity and preserved descriptors/Properties; revision1-subblocks reproduces the documented LIMITED result (xisf 0.9.7 decodes only 32 samples and fails image reshape)"
+  },
+  "result": "PASS_WITH_DOCUMENTED_LIMITATION",
+  "authority": "Independent black-box public-API acceptance and value identity for the exact fixtures only; not native PixInsight evidence, universal format conformance, or a license/dependency change. The Revision 1 subblock fixture is not independently readable by this package; its native evidence is the PixInsight 1.9.5 record bound to the unchanged writer source."
+}

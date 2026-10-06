@@ -42,15 +42,15 @@
       "id": "quality.exact-candidate-cross-platform",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Candidate v0.1.0-rc.3 has not yet passed the exact-source cross-platform matrix (Linux amd64, macOS arm64, hosted CI matrix and native Windows/MSVC). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/quality-runs/2026-10-06-rc3-linux-macos-1e4e831.json",
+      "note": "Partial: the frozen v0.1.0-rc.3 commit 1e4e831b8248cc68a65d3ce11e5ec9000b91671f passed the viewer-free pinned-vcpkg (Expat 2.8.5, OpenSSL 3.6.5) and system-graph gates on Linux amd64 and macOS arm64 (static 19/19, shared 20/20, consumers, ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds). The hosted CI matrix and native Windows/MSVC have not been run on this commit, so the gate stays NOT_TESTED. The rc.2 results (docs/quality-runs/2026-10-06-rc2-cross-platform.json) are historical."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The 900-second coverage-guided campaign must be repeated on the exact v0.1.0-rc.3 commit (new Expat 2.8.5 and OpenSSL 3.6.5 graph). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.3.json",
+      "note": "The exact frozen v0.1.0-rc.3 commit 1e4e831b8248cc68a65d3ce11e5ec9000b91671f (deterministic archive SHA-256 3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7) completed the versioned 900-second Linux amd64 Clang 18 ASan/UBSan/libFuzzer campaign with an available external symbolizer on the Expat 2.8.5 / system graph. It executed 2,277,832 inputs in 901 seconds, reached 15,977 covered edges and 44,418 features, and produced no crash artifact, sanitizer error, timeout, or slow input. The full log and evolved corpus remain privately retained and hash-bound. This is evidence for this exact build, not universal parser safety; final commit Y3 is re-qualified separately (ADR 0021)."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -63,8 +63,8 @@
       "id": "interop.independent-consumer-writer",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json",
-      "note": "PyPI xisf 0.9.7 replayed the committed fixtures through its documented public API (rc.2 replay: docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json; the replay is repeated on candidate X3). Third-party-produced fixtures matched exact decoded-pixel SHA-256, and the mmxisf-written fixtures matched their file hashes, stated values, Properties and pixel identities, except the Revision 1 multi-subblock fixture, which this package cannot decode (documented LIMITED result; native PixInsight evidence covers it). This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
+      "evidence": "docs/quality-runs/2026-10-06-rc3-independent-consumer-replay-macos-arm64.json",
+      "note": "PyPI xisf 0.9.7 replayed every committed fixture on candidate X3 (v0.1.0-rc.3) through its documented public API: nine third-party-produced fixtures matched exact decoded-pixel SHA-256, and the mmxisf-written fixtures matched their file hashes, stated values, Properties and pixel identities, except the Revision 1 multi-subblock fixture, which this package cannot decode (documented LIMITED result; native PixInsight evidence covers it). This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
     },
     {
       "id": "interop.pixinsight-writer-revision1-subblocks",
@@ -140,8 +140,8 @@
       "id": "security.production-dependency-baseline-control",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The pinned vcpkg graph moved to baseline e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7 for rc.3 (Expat 2.8.5, OpenSSL 3.6.5) with fail-closed floors raised to Expat 2.8.5 and OpenSSL 3.6.5; the exact production-graph gates must pass on candidate X3. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/security-audits/2026-10-06-rc3-dependency-update.json",
+      "note": "Partial: the pinned vcpkg graph moved to baseline e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7 (Expat 2.8.5, OpenSSL 3.6.5; every resolved port change recorded) with fail-closed floors raised to Expat 2.8.5 and OpenSSL 3.6.5, and the exact production-graph gates passed on Linux amd64 and macOS arm64 for candidate X3. The native Windows/MSVC production-graph gate has not run on this commit, so the gate stays NOT_TESTED."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",

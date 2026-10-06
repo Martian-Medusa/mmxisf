@@ -1,0 +1,60 @@
+{
+  "schema": "mmxisf.performance-checkpoint/1.0.0",
+  "recordedAtUtc": "2026-10-06T10:40:00Z",
+  "claim": "RECORDED_HOST_CHECKPOINT_NOT_PORTABLE_SLA",
+  "source": {
+    "commit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f",
+    "candidateRef": "v0.1.0-rc.3"
+  },
+  "profile": "6064x4040x3 UInt8 planar RGB, Zstandard level 3, byte shuffle, SHA-256, warm filesystem cache; static pinned-vcpkg Release build",
+  "decodedBytes": 73495680,
+  "fileBytes": 49373466,
+  "fileSha256": "78c64869af754018975fec3a0d008d38fd5244aac5dae8e9c88d1430cda67b46",
+  "fileSha256Note": "Identical on both hosts and across repeated runs; differs from the v0.1.0-rc.1 benchmark file because the benchmark Image id changed and the Revision 1 global shuffle changes the stored block.",
+  "hosts": {
+    "macOS arm64 (Apple M2)": {
+      "writerThroughputMiBPerSecond": [
+        352.148,
+        377.334,
+        377.666,
+        382.919,
+        358.989
+      ],
+      "owningReaderWallSeconds": [
+        0.44,
+        0.16,
+        0.17,
+        0.16,
+        0.15
+      ],
+      "owningReaderNote": "first run includes cold process/page-cache effects"
+    },
+    "Linux amd64 (Ryzen 5 5500U, mllse, live-service host)": {
+      "writerThroughputMiBPerSecond": [
+        94.559,
+        95.761,
+        93.553,
+        91.959,
+        94.173
+      ],
+      "owningReaderWallSeconds": [
+        0.46,
+        0.48,
+        0.46,
+        0.46,
+        0.46
+      ]
+    }
+  },
+  "rowReader": "Not measured: the low-copy row API intentionally rejects globally shuffled multi-subblock images (unsupported_feature) under XISF Revision 1; this benchmark profile is such an image on every host.",
+  "observations": [
+    "Linux writer throughput (median 94.173 MiB/s) remains well below the v0.1.0-rc.1-era Linux checkpoint (median 138.357 MiB/s, docs/M8_STATUS.md); not root-caused. The owner accepted LIMITED for v0.1.0 and scheduled the investigation for the next version (docs/ROADMAP.md).",
+    "The Apple host-specific writer budget (median >= 250 MiB/s) is met (median 377.334 MiB/s).",
+    "The benchmark file hash is identical to the rc.2 hash on both hosts, so the new Expat/OpenSSL pins did not change the written bytes."
+  ],
+  "limitations": [
+    "Local observations are not portable SLAs.",
+    "No row-reader timing exists for this profile (documented unsupported_feature).",
+    "The hosted Windows checkpoint for rc.3 is produced by the CI dispatch and is not yet recorded."
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "mmxisf.exact-candidate-quality-run/1.0.0",
+  "recordedAtUtc": "2026-10-06T15:00:00Z",
+  "status": "PASS_LINUX_AMD64_AND_MACOS_ARM64_HOSTED_CI_AND_MSVC_PENDING",
+  "publicationAuthorized": false,
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "candidateRef": "v0.1.0-rc.3",
+    "candidateRefCreatedInRepository": false,
+    "commit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f",
+    "supersedes": "v0.1.0-rc.2 (never tagged)",
+    "archive": {
+      "name": "mmxisf-0.1.0-source-1e4e831b8248.tar.gz",
+      "sizeBytes": 417443,
+      "sha256": "3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7",
+      "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+      "gitArchiveVerification": "PASS_MMXISF_VERIFY_GIT_ARCHIVE",
+      "candidateRefVerification": "PASS_MMXISF_VERIFY_CANDIDATE_REF_IN_DISPOSABLE_CLONE_TAG_NOT_IN_REPOSITORY",
+      "supportProfileSha256": "d290ea8bd3a3543c9e81d209adf9e654de0f12dcb8ad67e599c7dc95e236e228"
+    }
+  },
+  "scopeNote": "Exact frozen-candidate evidence for Linux amd64 and macOS arm64 only. The hosted CI matrix and native Windows/MSVC have NOT been run on this commit; the rc.2 results are historical.",
+  "vcpkgBaseline": {
+    "old": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "new": "e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7",
+    "record": "docs/security-audits/2026-10-06-rc3-dependency-update.json"
+  },
+  "linuxAmd64": {
+    "host": "mllse (Ryzen 5 5500U, Ubuntu 24.04.4, Linux 6.8.0-139, Docker 29.8.0)",
+    "container": {
+      "imageId": "sha256:2601e0d92dee9c75201bd9c859a04a106ca420082681c37933dbf253d9ed280f",
+      "compilers": "GCC 13.3.0, Clang 18.1.3, CMake 3.28.3, Ninja 1.11.1",
+      "limits": "--cpus=8 --memory=12g, uid 1000, --rm, names mmxisf-gate-*; no leftover container before or after"
+    },
+    "sourceTransfer": "git bundle cloned on the host; git archive on the host reproduced SHA-256 3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7",
+    "frozenCandidateSourcePreparation": "PASS (PrepareSourceCandidate with MMXISF_VERIFY_CANDIDATE_REF=ON and ValidateSourceCandidate with MMXISF_VERIFY_GIT_ARCHIVE=ON in the CI container, disposable clone, throwaway v0.1.0-rc.3 tag)",
+    "pinnedVcpkgProductionGate": {
+      "result": "PASS",
+      "compiler": "GCC 13.3 -Wall -Wextra -Wpedantic -Werror",
+      "dependencies": {
+        "expat": "2.8.5",
+        "zlib": "1.3.2#2",
+        "lz4": "1.10.0",
+        "zstd": "1.5.7",
+        "openssl": "3.6.5"
+      },
+      "portClosure": "8 ports: expat 2.8.5, lz4 1.10.0, openssl 3.6.5, zlib 1.3.2#2, zstd 1.5.7, vcpkg-cmake 2025-08-07, vcpkg-cmake-config 2026-07-21, vcpkg-cmake-get-vars 2025-05-29",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "installedConsumer": "2/2 each linkage",
+        "relocatedConsumer": "2/2 each linkage",
+        "embeddedConsumer": "1/1 each linkage"
+      },
+      "byteIdenticalRepeatBuilds": {
+        "static": "PASS",
+        "staticSha256": "e99eaffbf69256330b6da974c3a7af2a39d01ad295b0478027154deb0f502be3",
+        "shared": "PASS",
+        "sharedLibSha256": "998c81c4b9b8e1cf156dcf1ee43b6daa0875434dc70d949874a8a4cc8db85bfb"
+      },
+      "binarySbomSha256": {
+        "static": "30bbb015b1a889f6fbcf64f50ca76d33a23135bd614f87084a07576a5e4003d7",
+        "shared": "4f86db215cfb6cc3ae8ba36eb4dd58d06ef70022cc5a6cf0a67e91da5ae885c4"
+      },
+      "warnings": 0
+    },
+    "systemDependencyQualityGate": {
+      "result": "PASS",
+      "note": "Ubuntu system dependency graph (compatibility, not production floor)",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "asanUbsanClang": "19/19",
+        "mutationSmokeCases": 20000,
+        "threadSanitizerClang": "19/19",
+        "consumers": "installed/relocated/embedded pass"
+      }
+    },
+    "longFuzz": "docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.3.json"
+  },
+  "macosArm64": {
+    "host": "Apple M2, macOS 27.0 (26A428), Apple clang 21.0.0, CMake 3.24.4 (MacPorts)",
+    "sourceTransfer": "extracted from the verified deterministic archive",
+    "pinnedVcpkgProductionGate": {
+      "result": "PASS",
+      "compiler": "AppleClang -Wall -Wextra -Wpedantic -Werror, ZERO_AR_DATE=1",
+      "dependencies": {
+        "expat": "2.8.5",
+        "zlib": "1.3.2#2",
+        "lz4": "1.10.0",
+        "zstd": "1.5.7",
+        "openssl": "3.6.5"
+      },
+      "note": "Expat 2.8.5 and OpenSSL 3.6.5 were built from source (no binary cache for the new ABI hashes).",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "installedConsumer": "2/2 each linkage",
+        "relocatedConsumer": "2/2 each linkage",
+        "embeddedConsumer": "1/1 each linkage"
+      },
+      "byteIdenticalRepeatBuilds": {
+        "static": "PASS",
+        "staticSha256": "ce263666664f4d7d86c2a1c76bdb6e2af029568c453ba5eecbf6f2bd8bfff940",
+        "shared": "PASS",
+        "sharedSha256": "fc251f8e3b83ff579c3c7c8832b27bee985027002123ff2e405e9eeb6c3d2888"
+      },
+      "binarySbomSha256": {
+        "static": "7e5f632fb510dedb4dca2ded8e810077d72c86034ae14d8ada9e09548761390b",
+        "shared": "2ea2a8a1bbe4c7a1ac3fc73b6247396c1c2221b847471c1fc59eab0b5b867113"
+      }
+    },
+    "systemDependencyQualityGate": {
+      "result": "PASS",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "asanUbsan": "19/19",
+        "mutationSmokeCases": 20000,
+        "threadSanitizer": "19/19",
+        "consumers": "installed/relocated/embedded pass",
+        "documentation": "generated"
+      }
+    }
+  },
+  "newTests": "tests/reader_test.cpp UTF-16 / surrogate regression cases pass on every gate above (part of the 19/19 and 20/20 suites).",
+  "notRun": [
+    "hosted GitHub Actions matrix and native Windows/MSVC (require owner-approved dispatch)",
+    "Windows-target MinGW/Wine",
+    "optional viewer"
+  ],
+  "limitations": [
+    "System-dependency gates are compatibility evidence, not production-floor evidence.",
+    "Byte identity is for the recorded environments only.",
+    "A gate pass is not proof of absence of defects."
+  ]
+}

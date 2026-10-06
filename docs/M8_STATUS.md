@@ -863,6 +863,27 @@ paragraphs below are historical.
   historical files. The final tag still follows the X/Y model (Y3 =
   documentation-only evidence commit, all gates re-run on Y3).
 
+- Candidate X3 (`v0.1.0-rc.3`) Linux and macOS qualification (2026-10-06).
+  The freeze commit `1e4e831b8248cc68a65d3ce11e5ec9000b91671f` (no tag exists
+  yet) produced the deterministic 417,443-byte archive
+  `mmxisf-0.1.0-source-1e4e831b8248.tar.gz`, SHA-256
+  `3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7`; the
+  candidate-ref (disposable clone) and Git-archive byte-identity checks passed
+  and macOS, the Linux host and the Linux CI container produced the same
+  bytes. Linux amd64 and macOS arm64 passed the pinned-vcpkg gates on Expat 2.8.5
+  and OpenSSL 3.6.5 and the system-graph gates (static 19/19, shared 20/20,
+  consumers, ASan/UBSan, 20,000-mutation smoke, TSan, byte-identical repeat
+  builds), including the new UTF-16 regression cases; the 900-second fuzz
+  campaign executed 2,277,832 inputs with no finding; the independent consumer
+  replay passed except the documented multi-subblock limitation. Evidence:
+  `docs/quality-runs/2026-10-06-rc3-linux-macos-1e4e831.json`,
+  `docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.3.json`,
+  `docs/quality-runs/2026-10-06-rc3-independent-consumer-replay-macos-arm64.json`,
+  `docs/performance-runs/2026-10-06-rc3-macos-linux.json` and
+  `docs/security-audits/2026-10-06-rc3-dependency-update.json`. The hosted CI
+  matrix, native Windows/MSVC, the real-repository rc.3 identity check, the
+  final advisory refresh and Y3 re-qualification remain open.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is
