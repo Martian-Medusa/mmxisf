@@ -69,6 +69,19 @@ the repository, built with warnings as errors, tested, installed, and consumed
 through only its installed CMake package. This validates the packaging path,
 not a future frozen candidate or final release asset.
 
+## Promoting a candidate to the final release
+
+Per `docs/decisions/0021-final-release-is-the-frozen-candidate-commit.md`
+(owner decision, 2026-10-06), the final `vX.Y.Z` release is the exact commit of
+a frozen `vX.Y.Z-rc.N` candidate whose required gates all passed. After owner
+approval, the final annotated tag is created at that commit with no source,
+version, or tagged-tree change in between. The `rc.N` ref remains a
+candidate-identity ref and is not separately published as a prerelease. Release
+verification resolves both refs to the identical commit, reproduces the Git
+archive from the final tag, and compares it with the archive hash recorded for
+the candidate. Any tagged-tree change, gate failure, or moved ref supersedes the
+candidate with the next `rc.N`.
+
 ## Version and artifact gate
 
 Before tagging, update and cross-check the version in `CMakeLists.txt`,
