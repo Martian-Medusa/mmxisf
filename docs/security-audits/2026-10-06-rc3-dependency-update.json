@@ -46,7 +46,7 @@
     "vcpkgTool": "vcpkg tool release 2026-07-27 -> 2026-09-26 (scripts/vcpkg-tool-metadata.txt of the new baseline); the vcpkg executable is a build tool and is not distributed",
     "fullListRetainedPrivately": "PFI-agent-reports/2026-10-06/mmxisf-rc3/vcpkg-baseline-all-port-changes.json (all 288 registry baseline differences, old/new)",
     "linuxAmd64Closure": "Gate log 10-vcpkg-linux-amd64-gate: the same eight ports as macOS (expat 2.8.5, lz4 1.10.0, openssl 3.6.5, zlib 1.3.2#2, zstd 1.5.7, vcpkg-cmake 2025-08-07, vcpkg-cmake-config 2026-07-21, vcpkg-cmake-get-vars 2025-05-29); no pkgconf, vcpkg-make or other port is pulled in.",
-    "windowsClosure": "Recorded from the hosted CI run after the freeze."
+    "windowsClosure": "vcpkg resolved eight ports on x64-windows: expat 2.8.5, lz4 1.10.0, openssl 3.6.5, zlib 1.3.2#2, zstd 1.5.7, vcpkg-cmake 2025-08-07, vcpkg-cmake-config 2026-07-21, vcpkg-cmake-get-vars 2025-05-29 (identical to the macOS and Linux closures; vcpkg tool 2026-09-26)."
   },
   "mmxisfUtf16Boundary": {
     "headerPreCheck": "src/reader.cpp parse_header rejects any header that does not begin with the ASCII bytes <?xml (invalid_xisf), so UTF-16 and BOM-prefixed headers never reach Expat.",
@@ -60,7 +60,7 @@
     "https://github.com/microsoft/vcpkg/commit/e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7"
   ],
   "limitations": [
-    "Windows/MSVC binary SBOMs, the hosted-CI matrix and the final advisory refresh are recorded after the CI run; this record is complete for the macOS and Linux pinned-vcpkg closures.",
+    "Linux, macOS and Windows pinned-vcpkg closures are recorded; the final advisory review is docs/security-audits/2026-10-06-rc3-advisory-review.json.",
     "Absence of a published advisory for the other dependencies is a dated observation, not proof of safety."
   ],
   "binarySbomSha256": {
@@ -68,6 +68,7 @@
     "macosShared": "2ea2a8a1bbe4c7a1ac3fc73b6247396c1c2221b847471c1fc59eab0b5b867113",
     "linuxStatic": "30bbb015b1a889f6fbcf64f50ca76d33a23135bd614f87084a07576a5e4003d7",
     "linuxShared": "4f86db215cfb6cc3ae8ba36eb4dd58d06ef70022cc5a6cf0a67e91da5ae885c4",
-    "windows": "pending hosted CI"
+    "windowsStatic": "f43e8acc84f4f0c2c40fc0c7060c7b00507e92d0c44acbc62d955253f5b932e0",
+    "windowsShared": "8271bca7bc1739404d2c21dad313673636ff99f6c0693d7865a960eedd8d6e2b"
   }
 }

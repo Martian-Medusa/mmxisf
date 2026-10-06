@@ -19,10 +19,10 @@
     },
     {
       "id": "specification.revision1-qualification",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Revision 1 qualification must be completed on candidate X3 (frozen-candidate Linux/macOS/Windows, long fuzz and replay). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "note": "Revision 1 source corrections, local macOS regression gates, independent-consumer replay on candidate X3 (docs/quality-runs/2026-10-06-rc3-independent-consumer-replay-macos-arm64.json), exact-candidate Linux/macOS gates, native Windows/MSVC (CI run 37471026838), the 900-second exact-candidate coverage-guided fuzz campaign, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and the current block-Property fixture (bound to unchanged writer sources and fixtures) are complete for candidate X3. The multi-subblock fixture remains unreadable by the independent xisf 0.9.7 package (documented LIMITED result); native evidence covers it."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -40,10 +40,10 @@
     },
     {
       "id": "quality.exact-candidate-cross-platform",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-10-06-rc3-linux-macos-1e4e831.json",
-      "note": "Partial: the frozen v0.1.0-rc.3 commit 1e4e831b8248cc68a65d3ce11e5ec9000b91671f passed the viewer-free pinned-vcpkg (Expat 2.8.5, OpenSSL 3.6.5) and system-graph gates on Linux amd64 and macOS arm64 (static 19/19, shared 20/20, consumers, ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds). The hosted CI matrix and native Windows/MSVC have not been run on this commit, so the gate stays NOT_TESTED. The rc.2 results (docs/quality-runs/2026-10-06-rc2-cross-platform.json) are historical."
+      "evidence": "docs/quality-runs/2026-10-06-rc3-cross-platform.json",
+      "note": "Frozen candidate X3 (v0.1.0-rc.3, commit 1e4e831b8248cc68a65d3ce11e5ec9000b91671f) passed exact-source viewer-free gates on Linux amd64 and macOS arm64 locally (pinned-vcpkg Expat 2.8.5 / OpenSSL 3.6.5 static 19/19 and shared 20/20, installed/relocated/embedded consumers, ASan/UBSan 19/19, 20,000-mutation smoke, TSan 19/19, byte-identical repeat builds), on the hosted CI matrix (ubuntu-latest and macos-15 static/shared, fuzz-smoke, source-package, api-reference; run 37471026838), and on native Windows Server 2025 amd64/MSVC (warnings-as-errors static 19/19 and shared 20/20 with no excluded test, direct/relocated/embedded consumers, dependency floors, 39-symbol export surface, binary SBOMs). The MSVC static library was not byte-identical across build directories; this is a recorded non-blocking limitation because the release is source-only. Hosted macOS jobs use the runner's older Homebrew Expat 2.8.4 / OpenSSL 3.6.4 and are compatibility evidence only. MinGW/Wine was not run. Final commit Y3 is re-qualified separately (ADR 0021)."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
@@ -138,17 +138,17 @@
     },
     {
       "id": "security.production-dependency-baseline-control",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/security-audits/2026-10-06-rc3-dependency-update.json",
-      "note": "Partial: the pinned vcpkg graph moved to baseline e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7 (Expat 2.8.5, OpenSSL 3.6.5; every resolved port change recorded) with fail-closed floors raised to Expat 2.8.5 and OpenSSL 3.6.5, and the exact production-graph gates passed on Linux amd64 and macOS arm64 for candidate X3. The native Windows/MSVC production-graph gate has not run on this commit, so the gate stays NOT_TESTED."
+      "note": "The pinned vcpkg graph (baseline e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7: Expat 2.8.5, zlib 1.3.2#2, LZ4 1.10.0, Zstandard 1.5.7, OpenSSL 3.6.5; every resolved port change recorded) and the fail-closed dated floors (Expat 2.8.5, OpenSSL 3.6.5) passed exact extracted-source gates on macOS arm64 and Linux amd64 and the native Windows/MSVC gate for candidate X3, with binary SBOMs on all three platforms binding the same five versions."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The dated advisory review of the exact rc.3 binary SBOMs (Expat 2.8.5, OpenSSL 3.6.5 pins) must be completed for v0.1.0-rc.3. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/security-audits/2026-10-06-rc3-advisory-review.json",
+      "note": "Partial: Expat 2.8.5 and OpenSSL 3.6.5 are pinned, all six pinned-vcpkg binary SBOMs of candidate X3 (macOS, Linux, native MSVC) bind the same five reviewed dependencies, repository security controls were re-observed, and the OpenSSL list shows no vulnerability after 3.6.5 (2026-10-06). The gate stays NOT_TESTED because Expat 2.9.0 (2026-10-05; CVE-2026-102633 32-bit realloc overflow and CVE-2026-77214 XML_ParseBuffer len validation) postdates the pin and is not yet in the vcpkg registry; mmxisf calls XML_Parse only and targets 64-bit platforms, but the owner has not yet accepted that API-scoped disposition (docs/security-audits/2026-10-06-rc3-advisory-review.json). The review must be refreshed immediately before publication."
     },
     {
       "id": "security.private-reporting-channel",
@@ -166,10 +166,10 @@
     },
     {
       "id": "api.exact-candidate-diff-review",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The public-header and export-surface diff review must be repeated for the exact v0.1.0-rc.3 commit. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/quality-runs/2026-10-06-rc3-public-api-review.json",
+      "note": "Candidate X3 has no installed public-header path or byte change from the audited nine-header baseline or from v0.1.0-rc.1. The shared 39-symbol export allowlist passes on macOS arm64, Linux amd64 and native Windows/MSVC; installed and relocated static/shared consumers pass on all three; and the release notes state the pre-1.0 no-ABI-promise policy. Revision 1 behavior changes behind unchanged signatures (low-copy row API rejection of globally shuffled multi-subblock images) are documented in the support profile and release notes."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
@@ -180,10 +180,10 @@
     },
     {
       "id": "distribution.release-artifact-identity",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-10-06-rc3-source-identity.json",
-      "note": "Partial: the real-repository annotated v0.1.0-rc.3 ref resolves to candidate X3 (1e4e831b8248cc68a65d3ce11e5ec9000b91671f), and PrepareSourceCandidate with MMXISF_VERIFY_CANDIDATE_REF=ON and ValidateSourceCandidate with MMXISF_VERIFY_GIT_ARCHIVE=ON passed in a clean detached worktree, producing the byte-identical deterministic archive mmxisf-0.1.0-source-1e4e831b8248.tar.gz (417,443 bytes, SHA-256 3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7; docs/quality-runs/2026-10-06-rc3-source-identity.json). The gate stays NOT_TESTED until the hosted source-package job's archive for X3 is confirmed identical (process step 7). Identity and integrity of final commit Y3 and of the published assets are verified outside Y3 and published as release evidence (ADR 0021 items 4 and 7)."
+      "note": "Candidate X3's deterministic archive (mmxisf-0.1.0-source-1e4e831b8248.tar.gz, 417,443 bytes, SHA-256 3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7) was produced twice byte-identically, verified against the Git archive, reproduced on macOS, the Linux host, the Linux CI container and a clean detached worktree of the real repository with the annotated v0.1.0-rc.3 ref (MMXISF_VERIFY_CANDIDATE_REF=ON), and independently generated by the hosted source-package job (run 37471026838) with a byte-identical archive and source-candidate.json. Identity and integrity of final commit Y3 and of the published assets are verified outside Y3 and published as release evidence (ADR 0021 items 4 and 7)."
     },
     {
       "id": "pfi.native-operator-acceptance",

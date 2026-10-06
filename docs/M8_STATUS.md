@@ -894,6 +894,25 @@ paragraphs below are historical.
   v0.1.0 ships as standaloneBeta READY while standaloneProduction stays NOT_READY
   because performance is accepted as LIMITED.
 
+- Hosted CI and native Windows/MSVC on candidate X3 (2026-10-06). With the
+  owner's approval X3 was pushed as `candidate/v0.1.0-rc.3` and `ci.yml` was
+  dispatched once (run `37471026838`, head
+  `1e4e831b8248cc68a65d3ce11e5ec9000b91671f`): every job succeeded (viewer job
+  skipped). Native Windows Server 2025 amd64/MSVC passed warnings-as-errors static
+  19/19 and shared 20/20 with no excluded test, consumers, dependency floors and
+  the 39-symbol export surface; its vcpkg closure is the same eight ports on
+  Expat 2.8.5 / OpenSSL 3.6.5; the static library was again not byte-identical
+  (non-blocking). The hosted source package is byte-identical to the local archive
+  (SHA-256 `3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7`).
+  The ledger records PASS for the cross-platform, API diff, Revision 1
+  qualification, dependency-baseline and artifact-identity rows. The binary
+  vulnerability audit stays open pending the owner's disposition of Expat 2.9.0
+  (2026-10-05, not yet in the vcpkg registry). Evidence:
+  `docs/quality-runs/2026-10-06-rc3-windows-amd64-msvc.json`,
+  `docs/quality-runs/2026-10-06-rc3-cross-platform.json`,
+  `docs/quality-runs/2026-10-06-rc3-public-api-review.json` and
+  `docs/security-audits/2026-10-06-rc3-advisory-review.json`.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

@@ -44,17 +44,35 @@
         0.46,
         0.46
       ]
+    },
+    "Windows Server 2025 amd64 MSVC (GitHub-hosted, 4 vCPU AMD EPYC 9V74)": {
+      "writerThroughputMiBPerSecond": [
+        97.578,
+        98.185,
+        98.84,
+        98.802,
+        99.358
+      ],
+      "owningReaderElapsedSeconds": [
+        0.4213143,
+        0.3146014,
+        0.3134952,
+        0.3178047,
+        0.3189412
+      ],
+      "source": "docs/quality-runs/2026-10-06-rc3-windows-amd64-msvc.json"
     }
   },
   "rowReader": "Not measured: the low-copy row API intentionally rejects globally shuffled multi-subblock images (unsupported_feature) under XISF Revision 1; this benchmark profile is such an image on every host.",
   "observations": [
     "Linux writer throughput (median 94.173 MiB/s) remains well below the v0.1.0-rc.1-era Linux checkpoint (median 138.357 MiB/s, docs/M8_STATUS.md); not root-caused. The owner accepted LIMITED for v0.1.0 and scheduled the investigation for the next version (docs/ROADMAP.md).",
     "The Apple host-specific writer budget (median >= 250 MiB/s) is met (median 377.334 MiB/s).",
-    "The benchmark file hash is identical to the rc.2 hash on both hosts, so the new Expat/OpenSSL pins did not change the written bytes."
+    "The benchmark file hash is identical to the rc.2 hash on both hosts, so the new Expat/OpenSSL pins did not change the written bytes.",
+    "Windows writer throughput (median 98.802 MiB/s) is below both the rc.2 checkpoint (median 133.246 MiB/s, same runner class, run-to-run variance on hosted runners is large) and the v0.1.0-rc.1 checkpoint (median 183.753 MiB/s). The owner accepted LIMITED for v0.1.0."
   ],
   "limitations": [
     "Local observations are not portable SLAs.",
     "No row-reader timing exists for this profile (documented unsupported_feature).",
-    "The hosted Windows checkpoint for rc.3 is produced by the CI dispatch and is not yet recorded."
+    "The native Windows checkpoint is recorded from CI run 37471026838."
   ]
 }

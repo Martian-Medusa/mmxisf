@@ -7,7 +7,10 @@ It supersedes `v0.1.0-rc.1`, which covered only the document-1.00 profile
 
 ## Commit model (ADR 0021)
 
-- **Candidate X** is the commit tagged `v0.1.0-rc.3`. An earlier candidate,
+- **Candidate X** is the commit tagged `v0.1.0-rc.3`:
+  `1e4e831b8248cc68a65d3ce11e5ec9000b91671f`, source archive
+  `mmxisf-0.1.0-source-1e4e831b8248.tar.gz` (417,443 bytes), SHA-256
+  `3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7`. An earlier candidate,
   `v0.1.0-rc.2`, passed its gates but was superseded before tagging because
   Expat 2.8.5 and OpenSSL 3.6.5 required new dependency pins.
 - **Final Y** is the commit tagged `v0.1.0`. It is X plus documentation-only
@@ -82,26 +85,34 @@ that UTF-16 and surrogate-malformed headers are rejected. The earlier rc.2
 candidate pinned Expat 2.8.4 and OpenSSL 3.6.4 and is superseded. See
 `docs/security-audits/2026-10-06-rc3-dependency-update.json`.
 
-## Qualification of candidate X (historical rc.2 records in this tree; rc.3 evidence is published as release assets and recorded after the freeze)
+Expat 2.9.0 (2026-10-05) lists two security fixes (CVE-2026-102633, a 32-bit
+`expat_realloc` integer overflow, and CVE-2026-77214, `XML_ParseBuffer` length
+validation) and is not yet available in the vcpkg registry. mmxisf calls
+`XML_Parse` only and supports 64-bit platforms only. EXPAT_DISPOSITION_PENDING
+(see `docs/security-audits/2026-10-06-rc3-advisory-review.json`).
+
+## Qualification of candidate X3 (`v0.1.0-rc.3`)
 
 - Linux amd64 (GCC 13 pinned-vcpkg production graph and system graph, Clang
-  ASan/UBSan, 20,000-case mutation smoke, TSan, byte-identical repeat builds)
-  and macOS arm64 (the same gate families with AppleClang): PASS. Evidence:
-  `docs/quality-runs/2026-10-06-rc2-linux-macos-d176056.json`.
-- 900-second Linux libFuzzer ASan/UBSan campaign: 2,344,549 executions, no
+  ASan/UBSan, 20,000-case mutation smoke, TSan, byte-identical repeat builds) and
+  macOS arm64 (the same gate families with AppleClang): PASS. Evidence:
+  `docs/quality-runs/2026-10-06-rc3-linux-macos-1e4e831.json`.
+- 900-second Linux libFuzzer ASan/UBSan campaign: 2,277,832 executions, no
   crash, sanitizer finding, or timeout. Evidence:
-  `docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json`.
-- Independent PyPI `xisf` 0.9.7 consumer replay: PASS with the documented
-  limitation that it cannot read the Revision 1 multi-subblock fixture.
-  Evidence: `docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json`.
+  `docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.3.json`.
 - Hosted CI matrix (ubuntu-latest and macos-15 static/shared, fuzz-smoke,
   source-package, api-reference) and native Windows Server 2025 amd64/MSVC
   (warnings-as-errors static 19/19 and shared 20/20, consumers, dependency
-  floors, 39-symbol export surface): PASS, run 37461708502. Evidence:
-  `docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json` and
-  `docs/quality-runs/2026-10-06-rc2-cross-platform.json`.
+  floors, 39-symbol export surface): PASS, run 37471026838. Evidence:
+  `docs/quality-runs/2026-10-06-rc3-windows-amd64-msvc.json` and
+  `docs/quality-runs/2026-10-06-rc3-cross-platform.json`.
+- Real-repository `v0.1.0-rc.3` identity and Git-archive check, and the hosted
+  source-package archive, reproduce the archive byte for byte:
+  `docs/quality-runs/2026-10-06-rc3-source-identity.json`.
+- Independent PyPI `xisf` 0.9.7 consumer replay: PASS with the documented
+  limitation that it cannot read the Revision 1 multi-subblock fixture.
 - The status of every gate is the ledger's (`docs/production-readiness.json`),
-  not this file's.
+  not this file's. Y re-qualification evidence is published as release assets.
 
 ## Known limitations
 
