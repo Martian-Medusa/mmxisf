@@ -1,7 +1,7 @@
 {
   "schema": "mmxisf.exact-candidate-binary-advisory-review/1.0.0",
-  "reviewedAtUtc": "2026-10-06T10:45:00Z",
-  "result": "LIMITED_DIRECT_DEPENDENCIES_ACCEPTED_MSVC_SBOM_PENDING",
+  "reviewedAtUtc": "2026-10-06T13:10:00Z",
+  "result": "LIMITED_PENDING_OWNER_DISPOSITION_OF_EXPAT_2_8_5",
   "publicationAuthorized": false,
   "candidate": {
     "tag": "v0.1.0-rc.2",
@@ -15,24 +15,28 @@
   },
   "candidateBinarySboms": [
     {
-      "platform": "macOS arm64 static",
+      "platform": "macOS arm64 static (local, pinned vcpkg)",
       "sha256": "58d35821e9fe78fc3580803e09142390221d9b5981920060c59688b7bc79c2b0"
     },
     {
-      "platform": "macOS arm64 shared",
+      "platform": "macOS arm64 shared (local, pinned vcpkg)",
       "sha256": "2605df386b999ceab12d4690b12f5ce8edb59cca3fce06de7e98115e7ae4059d"
     },
     {
-      "platform": "Linux amd64 static",
+      "platform": "Linux amd64 static (local, pinned vcpkg)",
       "sha256": "68178e2bf049af8d0962b795cda5ba5bce362751dee1d0c941ca4e879935ee43"
     },
     {
-      "platform": "Linux amd64 shared",
+      "platform": "Linux amd64 shared (local, pinned vcpkg)",
       "sha256": "50114ab4cc9966b1898e246cb050277e48bd85b81bc0a24c7890f2b6ff43f0fa"
     },
     {
-      "platform": "Windows amd64 MSVC static/shared",
-      "sha256": "NOT_YET_GENERATED"
+      "platform": "Windows amd64 MSVC static (hosted CI run 37461708502)",
+      "sha256": "51fc773146c01d233cd9810554dec3414c9bfe05f4a542280b5f524843477a7c"
+    },
+    {
+      "platform": "Windows amd64 MSVC shared (hosted CI run 37461708502)",
+      "sha256": "b59d5d10ea1c10e72250c72666679184f5d67980ca3da069265dc4497a810ac4"
     }
   ],
   "resolvedDirectDependencies": {
@@ -56,6 +60,13 @@
     {
       "item": "OpenSSL 3.6.4 (25 Aug 2026)",
       "finding": "Security patch release already contained in the pinned version; the reviewed titles likewise concern QUIC, CMS, CMP, DTLS, RPK and EVP_Cipher AEAD paths, none of which mmxisf calls (EVP_Cipher is not used)."
+    },
+    {
+      "item": "Expat 2.8.5 (2026-09-22)",
+      "finding": "The Expat changelog and release page identify 2.8.5 as a security release fixing CVE-2026-93990 (UTF-16 decoding: high surrogate without a low surrogate accepted; a changelog summary rated it CVSS 9.8). It postdates the pinned 2.8.4 and the v0.1.0-rc.1 review, and Dependabot has an open branch for the bump (dependabot/vcpkg/expat-2.8.5). Expat parses untrusted XISF headers in mmxisf, so this is directly relevant.",
+      "sourceScopeReading": "src/reader.cpp creates the parser with XML_ParserCreateNS(\"UTF-8\", ...), which overrides any declared document encoding, and its XML-declaration handler rejects declarations whose encoding is not UTF-8. Expat's UTF-16 decoder therefore appears unreachable from the document encoding. This is a source reading, not a regression test or verified disposition, and the CVE text itself was not read in full.",
+      "ownerDecisionNeeded": "Accept Expat 2.8.4 for v0.1.0 with a dated API-scoped disposition (ideally backed by a test that a UTF-16 or BOM-prefixed document is rejected), or move the vcpkg pin to 2.8.5, which changes vcpkg.json and requires a new candidate rc.3 and a full rerun.",
+      "verifiedAt": "2026-10-06"
     }
   ],
   "toolchainDisposition": {
@@ -64,13 +75,39 @@
     "windowsMsvc": "NOT_TESTED"
   },
   "limitations": [
-    "The Windows/MSVC binary SBOMs of candidate X do not exist yet; the review must be completed against them.",
+    "The review is not a gate pass until the owner disposes of Expat 2.8.5.",
     "A project page showing no published advisory does not prove that no unpublished or newly disclosed vulnerability exists.",
-    "Because Y is re-qualified, the review must be refreshed immediately before publication.",
+    "The review must be refreshed immediately before publication, including for the final commit Y.",
+    "The Windows runner image was inventoried but not re-audited for new advisories.",
     "This record does not authorize publication."
   ],
   "owner": {
     "decision": "Accept OpenSSL 3.6.4 for v0.1.0 with an API-scoped disposition; schedule an OpenSSL bump for the next mmxisf version.",
     "decidedOn": "2026-10-06"
+  },
+  "sbomBinding": "All six pinned-vcpkg binary SBOMs (macOS, Linux, native MSVC) bind Expat 2.8.4, zlib 1.3.2, LZ4 1.10.0, Zstandard 1.5.7 and OpenSSL 3.6.4. Hosted ubuntu/macOS SBOMs describe system dependency graphs and are not release-floor evidence.",
+  "repositoryControlsReobserved": {
+    "observedAtUtc": "2026-10-06",
+    "visibility": "public",
+    "privateVulnerabilityReporting": "ENABLED",
+    "dependabotSecurityUpdates": "ENABLED",
+    "secretScanning": "ENABLED",
+    "secretScanningPushProtection": "ENABLED",
+    "defaultWorkflowPermissions": "read",
+    "actionShaPinningRequired": true,
+    "openDependabotAlerts": 0,
+    "openSecretScanningAlerts": 0,
+    "method": "read-only GitHub API (gh api)"
+  },
+  "nativeWindowsBuildEnvironment": {
+    "runner": "GitHub-hosted Windows Server 2025 amd64",
+    "runnerImage": "win25-vs2026/20260925.250.1",
+    "visualStudio": "Visual Studio Enterprise 2026 (path ...\\Microsoft Visual Studio\\18\\Enterprise)",
+    "msvcToolsVersion": "14.51.36231",
+    "cl": "19.51.36260.0",
+    "windowsSdkUsed": "10.0.26100.0",
+    "cmake": "4.4.3",
+    "evidence": "docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json",
+    "disposition": "The release is source-only: no Windows binaries, PDB files, compilers or runner components are distributed. The rc.1 disposition of CVE-2026-69522 (Microsoft.DiaSymReader.Native, not in the project dependency graph) is carried forward unchanged; a new advisory search of the 20260925 runner image was not performed, so no toolchain-vulnerability claim is made."
   }
 }

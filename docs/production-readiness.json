@@ -19,10 +19,10 @@
     },
     {
       "id": "specification.revision1-qualification",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay (including on the frozen v0.1.0-rc.2 commit, docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json), the exact-implementation Linux and macOS gates and 900-second fuzz campaign on the frozen commit, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and the current block-Property fixture are complete. This gate remains fail-closed until native Windows/MSVC and the remaining frozen-candidate evidence are complete."
+      "note": "Revision 1 source corrections, local macOS regression gates, independent-consumer replay (including on candidate X, docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json), exact-candidate Linux/macOS gates, native Windows/MSVC, the 900-second exact-candidate coverage-guided fuzz campaign, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and the current block-Property fixture (bound to unchanged writer sources and fixtures) are complete for candidate X. The multi-subblock fixture remains unreadable by the independent xisf 0.9.7 package (documented LIMITED result); native evidence covers it."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -40,10 +40,10 @@
     },
     {
       "id": "quality.exact-candidate-cross-platform",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-10-06-rc2-linux-macos-d176056.json",
-      "note": "Partial: the frozen v0.1.0-rc.2 commit d17605686768832226da55090a33b28888bfab35 passed the viewer-free pinned-vcpkg and system-graph gates on Linux amd64 (static 19/19, shared 20/20, consumers, ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds) and on macOS arm64 (same families). Native Windows/MSVC, the hosted CI matrix and MinGW/Wine have not been run on this commit, so the gate stays NOT_TESTED. The v0.1.0-rc.1 result (docs/quality-runs/2026-09-14-rc1-cross-platform.json) is historical."
+      "evidence": "docs/quality-runs/2026-10-06-rc2-cross-platform.json",
+      "note": "Frozen candidate X (v0.1.0-rc.2, commit d17605686768832226da55090a33b28888bfab35) passed exact-source viewer-free gates on Linux amd64 and macOS arm64 locally (pinned-vcpkg static 19/19 and shared 20/20, installed/relocated/embedded consumers, ASan/UBSan 19/19, 20,000-mutation smoke, TSan 19/19, byte-identical repeat builds), on the hosted CI matrix (ubuntu-latest and macos-15 static/shared, fuzz-smoke, source-package, api-reference; run 37461708502), and on native Windows Server 2025 amd64/MSVC (warnings-as-errors static 19/19 and shared 20/20 with no excluded test, direct/relocated/embedded consumers, dependency floors, 39-symbol export surface, binary SBOMs). The MSVC static library was not byte-identical across build directories; this is a recorded non-blocking limitation because the release is source-only. MinGW/Wine was not run (compatibility evidence only). Evidence for the final commit Y is produced by its own re-qualification (ADR 0021)."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
@@ -126,8 +126,8 @@
       "id": "performance.supported-host-review",
       "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-15-rc1-windows-amd64-msvc.json",
-      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64, and native Windows Server 2025 amd64/MSVC on v0.1.0-rc.1 code. The Revision 1 reader and writer corrections postdate those measurements, so they are retained as dated checkpoints pending re-measurement on the frozen candidate; no portable SLA or cross-host ranking is claimed. The low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy, so no row-reader timing exists for it. Frozen-candidate macOS arm64 and Linux amd64 checkpoints are recorded in docs/performance-runs/2026-10-06-rc2-macos-linux.json (Linux writer throughput was lower than the rc.1-era checkpoint and was not root-caused); the native Windows checkpoint is pending."
+      "evidence": "docs/performance-runs/2026-10-06-rc2-macos-linux.json",
+      "note": "Candidate X measurements exist for Apple M2 macOS arm64 (writer median 395 MiB/s, host budget >=250 met), Ryzen 5 5500U Linux amd64 (median 89.7 MiB/s) and native Windows Server 2025 amd64/MSVC (median 133.2 MiB/s) in docs/performance-runs/2026-10-06-rc2-macos-linux.json and docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json. The gate stays LIMITED because the low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy (no row-reader timing exists), and Linux and Windows writer throughput is about 27-35% below the v0.1.0-rc.1-era checkpoints without root-cause isolation; no portable SLA or cross-host ranking is claimed. Promotion to PASS needs an explicit owner acceptance of these observations."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -148,7 +148,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/security-audits/2026-10-06-rc2-advisory-review.json",
-      "note": "The owner accepted OpenSSL 3.6.4 for v0.1.0 on 2026-10-06 with an API-scoped disposition (mmxisf calls only EVP message-digest primitives; the official OpenSSL vulnerability list at https://openssl-library.org/news/vulnerabilities/ names no 3.6.5 or 3.6.4 issue in EVP_Digest*), and the libexpat, zlib, lz4 and zstd advisory pages listed nothing; an OpenSSL bump is scheduled for the next mmxisf version (docs/ROADMAP.md). Linux amd64 and macOS arm64 binary SBOMs of candidate X bind the reviewed graph; the native Windows/MSVC binary SBOMs of X do not exist yet, so the gate stays NOT_TESTED until they are generated and bound. The v0.1.0-rc.1 review is historical."
+      "note": "Partial: the owner accepted OpenSSL 3.6.4 for v0.1.0 on 2026-10-06 with an API-scoped disposition (digest primitives only; official list https://openssl-library.org/news/vulnerabilities/), and the pinned-vcpkg binary SBOMs of candidate X for macOS, Linux and native MSVC all bind the same five reviewed dependencies (docs/security-audits/2026-10-06-rc2-advisory-review.json). The gate stays NOT_TESTED because Expat 2.8.5 (2026-09-22, security release for CVE-2026-93990, UTF-16 decoding) postdates the pinned Expat 2.8.4 and needs an owner disposition: either an API-scoped acceptance (the parser is created with a UTF-8 encoding override and non-UTF-8 declarations are rejected, a source reading not yet backed by a test) or a new candidate with the pin bumped. The review must also be refreshed immediately before publication. The v0.1.0-rc.1 review is historical."
     },
     {
       "id": "security.private-reporting-channel",
@@ -166,10 +166,10 @@
     },
     {
       "id": "api.exact-candidate-diff-review",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-10-06-rc2-public-api-review.json",
-      "note": "Partial: no installed public header byte differs from the audited baseline or from v0.1.0-rc.1, and the 39-symbol shared export allowlist passes on Linux amd64 and macOS arm64 for the frozen v0.1.0-rc.2 commit. The native Windows/MSVC export surface and the candidate release notes are not final, so the gate stays NOT_TESTED. The v0.1.0-rc.1 review is historical."
+      "note": "Candidate X has no installed public-header path or byte change from the audited nine-header baseline or from v0.1.0-rc.1. The shared 39-symbol export allowlist passes on macOS arm64, Linux amd64 and native Windows/MSVC; installed and relocated static/shared consumers pass on all three; and the release notes state the pre-1.0 no-ABI-promise policy. Revision 1 behavior changes behind unchanged signatures (low-copy row API rejection of globally shuffled multi-subblock images) are documented in the support profile and release notes."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
@@ -183,7 +183,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The deterministic source archive, ref identity and published asset hashes for candidate X (v0.1.0-rc.2) are recorded once the real-repository candidate-ref and Git-archive verification of X passes; identity and integrity of final commit Y and of the published assets are verified outside Y and published as release evidence (ADR 0021 items 4 and 7). The v0.1.0-rc.1 verification (docs/quality-runs/2026-09-15-rc1-release-verification.json) is historical."
+      "note": "Candidate X's deterministic archive (mmxisf-0.1.0-source-d17605686768.tar.gz, 399,408 bytes, SHA-256 11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66) was produced twice byte-identically, verified against the Git archive, reproduced on macOS, the Linux host and the Linux CI container, and independently generated by the hosted source-package job with a byte-identical archive and source-candidate.json (run 37461708502). The gate stays NOT_TESTED until the real-repository v0.1.0-rc.2 annotated ref is created locally at X and PrepareSourceCandidate with MMXISF_VERIFY_CANDIDATE_REF=ON passes there (the earlier pass used a disposable clone tag). Identity and integrity of final commit Y and of the published assets are verified outside Y and published as release evidence (ADR 0021 items 4 and 7). The v0.1.0-rc.1 verification is historical."
     },
     {
       "id": "pfi.native-operator-acceptance",

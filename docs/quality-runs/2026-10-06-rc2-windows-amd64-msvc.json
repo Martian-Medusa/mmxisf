@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "mmxisf.exact-candidate-windows-run/1.0.0",
+  "recordedAtUtc": "2026-10-06T13:10:00Z",
+  "status": "PASS_NATIVE_WINDOWS_AMD64_MSVC_FUNCTIONAL_GATE",
+  "publicationAuthorized": false,
+  "source": {
+    "repository": "Martian-Medusa/mmxisf",
+    "candidateRef": "v0.1.0-rc.2",
+    "candidateRefCreatedInRepository": false,
+    "commit": "d17605686768832226da55090a33b28888bfab35",
+    "dispatchBranch": "candidate/v0.1.0-rc.2 (pushed at exactly the frozen commit)",
+    "archiveSha256": "11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66"
+  },
+  "workflowRun": {
+    "url": "https://github.com/Martian-Medusa/mmxisf/actions/runs/37461708502",
+    "id": 37461708502,
+    "attempt": 1,
+    "event": "workflow_dispatch",
+    "inputs": "windows_source_ref empty; include_viewer false",
+    "conclusion": "success",
+    "headSha": "d17605686768832226da55090a33b28888bfab35",
+    "jobs": {
+      "windows-build": "success (12:13:19Z-12:40:15Z)",
+      "build (ubuntu-latest, OFF)": "success",
+      "build (ubuntu-latest, ON)": "success",
+      "build (macos-15, OFF)": "success",
+      "build (macos-15, ON)": "success",
+      "fuzz-smoke": "success",
+      "source-package": "success",
+      "api-reference": "success",
+      "viewer-poc": "skipped (not requested; viewer outside the library claim)"
+    },
+    "retainedPrivately": "run.json, watch.log, per-job logs and all artifacts under PFI-agent-reports/2026-10-06/mmxisf-freeze/msvc-X/ (GitHub artifacts expire after 14 days)"
+  },
+  "windowsHost": {
+    "operatingSystem": "Microsoft Windows Server 2025 Datacenter",
+    "version": "10.0.26100",
+    "buildNumber": "26100",
+    "architecture": "AMD64",
+    "processor": "AMD EPYC 9V74 80-Core Processor                ",
+    "logicalCpuCount": 4,
+    "runnerImage": "win25-vs2026",
+    "runnerImageVersion": "20260925.250.1"
+  },
+  "windowsToolchain": {
+    "visualStudioPath": "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise",
+    "msvcToolsVersion": "14.51.36231",
+    "clFileVersion": "19.51.36260.0",
+    "linkerFileVersion": "14.51.36260.0",
+    "cmake": "cmake version 4.4.3",
+    "powershell": "7.6.6",
+    "vcpkg": "vcpkg package management program version 2026-07-27-98d7cb0cf1f4686a3e43aa5672b6230c1d56bce8",
+    "vcpkgCommit": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "windowsSdkUsed": "10.0.26100.0"
+  },
+  "dependencies": {
+    "expat": "2.8.4",
+    "zlib": "1.3.2",
+    "lz4": "1.10.0",
+    "zstd": "1.5.7",
+    "openssl": "3.6.4",
+    "source": "Windows static/shared binary SBOMs, pinned vcpkg baseline a1cae005c39be7b18ba319fced856b68d7276271"
+  },
+  "functionalGate": {
+    "result": "PASS",
+    "warningsAsErrors": true,
+    "excludedTests": "none",
+    "staticTests": "19/19",
+    "sharedTests": "20/20",
+    "installedConsumer": "2/2 each linkage",
+    "relocatedConsumer": "2/2 each linkage",
+    "embeddedConsumer": "1/1 each linkage",
+    "sharedExportSurface": "PASS (mmxisf.shared-export-surface, 39-symbol allowlist, in the 20/20 shared suite)",
+    "sourceCandidateContract": "PASS (not excluded; byte-portable fixture)",
+    "dependencyFloors": "PASS (mmxisf.production-dependency-baseline-contract)",
+    "binarySbomContract": "PASS"
+  },
+  "reproducibility": {
+    "result": "LIMITED_NON_IDENTICAL_ARTIFACTS",
+    "policy": "MEASURED_NON_BLOCKING_SOURCE_ONLY",
+    "staticLibByteIdentical": false,
+    "sharedImportLibByteIdentical": true,
+    "sharedDllByteIdentical": true,
+    "staticSha256Primary": "a643c9835de18913797754172722f270e4d63b80804d846b5bd3339637b0fdeb",
+    "staticSha256Reproduction": "789415347d1feb07f4124f44fcc26e5b6f95fb5203b1db1592bc4b1c306cd9f3",
+    "sharedImportLibSha256": "05e64d1dab761cce11227f3826fa9bcef58660168e0a11049f73df382e8fdaa9",
+    "sharedDllSha256": "ccebb1ba64176fef75870c62f4c824f8d09e981b9dee70ed2e45fe8343366040",
+    "note": "Same non-blocking limitation as v0.1.0-rc.1; no Windows binary is distributed."
+  },
+  "binarySbomSha256": {
+    "windowsStatic": "51fc773146c01d233cd9810554dec3414c9bfe05f4a542280b5f524843477a7c",
+    "windowsShared": "b59d5d10ea1c10e72250c72666679184f5d67980ca3da069265dc4497a810ac4",
+    "hostedLinuxStaticSystemDeps": "2aa3158fbc385245bc91b9db002ebe44ca007dc8ed4849f29f53262a8ddf1ae2",
+    "hostedLinuxSharedSystemDeps": "fec69dc3bffdb3ffa55a823c8c631b48f5c8482bbba1bfe3bc8c062b085ed4fd",
+    "hostedMacosStaticSystemDeps": "66a9835e94d12166a80c4a6de0759bdf3df2b984029f8342fa54e3dbda637da0",
+    "hostedMacosSharedSystemDeps": "7c44ab321b27dc32ceeb837c602246ed80b99f31173f7907bcca663494ed5b61"
+  },
+  "hostedMatrix": {
+    "ubuntuLatest": "static 19/19, shared 20/20, installed/relocated/subdirectory consumers pass (apt system dependencies: Expat 2.6.1, zlib 1.3, LZ4 1.9.4, Zstd 1.5.5, OpenSSL 3.0.13)",
+    "macos15": "static 19/19, shared 20/20, consumers pass (Homebrew/SDK dependencies: Expat 2.8.4, LZ4 1.10.0, Zstd 1.5.7, OpenSSL 3.6.4, SDK zlib 1.2.12)",
+    "fuzzSmoke": "19/19 and 20,000 deterministic mutation runs",
+    "sourcePackage": "archive SHA-256 11a215f2...2c66, 399,408 bytes; archive and source-candidate.json byte-identical to the local preparation; ValidateSourceCandidate with MMXISF_VERIFY_GIT_ARCHIVE=ON passed",
+    "apiReference": "generated API reference artifact built"
+  },
+  "performanceCheckpoint": {
+    "profile": {
+      "geometry": "6064x4040x3",
+      "sampleFormat": "UInt8",
+      "compression": "Zstandard level 3",
+      "checksum": "SHA-256",
+      "filesystemCache": "warm"
+    },
+    "writerThroughputMiBPerSecond": [
+      127.846,
+      130.979,
+      139.192,
+      133.246,
+      140.6
+    ],
+    "benchmarkFileSha256": "78c64869af754018975fec3a0d008d38fd5244aac5dae8e9c88d1430cda67b46",
+    "owningReaderElapsedSeconds": [
+      0.4327786,
+      0.4443691,
+      0.4045557,
+      0.4291064,
+      0.5207607
+    ],
+    "rowReaderStatus": "UNSUPPORTED_GLOBALLY_SHUFFLED_MULTI_SUBBLOCK_PROFILE",
+    "rowReaderExitCode": 1,
+    "note": "The documented row-API rejection assertion added to the CI step was exercised and passed; the benchmark file hash equals the Linux and macOS hashes."
+  },
+  "workflowHarnessFixesExercised": [
+    "writer benchmark Image id writer_benchmark_rgb accepted on MSVC",
+    "Windows performance-checkpoint step asserts the documented row-API rejection"
+  ],
+  "limitations": [
+    "Hosted-runner measurements are a dated checkpoint, not a portable performance SLA.",
+    "Hosted ubuntu/macOS jobs use system dependency graphs and are compatibility evidence, not production-floor evidence.",
+    "The MSVC static library is not byte-identical across build directories; no Windows binary is distributed.",
+    "MinGW/Wine compatibility and the optional viewer were not run.",
+    "Toolchain/runner advisory disposition is recorded separately in docs/security-audits/2026-10-06-rc2-advisory-review.json."
+  ]
+}

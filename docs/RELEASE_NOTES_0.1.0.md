@@ -68,8 +68,10 @@ vulnerability list (https://openssl-library.org/news/vulnerabilities/) names no
 3.6.4 or 3.6.5 issue in those primitives. OpenSSL 3.6.5 (2026-09-29) fixes one
 High DTLS issue (CVE-2026-84782) and further Low/Moderate issues in DTLS, QUIC,
 CMP, X.509, EC and SM2 code that mmxisf does not call. An OpenSSL bump is
-scheduled for the next mmxisf version. See
-`docs/security-audits/2026-10-06-rc2-advisory-review.json`.
+scheduled for the next mmxisf version. Expat 2.8.5 (2026-09-22) fixes
+CVE-2026-93990 (UTF-16 decoding) after the pinned Expat 2.8.4; the disposition
+is recorded in `docs/security-audits/2026-10-06-rc2-advisory-review.json`
+and must be final before this release is published.
 
 ## Qualification of candidate X (recorded in this tree)
 
@@ -83,20 +85,25 @@ scheduled for the next mmxisf version. See
 - Independent PyPI `xisf` 0.9.7 consumer replay: PASS with the documented
   limitation that it cannot read the Revision 1 multi-subblock fixture.
   Evidence: `docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json`.
-- Hosted CI matrix and native Windows/MSVC for X: see the ledger and
-  `docs/quality-runs/` for the recorded result; the status of every gate is the
-  ledger's, not this file's.
+- Hosted CI matrix (ubuntu-latest and macos-15 static/shared, fuzz-smoke,
+  source-package, api-reference) and native Windows Server 2025 amd64/MSVC
+  (warnings-as-errors static 19/19 and shared 20/20, consumers, dependency
+  floors, 39-symbol export surface): PASS, run 37461708502. Evidence:
+  `docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json` and
+  `docs/quality-runs/2026-10-06-rc2-cross-platform.json`.
+- The status of every gate is the ledger's (`docs/production-readiness.json`),
+  not this file's.
 
 ## Known limitations
 
 - The support profile is bounded and includes explicit INSPECT_ONLY and
   REJECT_EXPLICITLY rows; this is not a universal XISF implementation claim.
 - The API is pre-1.0 and carries no ABI promise.
-- The row API does not support globally shuffled multi-subblock images.
+- The row API does not support globally shuffled multi-subblock images, so no row-reader throughput is reported for the benchmark profile; writer throughput on Linux and Windows is lower than the rc.1-era checkpoints (not root-caused).
 - The independent `xisf` 0.9.7 package cannot decode the Revision 1
   multi-subblock fixture; native PixInsight acceptance of that writer path is
   recorded in `docs/quality-runs/2026-09-21-pixinsight-revision1-subblocks-macos-arm64.json`.
-- The native MSVC static library may not be byte-identical across build
+- The native MSVC static library is not byte-identical across build
   directories (documented non-blocking limitation, source-only release).
 - The optional macOS viewer remains a local PoC and is not a release asset.
 - PFI operator acceptance and rollback exercise are separate product gates and

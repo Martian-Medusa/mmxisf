@@ -44,15 +44,33 @@
         0.46,
         0.45
       ]
+    },
+    "Windows Server 2025 amd64 MSVC (GitHub-hosted, 4 vCPU AMD EPYC 9V74)": {
+      "writerThroughputMiBPerSecond": [
+        127.846,
+        130.979,
+        139.192,
+        133.246,
+        140.6
+      ],
+      "owningReaderElapsedSeconds": [
+        0.4327786,
+        0.4443691,
+        0.4045557,
+        0.4291064,
+        0.5207607
+      ],
+      "source": "docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json"
     }
   },
   "rowReader": "Not measured: the low-copy row API intentionally rejects globally shuffled multi-subblock images (unsupported_feature) under XISF Revision 1; this benchmark profile is such an image on every host.",
   "observations": [
     "Linux writer throughput (median 89.650 MiB/s) is lower than the v0.1.0-rc.1-era Linux checkpoint (median 138.357 MiB/s, docs/M8_STATUS.md). The host runs live services and the Revision 1 whole-block shuffle adds a pass; the cause was not isolated and no regression claim is made.",
-    "The Apple host-specific writer budget (median >= 250 MiB/s, docs/M6_WRITER_PERFORMANCE.md) is met (median 395.454 MiB/s)."
+    "The Apple host-specific writer budget (median >= 250 MiB/s, docs/M6_WRITER_PERFORMANCE.md) is met (median 395.454 MiB/s).",
+    "Windows writer throughput (median 133.246 MiB/s) is lower than the v0.1.0-rc.1 Windows checkpoint (median 183.753 MiB/s), a similar relative drop (about 27%) to Linux; macOS is higher. Two of three hosts show a drop on the same benchmark profile, which is consistent with the Revision 1 whole-block shuffle pass but was not isolated by a profile or A/B build."
   ],
   "limitations": [
-    "Local observations are not portable SLAs.",
-    "Native Windows/MSVC checkpoint is produced by the hosted workflow and is not yet recorded."
+    "Local and hosted observations are not portable SLAs.",
+    "No row-reader timing exists for this profile (documented unsupported_feature); row-reader performance for supported combinations is not re-measured."
   ]
 }

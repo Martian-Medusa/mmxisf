@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "mmxisf.exact-candidate-cross-platform/1.0.0",
+  "recordedAtUtc": "2026-10-06T13:10:00Z",
+  "status": "PASS_LINUX_MACOS_WINDOWS_MSVC",
+  "candidate": {
+    "candidateRef": "v0.1.0-rc.2",
+    "commit": "d17605686768832226da55090a33b28888bfab35",
+    "archiveSha256": "11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66"
+  },
+  "evidence": {
+    "linuxAmd64AndMacosArm64Local": "docs/quality-runs/2026-10-06-rc2-linux-macos-d176056.json",
+    "linuxLongFuzz": "docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json",
+    "hostedCiAndNativeMsvc": "docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json"
+  },
+  "summary": {
+    "linuxAmd64": "pinned-vcpkg production static 19/19 shared 20/20 consumers, system-graph ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds, 900 s fuzz clean; hosted ubuntu static/shared 19/19 and 20/20",
+    "macosArm64": "pinned-vcpkg production static 19/19 shared 20/20 consumers, system-graph ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds; hosted macos-15 static/shared 19/19 and 20/20",
+    "windowsAmd64Msvc": "native Windows Server 2025 MSVC warnings-as-errors static 19/19 shared 20/20, direct/relocated/embedded consumers, dependency floors, 39-symbol export surface, SBOMs"
+  },
+  "notRun": [
+    "Windows-target MinGW/Wine (compatibility evidence only, not required by the ledger gate)",
+    "hosted fuzz-long workflow (the exact-commit 900 s campaign ran on the Linux host)",
+    "optional viewer"
+  ],
+  "limitations": [
+    "System-dependency jobs are compatibility evidence, not production-floor evidence.",
+    "MSVC static library byte identity is not claimed.",
+    "This is evidence for candidate X; the final commit Y is re-qualified separately (ADR 0021)."
+  ]
+}

@@ -828,6 +828,30 @@ paragraphs below are historical.
   records the owner-accepted API-scoped disposition of OpenSSL 3.6.4 against the
   3.6.5 security release), and Y re-qualification remain open.
 
+- Hosted CI and native Windows/MSVC on candidate X (2026-10-06). With the
+  owner's approval the frozen commit was pushed as
+  `candidate/v0.1.0-rc.2` and `ci.yml` was dispatched once (run
+  `37461708502`, head `d17605686768832226da55090a33b28888bfab35`): every job
+  succeeded (ubuntu-latest and macos-15 static/shared, fuzz-smoke,
+  source-package, api-reference, windows-build; the viewer job was skipped).
+  Native Windows Server 2025 amd64/MSVC passed warnings-as-errors static 19/19
+  and shared 20/20 with no excluded test, direct/relocated/embedded consumers,
+  dependency floors, the 39-symbol export surface and binary SBOMs; the static
+  library was again not byte-identical across build directories (non-blocking,
+  source-only). The CI source package is byte-identical to the local archive
+  (SHA-256 `11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66`).
+  The two harness fixes (benchmark Image id, row-API rejection assertion) were
+  exercised on MSVC. Evidence: `docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json`,
+  `docs/quality-runs/2026-10-06-rc2-cross-platform.json`, updated
+  `docs/quality-runs/2026-10-06-rc2-public-api-review.json` (PASS) and the
+  performance record. The ledger now records PASS for the cross-platform, API
+  diff and Revision 1 qualification gates. Still open: the real-repository
+  `v0.1.0-rc.2` identity check, the owner disposition of Expat 2.8.5 (security
+  release CVE-2026-93990, 2026-09-22, after the pinned 2.8.4) for the binary
+  vulnerability audit, the performance observations (row-reader unsupported;
+  Linux and Windows writer throughput below the rc.1-era checkpoints), and the
+  re-qualification of final commit Y.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

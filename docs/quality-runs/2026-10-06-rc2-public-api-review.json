@@ -1,7 +1,7 @@
 {
   "schema": "mmxisf.exact-candidate-public-api-review/1.0.0",
-  "reviewedAtUtc": "2026-10-06T10:40:00Z",
-  "result": "LIMITED_PENDING_NATIVE_MSVC_EXPORT_SURFACE",
+  "reviewedAtUtc": "2026-10-06T13:10:00Z",
+  "result": "PASS",
   "publicationAuthorized": false,
   "candidate": {
     "tag": "v0.1.0-rc.2",
@@ -21,19 +21,20 @@
     "baselineValidator": "PASS (mmxisf.public-api-baseline and contract in every gate)",
     "macosArm64Exports": "PASS (mmxisf.shared-export-surface, 39-symbol allowlist, 20/20 shared suite)",
     "linuxAmd64Exports": "PASS (mmxisf.shared-export-surface, 39-symbol allowlist, 20/20 shared suite)",
-    "windowsMsvcExports": "NOT_RUN",
+    "windowsMsvcExports": "PASS (native MSVC mmxisf.shared-export-surface, 39-symbol allowlist, 20/20 shared suite; run 37461708502)",
     "windowsMinGWExports": "NOT_RUN",
-    "installedAndRelocatedConsumers": "PASS_STATIC_SHARED_MACOS_LINUX",
-    "releaseNoteAbiPolicy": "PENDING (docs/RELEASE_NOTES_0.1.0.md records the pre-1.0 no-ABI-promise policy)"
+    "installedAndRelocatedConsumers": "PASS_STATIC_SHARED_MACOS_LINUX_WINDOWS_MSVC",
+    "releaseNoteAbiPolicy": "PASS_docs/RELEASE_NOTES_0.1.0.md",
+    "hostedApiReference": "PASS (api-reference job built the generated reference)"
   },
   "behaviorChangesVisibleThroughUnchangedHeaders": [
     "Revision 1 conformance (1f2a935): the low-copy row API returns unsupported_feature for byte-shuffled images with more than one compression subblock; owning and caller-buffer reads support them. Recorded in docs/ROW_READER.md, the support profile and the conformance matrix.",
     "Revision 1 Image id syntax validation is enforced by the writer (invalid ids such as hyphenated ones are rejected)."
   ],
-  "reviewDisposition": "No installed header byte changed from the audited baseline or from v0.1.0-rc.1. Behavioral Revision 1 changes behind the unchanged signatures are documented in the support profile, so consumers of rc.1 must treat them as source-compatible but behavior-changing.",
+  "reviewDisposition": "No installed header byte changed from the audited baseline or from v0.1.0-rc.1, and the shared 39-symbol allowlist holds on macOS, Linux and native MSVC. Behavioral Revision 1 changes behind the unchanged signatures are documented in the support profile and the release notes.",
   "limitations": [
-    "Native Windows/MSVC export surface not yet evidenced for this commit; the ledger gate stays NOT_TESTED.",
     "PASS does not create an ABI promise before 1.0.",
+    "Windows-target MinGW exports were not run; native MSVC and the three other shared-library toolchains retain the allowlisted surface.",
     "The review does not authorize publication."
   ]
 }
