@@ -297,5 +297,7 @@ resource-safety risks.
   for globally shuffled multi-subblock images, so a row-reader timing exists
   again. The owner accepted `performance.supported-host-review` as LIMITED for
   0.1.0 (2026-10-06).
+- Bump Expat to 2.9.0 (2026-10-05; CVE-2026-102633 32-bit realloc overflow and CVE-2026-77214 XML_ParseBuffer len validation) as soon as the vcpkg registry provides it; v0.1.0 ships Expat 2.8.5 under the dated API-scoped owner disposition in
+  `docs/security-audits/2026-10-06-rc3-advisory-review.json`.
 - Keep the pinned dependency graph current: refresh the vcpkg baseline, the
   dated production floors and the advisory review for each later version.

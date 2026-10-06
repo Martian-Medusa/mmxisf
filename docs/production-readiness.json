@@ -5,7 +5,7 @@
     "ref": "v0.1.0-rc.3"
   },
   "claims": {
-    "standaloneBeta": "NOT_READY",
+    "standaloneBeta": "READY",
     "standaloneProduction": "NOT_READY",
     "pfiProduction": "NOT_READY"
   },
@@ -145,10 +145,10 @@
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/security-audits/2026-10-06-rc3-advisory-review.json",
-      "note": "Partial: Expat 2.8.5 and OpenSSL 3.6.5 are pinned, all six pinned-vcpkg binary SBOMs of candidate X3 (macOS, Linux, native MSVC) bind the same five reviewed dependencies, repository security controls were re-observed, and the OpenSSL list shows no vulnerability after 3.6.5 (2026-10-06). The gate stays NOT_TESTED because Expat 2.9.0 (2026-10-05; CVE-2026-102633 32-bit realloc overflow and CVE-2026-77214 XML_ParseBuffer len validation) postdates the pin and is not yet in the vcpkg registry; mmxisf calls XML_Parse only and targets 64-bit platforms, but the owner has not yet accepted that API-scoped disposition (docs/security-audits/2026-10-06-rc3-advisory-review.json). The review must be refreshed immediately before publication."
+      "note": "Candidate X3 pins Expat 2.8.5 and OpenSSL 3.6.5; all six pinned-vcpkg binary SBOMs (macOS, Linux, native MSVC) bind the five reviewed dependencies; repository controls were re-observed; the OpenSSL list shows no vulnerability after 3.6.5. On 2026-10-06 the owner accepted Expat 2.8.5 for v0.1.0 with a dated API-scoped disposition for Expat 2.9.0 (2026-10-05; CVE-2026-102633 32-bit realloc overflow and CVE-2026-77214 XML_ParseBuffer len validation): mmxisf calls XML_Parse only, supports 64-bit platforms only, and 2.9.0 is not yet in the vcpkg registry; the bump is scheduled for the next mmxisf version. The release is source-only, so no toolchain-vulnerability claim is made. The review is refreshed immediately before publication (docs/security-audits/2026-10-06-rc3-advisory-review.json)."
     },
     {
       "id": "security.private-reporting-channel",

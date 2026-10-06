@@ -913,6 +913,17 @@ paragraphs below are historical.
   `docs/quality-runs/2026-10-06-rc3-public-api-review.json` and
   `docs/security-audits/2026-10-06-rc3-advisory-review.json`.
 
+- Expat 2.9.0 disposition and the beta claim (2026-10-06). Expat 2.9.0
+  (2026-10-05; CVE-2026-102633, 32-bit `expat_realloc` overflow, and
+  CVE-2026-77214, `XML_ParseBuffer` length validation) is not yet in the vcpkg
+  registry. The owner accepted Expat 2.8.5 for v0.1.0 with a dated API-scoped
+  disposition: mmxisf calls `XML_Parse` only (exact call sites recorded in
+  `docs/security-audits/2026-10-06-rc3-advisory-review.json`), supports 64-bit
+  platforms only, and bumps Expat in the next version (`docs/ROADMAP.md`). With
+  `security.exact-binary-vulnerability-audit` PASS the ledger derives
+  standaloneBeta READY (19/19); standaloneProduction stays NOT_READY because
+  performance is accepted as LIMITED; pfiProduction stays NOT_READY by design.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

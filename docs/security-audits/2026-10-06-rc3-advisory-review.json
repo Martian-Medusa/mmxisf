@@ -1,7 +1,7 @@
 {
   "schema": "mmxisf.exact-candidate-binary-advisory-review/1.0.0",
   "reviewedAtUtc": "2026-10-06T16:30:00Z",
-  "result": "LIMITED_PENDING_OWNER_DISPOSITION_OF_EXPAT_2_9_0",
+  "result": "LIMITED_DIRECT_DEPENDENCIES_ACCEPTED_SOURCE_ONLY_RELEASE",
   "publicationAuthorized": false,
   "candidate": {
     "tag": "v0.1.0-rc.3",
@@ -62,7 +62,17 @@
       "item": "Expat 2.9.0 (2026-10-05)",
       "finding": "Upstream release R_2_9_0 (GitHub releases, 2026-10-05) lists two security fixes in its changelog: CVE-2026-102633 (integer overflow in expat_realloc on 32-bit platforms) and CVE-2026-77214 (validate the len parameter against the available buffer capacity in XML_ParseBuffer). It postdates the pin and the owner's rc.3 decision. The vcpkg registry's newest expat port is still 2.8.5 (registry commit 673823e1), so 2.9.0 cannot be selected through the pinned registry or an override at this time. Dependabot has no open expat 2.9.0 branch yet.",
       "apiScopeReading": "mmxisf calls XML_Parse only (src/reader.cpp parse_header, 1 MiB chunks); it never calls XML_ParseBuffer or XML_GetBuffer. Supported targets are 64-bit only (macOS arm64, Linux amd64, Windows amd64), where the 32-bit realloc overflow is not applicable. This is a reading of the changelog titles; the CVE texts were not reviewed in full.",
-      "ownerDecisionNeeded": "Accept Expat 2.8.5 for v0.1.0 with this dated API-scoped disposition and schedule the 2.9.0 bump for the next mmxisf version, or hold the release until the registry provides 2.9.0 (rc.4 and a full rerun)."
+      "ownerDecisionNeeded": "Accept Expat 2.8.5 for v0.1.0 with this dated API-scoped disposition and schedule the 2.9.0 bump for the next mmxisf version, or hold the release until the registry provides 2.9.0 (rc.4 and a full rerun).",
+      "verifiedChangelog": "https://github.com/libexpat/libexpat/blob/R_2_9_0/expat/Changes (2.9.0, 5 October 2026), verified by the repository lead: CVE-2026-102633 is an integer overflow in expat_realloc on 32-bit platforms only; CVE-2026-77214 is a missing len validation in XML_ParseBuffer (caller misuse).",
+      "exactExpatCallSites": {
+        "file": "src/reader.cpp",
+        "includes": "line 6 <expat.h>",
+        "calls": "XML_ParserCreateNS (2833), XML_SetUserData (2837), XML_SetElementHandler (2838), XML_SetCharacterDataHandler (2839), XML_SetStartDoctypeDeclHandler (2840), XML_SetXmlDeclHandler (2841), XML_Parse (2849, 1 MiB chunks), XML_GetErrorCode (2856), XML_GetCurrentByteIndex (2858), XML_ParserFree (2865), XML_StopParser (889)",
+        "notCalled": "XML_ParseBuffer, XML_GetBuffer, XML_SetMemoryHandlingSuite, XML_MemRealloc; no other source, tool, test, viewer or example file includes expat.h or calls Expat",
+        "verifiedBy": "grep of src, include, tools, tests, viewer and examples at the final Y3"
+      },
+      "platformScope": "The support profile's targetPlatforms are macOS-arm64, Linux-amd64 and Windows-amd64 (all 64-bit); no 32-bit build is tested or supported, although the code contains no compile-time 32-bit prohibition.",
+      "disposition": "ACCEPTED_BY_OWNER_2026-10-06: release v0.1.0 with Expat 2.8.5; bump to 2.9.0 in the next mmxisf version once the vcpkg registry provides it."
     },
     {
       "item": "zlib 1.3.2, LZ4 1.10.0, Zstandard 1.5.7",
@@ -119,9 +129,13 @@
     "windowsMsvc": "INVENTORIED_SOURCE_ONLY_RELEASE"
   },
   "limitations": [
-    "The review is not a gate pass until the owner disposes of Expat 2.9.0.",
+    "The owner accepted the Expat 2.9.0 disposition on 2026-10-06; the review still must be refreshed immediately before publication.",
     "A project page showing no published advisory does not prove that no unpublished or newly disclosed vulnerability exists.",
     "The review must be refreshed immediately before publication and applies to Y3 only through its byte-identity with X3.",
     "This record does not authorize publication."
-  ]
+  ],
+  "owner": {
+    "decision": "Accept Expat 2.8.5 for v0.1.0 with an API-scoped disposition for Expat 2.9.0; schedule the bump for the next mmxisf version.",
+    "decidedOn": "2026-10-06"
+  }
 }

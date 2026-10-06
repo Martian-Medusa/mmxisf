@@ -88,8 +88,9 @@ candidate pinned Expat 2.8.4 and OpenSSL 3.6.4 and is superseded. See
 Expat 2.9.0 (2026-10-05) lists two security fixes (CVE-2026-102633, a 32-bit
 `expat_realloc` integer overflow, and CVE-2026-77214, `XML_ParseBuffer` length
 validation) and is not yet available in the vcpkg registry. mmxisf calls
-`XML_Parse` only and supports 64-bit platforms only. EXPAT_DISPOSITION_PENDING
-(see `docs/security-audits/2026-10-06-rc3-advisory-review.json`).
+`XML_Parse` only (never `XML_ParseBuffer`) and its supported platforms are 64-bit only; the exact call sites are recorded in the advisory review. The owner accepted Expat 2.8.5 for this release on 2026-10-06 with that
+API-scoped disposition; the bump to 2.9.0 is scheduled for the next mmxisf
+version (`docs/security-audits/2026-10-06-rc3-advisory-review.json`).
 
 ## Qualification of candidate X3 (`v0.1.0-rc.3`)
 
