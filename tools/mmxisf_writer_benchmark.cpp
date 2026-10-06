@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     }
 
     mmxisf::ImageWriteView image;
-    image.id = "writer-benchmark-rgb";
+    image.id = "writer_benchmark_rgb";
     image.width = kWidth;
     image.height = kHeight;
     image.channels = kChannels;
