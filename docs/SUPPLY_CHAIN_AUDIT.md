@@ -135,3 +135,16 @@ the source-only `v0.1.0-rc.1` prerelease. It is published, and independent
 post-publication download, SHA-256, immutable-tag, archive-identity, build,
 install, and installed-package-consumer verification passed as recorded in
 [`quality-runs/2026-09-15-rc1-release-verification.json`](quality-runs/2026-09-15-rc1-release-verification.json).
+
+## Candidate v0.1.0-rc.3 dependency update (2026-10-06)
+
+Candidate `v0.1.0-rc.2` pinned vcpkg baseline
+`a1cae005c39be7b18ba319fced856b68d7276271` (Expat 2.8.4, OpenSSL 3.6.4) and was
+superseded before tagging: Expat 2.8.5 (2026-09-22, CVE-2026-93990) and
+OpenSSL 3.6.5 (2026-09-29, security patch release) were published after the
+rc.1 review. Candidate rc.3 moves `builtin-baseline` to the earliest vcpkg
+commit that provides both, `e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7`
+(2026-10-01, "[openssl] Update to 3.6.5"), raises the direct constraints to
+`expat>=2.8.5` and `openssl>=3.6.5` and the fail-closed production floors to the
+same versions. Every resolved port version change is recorded in
+[`security-audits/2026-10-06-rc3-dependency-update.json`](security-audits/2026-10-06-rc3-dependency-update.json).

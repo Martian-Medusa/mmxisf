@@ -190,6 +190,26 @@ std::filesystem::path write_fixture(const std::string &name,
   return path;
 }
 
+// UTF-16 little-endian (optionally with BOM) encoding of an ASCII-only header,
+// optionally followed by raw 16-bit code units (e.g. an unpaired surrogate).
+std::string utf16le_header(const std::string &ascii, bool bom,
+                           const std::vector<std::uint16_t> &raw_tail = {}) {
+  std::string out;
+  if (bom) {
+    out.push_back(static_cast<char>(0xff));
+    out.push_back(static_cast<char>(0xfe));
+  }
+  for (const char character : ascii) {
+    out.push_back(character);
+    out.push_back('\0');
+  }
+  for (const auto unit : raw_tail) {
+    out.push_back(static_cast<char>(unit & 0xffU));
+    out.push_back(static_cast<char>((unit >> 8U) & 0xffU));
+  }
+  return out;
+}
+
 std::string valid_metadata() {
   return "<Metadata>"
          "<Property id=\"XISF:CreationTime\" type=\"TimePoint\" "
@@ -2275,6 +2295,85 @@ int main() {
   expect(!wrong_xml_encoding &&
              wrong_xml_encoding.error().code == mmxisf::ErrorCode::invalid_xisf,
          "non-UTF-8 XML declaration is rejected");
+
+  // Expat CVE-2026-93990 concerns its UTF-16 decoder (high surrogate without a
+  // low surrogate). mmxisf requires the header to begin with an ASCII UTF-8
+  // XML declaration before the parser sees any byte and forces UTF-8 on the
+  // parser, so UTF-16 input must be rejected as invalid_xisf and never be
+  // decoded as UTF-16. These cases are regression guards for that boundary.
+  const std::string utf16_document =
+      "<?xml version=\"1.0\" encoding=\"UTF-16\"?>"
+      "<xisf xmlns=\"http://www.pixinsight.com/xisf\" version=\"1.0\">"
+      "<Metadata><Property id=\"XISF:CreationTime\" type=\"String\">t"
+      "</Property><Property id=\"XISF:CreatorApplication\" type=\"String\">a"
+      "</Property></Metadata></xisf>";
+  const std::array<std::pair<const char *, std::string>, 5> utf16_cases{{
+      {"UTF-16LE with BOM and UTF-16 declaration",
+       utf16le_header(utf16_document, true)},
+      {"UTF-16LE without BOM", utf16le_header(utf16_document, false)},
+      {"UTF-16LE with BOM and a lone high surrogate",
+       utf16le_header(utf16_document, true, {0xd800})},
+      {"UTF-16LE with BOM and a high surrogate followed by a non-surrogate",
+       utf16le_header(utf16_document, true, {0xd83d, 0x0041})},
+      {"UTF-16LE with BOM and a reversed surrogate pair",
+       utf16le_header(utf16_document, true, {0xde00, 0xd83d})},
+  }};
+  for (std::size_t index = 0; index < utf16_cases.size(); ++index) {
+    const auto path = write_fixture(
+        "mmxisf-utf16-" + std::to_string(index) + ".xisf",
+        utf16_cases[index].second, {}, 1024, false);
+    auto result = mmxisf::Reader::open_file(path);
+    expect(!result && result.error().code == mmxisf::ErrorCode::invalid_xisf,
+           utf16_cases[index].first);
+  }
+
+  // A UTF-8 document whose bytes spell UTF-16 surrogate code points (CESU-8
+  // style) and a lone high surrogate encoded as UTF-8 are not valid UTF-8.
+  const auto cesu_surrogates_path = write_fixture(
+      "mmxisf-utf8-surrogates.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\"><Metadata><Property "
+                  "id=\"XISF:CreationTime\" type=\"String\">t</Property>"
+                  "<Property id=\"XISF:CreatorApplication\" "
+                  "type=\"String\">") +
+          std::string("\xed\xa0\xbd\xed\xb8\x80") +
+          "</Property></Metadata></xisf>",
+      {}, 1024, false);
+  auto cesu_surrogates = mmxisf::Reader::open_file(cesu_surrogates_path);
+  expect(!cesu_surrogates && cesu_surrogates.error().code ==
+                                 mmxisf::ErrorCode::malformed_xml,
+         "UTF-8 encoded surrogate code points are rejected");
+  const auto lone_surrogate_path = write_fixture(
+      "mmxisf-utf8-lone-surrogate.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\"><Metadata><Property "
+                  "id=\"XISF:CreationTime\" type=\"String\">t</Property>"
+                  "<Property id=\"XISF:CreatorApplication\" "
+                  "type=\"String\">") +
+          std::string("\xed\xa0\x80") + "</Property></Metadata></xisf>",
+      {}, 1024, false);
+  auto lone_surrogate = mmxisf::Reader::open_file(lone_surrogate_path);
+  expect(!lone_surrogate && lone_surrogate.error().code ==
+                                mmxisf::ErrorCode::malformed_xml,
+         "UTF-8 encoded lone surrogate is rejected");
+
+  // Positive control: a well-formed supplementary-plane character in UTF-8 is
+  // accepted, so the guards above do not simply reject all non-ASCII input.
+  const auto supplementary_path = write_fixture(
+      "mmxisf-utf8-supplementary.xisf",
+      std::string("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                  "<xisf xmlns=\"http://www.pixinsight.com/xisf\" "
+                  "version=\"1.0\"><Metadata><Property "
+                  "id=\"XISF:CreationTime\" type=\"String\">t</Property>"
+                  "<Property id=\"XISF:CreatorApplication\" "
+                  "type=\"String\">") +
+          std::string("\xf0\x9f\x98\x80") + "</Property></Metadata></xisf>",
+      {}, 1024, false);
+  auto supplementary = mmxisf::Reader::open_file(supplementary_path);
+  expect(supplementary.has_value(),
+         "well-formed UTF-8 supplementary-plane text is accepted");
 
   const auto standalone_declaration_path = write_fixture(
       "mmxisf-standalone-declaration.xisf",

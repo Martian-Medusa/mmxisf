@@ -2,11 +2,11 @@
   "name": "mmxisf",
   "version-semver": "0.1.0",
   "description": "Pinned development and release dependencies for mmxisf",
-  "builtin-baseline": "a1cae005c39be7b18ba319fced856b68d7276271",
+  "builtin-baseline": "e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7",
   "dependencies": [
     {
       "name": "expat",
-      "version>=": "2.8.4"
+      "version>=": "2.8.5"
     },
     {
       "name": "zlib",
@@ -22,7 +22,7 @@
     },
     {
       "name": "openssl",
-      "version>=": "3.6.4"
+      "version>=": "3.6.5"
     }
   ]
 }

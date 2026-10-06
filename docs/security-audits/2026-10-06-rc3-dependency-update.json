@@ -1,0 +1,64 @@
+{
+  "schema": "mmxisf.dependency-update-record/1.0.0",
+  "recordedAtUtc": "2026-10-06T14:30:00Z",
+  "candidate": "v0.1.0-rc.3",
+  "supersedes": "v0.1.0-rc.2 (never tagged; commit d17605686768832226da55090a33b28888bfab35)",
+  "ownerDecision": {
+    "date": "2026-10-06",
+    "text": "Take Expat 2.8.5 (CVE-2026-93990, UTF-16 surrogate validation) and OpenSSL 3.6.5 for v0.1.0 and add a UTF-16 regression test; this supersedes the earlier API-scoped acceptance of OpenSSL 3.6.4. Prefer overrides for exactly expat/openssl; if the baseline must move, record every resulting port version change."
+  },
+  "whyBaselineMoved": "vcpkg resolves versions from the version database of the registry checkout, whose version files must match builtin-baseline. The baseline a1cae005 (2026-09-11) predates Expat 2.8.5 (registry commit 673823e1, 2026-09-23) and OpenSSL 3.6.5 (registry commit e182cb4d, 2026-10-01), so an overrides entry cannot select them without the newer registry; the production gate scripts also require the checkout HEAD to equal builtin-baseline. The earliest registry commit providing both is the OpenSSL 3.6.5 update.",
+  "baseline": {
+    "old": "a1cae005c39be7b18ba319fced856b68d7276271",
+    "oldDate": "2026-09-11T15:13:08-07:00",
+    "new": "e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7",
+    "newDate": "2026-10-01T04:30:33Z",
+    "newSubject": "[openssl] Update to 3.6.5 (#54199)"
+  },
+  "manifestChange": {
+    "expat": ">=2.8.4 -> >=2.8.5",
+    "openssl": ">=3.6.4 -> >=3.6.5",
+    "zlib": ">=1.3.2#2 unchanged",
+    "lz4": ">=1.10.0 unchanged",
+    "zstd": ">=1.5.7 unchanged"
+  },
+  "floorChange": {
+    "file": "cmake/EnforceProductionDependencyBaseline.cmake",
+    "expat": "2.8.4 -> 2.8.5",
+    "openssl": "3.5.8 -> 3.6.5",
+    "date": "2026-09-14 -> 2026-10-06"
+  },
+  "resolvedPortChanges": {
+    "directDependencies": {
+      "expat": "2.8.4 -> 2.8.5",
+      "openssl": "3.6.4 -> 3.6.5",
+      "zlib": "1.3.2#2 unchanged",
+      "lz4": "1.10.0 unchanged",
+      "zstd": "1.5.7 unchanged"
+    },
+    "macosArm64Closure": "dry-run of the new manifest on arm64-osx resolves the same eight ports as rc.2 (expat, lz4, openssl, zlib, zstd, vcpkg-cmake, vcpkg-cmake-config, vcpkg-cmake-get-vars); vcpkg-cmake, vcpkg-cmake-config, vcpkg-cmake-get-vars versions are unchanged.",
+    "registryBaselineEntriesChangedOverall": 288,
+    "registryBaselineEntriesRelevantToBuildTooling": {
+      "pkgconf": "3.0.3#0 -> 3.0.3#1",
+      "vcpkg-make": "2026-07-09#0 -> 2026-07-09#1",
+      "note": "not in the macOS closure; Linux and Windows closures are recorded from their gate logs"
+    },
+    "vcpkgTool": "vcpkg tool release 2026-07-27 -> 2026-09-26 (scripts/vcpkg-tool-metadata.txt of the new baseline); the vcpkg executable is a build tool and is not distributed",
+    "fullListRetainedPrivately": "PFI-agent-reports/2026-10-06/mmxisf-rc3/vcpkg-baseline-all-port-changes.json (all 288 registry baseline differences, old/new)"
+  },
+  "mmxisfUtf16Boundary": {
+    "headerPreCheck": "src/reader.cpp parse_header rejects any header that does not begin with the ASCII bytes <?xml (invalid_xisf), so UTF-16 and BOM-prefixed headers never reach Expat.",
+    "parser": "XML_ParserCreateNS(\"UTF-8\") overrides declared encodings and xml_declaration rejects non-UTF-8 declarations.",
+    "regressionTests": "tests/reader_test.cpp: UTF-16LE with and without BOM, lone high surrogate, high surrogate followed by a non-surrogate, reversed pair (all invalid_xisf); UTF-8-encoded surrogates (malformed_xml); positive control for a well-formed supplementary-plane UTF-8 character.",
+    "note": "These tests guard the boundary on any Expat version; they cannot demonstrate the Expat bug itself because that path is unreachable through mmxisf."
+  },
+  "sources": [
+    "https://github.com/libexpat/libexpat/blob/R_2_8_5/expat/Changes",
+    "https://openssl-library.org/news/vulnerabilities/",
+    "https://github.com/microsoft/vcpkg/commit/e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7"
+  ],
+  "limitations": [
+    "Exact binary SBOMs, advisory disposition and gates for rc.3 are recorded after the freeze.",
+    "Absence of a published advisory for the other dependencies is a dated observation, not proof of safety."
+  ]
+}
