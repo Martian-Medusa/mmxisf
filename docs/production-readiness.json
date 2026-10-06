@@ -127,7 +127,7 @@
       "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
       "evidence": "docs/performance-runs/2026-10-06-rc2-macos-linux.json",
-      "note": "Measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64 and native Windows Server 2025 amd64/MSVC on rc.2 (docs/performance-runs/2026-10-06-rc2-macos-linux.json, docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json) and are re-recorded for rc.3 where the gates run. The owner accepted LIMITED for v0.1.0 (2026-10-06): the low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy (no row-reader timing exists), and Linux and Windows writer throughput is about 27-35% below the rc.1-era checkpoints without root-cause isolation; the investigation is scheduled for the next mmxisf version (docs/ROADMAP.md). No portable SLA or cross-host ranking is claimed."
+      "note": "Measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64 and native Windows Server 2025 amd64/MSVC on rc.2 (docs/performance-runs/2026-10-06-rc2-macos-linux.json, docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json) and are re-recorded for rc.3 where the gates run. The owner accepted LIMITED for v0.1.0 (2026-10-06): the low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy (no row-reader timing exists), and Linux and Windows writer throughput is about 27-35% below the rc.1-era checkpoints without root-cause isolation; the investigation is scheduled for the next mmxisf version (docs/ROADMAP.md). No portable SLA or cross-host ranking is claimed. Owner decision 2026-10-06: v0.1.0 ships as a standalone-beta claim; standaloneProduction deliberately stays NOT_READY because this row is accepted as LIMITED (no validator change, no rc.4)."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -182,8 +182,8 @@
       "id": "distribution.release-artifact-identity",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The deterministic source archive and real-repository v0.1.0-rc.3 ref identity of candidate X3 have not been verified; identity of final commit Y3 and of published assets is verified outside Y3 (ADR 0021). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
+      "evidence": "docs/quality-runs/2026-10-06-rc3-source-identity.json",
+      "note": "Partial: the real-repository annotated v0.1.0-rc.3 ref resolves to candidate X3 (1e4e831b8248cc68a65d3ce11e5ec9000b91671f), and PrepareSourceCandidate with MMXISF_VERIFY_CANDIDATE_REF=ON and ValidateSourceCandidate with MMXISF_VERIFY_GIT_ARCHIVE=ON passed in a clean detached worktree, producing the byte-identical deterministic archive mmxisf-0.1.0-source-1e4e831b8248.tar.gz (417,443 bytes, SHA-256 3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7; docs/quality-runs/2026-10-06-rc3-source-identity.json). The gate stays NOT_TESTED until the hosted source-package job's archive for X3 is confirmed identical (process step 7). Identity and integrity of final commit Y3 and of the published assets are verified outside Y3 and published as release evidence (ADR 0021 items 4 and 7)."
     },
     {
       "id": "pfi.native-operator-acceptance",

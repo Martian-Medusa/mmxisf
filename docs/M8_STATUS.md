@@ -884,6 +884,16 @@ paragraphs below are historical.
   matrix, native Windows/MSVC, the real-repository rc.3 identity check, the
   final advisory refresh and Y3 re-qualification remain open.
 
+- Real-repository rc.3 identity check and readiness scope (2026-10-06). The
+  local annotated `v0.1.0-rc.3` ref resolves to X3
+  (`1e4e831b8248cc68a65d3ce11e5ec9000b91671f`); source preparation with
+  `MMXISF_VERIFY_CANDIDATE_REF=ON` and Git-archive verification passed in a clean
+  detached worktree and reproduced the archive byte for byte
+  (SHA-256 `3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7`;
+  `docs/quality-runs/2026-10-06-rc3-source-identity.json`). The owner decided that
+  v0.1.0 ships as standaloneBeta READY while standaloneProduction stays NOT_READY
+  because performance is accepted as LIMITED.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

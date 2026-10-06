@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "mmxisf.exact-candidate-source-identity/1.0.0",
+  "recordedAtUtc": "2026-10-06T16:00:00Z",
+  "publicationAuthorized": false,
+  "candidate": {
+    "candidateRef": "v0.1.0-rc.3",
+    "annotatedTagObject": "016cf00b6fd3967b3e4662ec018f32d6f1eb5c7d",
+    "commit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f",
+    "tagScope": "local only in the real repository (not pushed); remote refs list only v0.1.0-rc.1 among tags at check time"
+  },
+  "method": "Clean detached worktree of the real repository at v0.1.0-rc.3; cmake/PrepareSourceCandidate.cmake with MMXISF_VERIFY_CANDIDATE_REF=ON, then cmake/ValidateSourceCandidate.cmake with MMXISF_EXPECTED_COMMIT and MMXISF_VERIFY_GIT_ARCHIVE=ON.",
+  "result": "PASS",
+  "archive": {
+    "name": "mmxisf-0.1.0-source-1e4e831b8248.tar.gz",
+    "sizeBytes": 417443,
+    "sha256": "3f52fa6c8d214d4e9db47ee53231eef9e394e1ed77eef88addd9e589fcb491b7",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "gitArchiveVerification": "PASS",
+    "byteIdenticalToDisposableCloneArchive": true,
+    "sourceCandidateManifestIdenticalToDisposableCloneManifest": true
+  },
+  "checks": {
+    "tagResolvesToCheckedOutHead": "PASS",
+    "tagResolvesToManifestCommit": "PASS",
+    "supportProfileState": "FROZEN",
+    "supportProfileCandidateRef": "v0.1.0-rc.3"
+  },
+  "notYetCovered": "The hosted source-package job's archive for the pushed branch is compared separately after the CI run; identity of final commit Y3 and of published assets is verified outside Y3 (ADR 0021).",
+  "limitations": [
+    "This record covers candidate X3 only.",
+    "A passing identity check does not authorize publication."
+  ]
+}

@@ -20,6 +20,19 @@ It supersedes `v0.1.0-rc.1`, which covered only the document-1.00 profile
   `source-candidate.json`, and the Y gate-evidence bundle) and in the GitHub
   Release notes, not in this file.
 
+## Readiness claim
+
+`v0.1.0` is released as a **standalone beta**: the machine-checked ledger
+(`docs/production-readiness.json`) derives `standaloneBeta` READY from the
+required gates. `standaloneProduction` deliberately remains NOT_READY because
+`performance.supported-host-review` is accepted as LIMITED (owner decision
+2026-10-06): the low-copy row reader rejects globally shuffled multi-subblock
+images by documented Revision 1 policy, so no row-reader timing exists, and
+Linux and Windows writer throughput is about 27-35% below the v0.1.0-rc.1-era
+checkpoints (not root-caused; investigation scheduled for the next mmxisf
+version). `pfiProduction` is NOT_READY by design (operator acceptance and
+rollback are separate product gates).
+
 ## Library scope
 
 - Bounded XISF 1.0 (Revision 1) parsing and image decoding for the profiles
