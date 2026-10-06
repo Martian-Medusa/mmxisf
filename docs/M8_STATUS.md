@@ -1,7 +1,7 @@
 # M8 progress: hardening and distribution
 
-- Status (current): CANDIDATE_RC2_FROZEN; EXACT_CANDIDATE_GATES_PENDING;
-  FINAL_V0_1_0_EQUALS_RC2_COMMIT_PER_ADR_0021; PUBLICATION_NOT_AUTHORIZED
+- Status (current): CANDIDATE_RC3_FROZEN; RC2_SUPERSEDED_BEFORE_TAG; EXACT_CANDIDATE_GATES_PENDING;
+  FINAL_V0_1_0_ON_DOCS_ONLY_EVIDENCE_COMMIT_PER_ADR_0021; PUBLICATION_NOT_AUTHORIZED
 - Historical RC1 status (superseded, immutable evidence only):
   FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
@@ -851,6 +851,17 @@ paragraphs below are historical.
   vulnerability audit, the performance observations (row-reader unsupported;
   Linux and Windows writer throughput below the rc.1-era checkpoints), and the
   re-qualification of final commit Y.
+
+- Candidate rc.2 superseded by rc.3 (2026-10-06). The owner decided, after the
+  rc.2 CI run succeeded, to take Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5
+  and to add a UTF-16 / surrogate regression test for the forced-UTF-8 parser;
+  `v0.1.0-rc.2` was never tagged. The vcpkg `builtin-baseline` moved to
+  `e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7`; floors were raised to Expat 2.8.5
+  and OpenSSL 3.6.5; all exact-candidate ledger rows were reset to NOT_TESTED
+  for candidate X3 (`v0.1.0-rc.3`) and `performance.supported-host-review`
+  remains LIMITED by owner acceptance. The rc.2 evidence records stay as
+  historical files. The final tag still follows the X/Y model (Y3 =
+  documentation-only evidence commit, all gates re-run on Y3).
 
 ## Publication closure and deferred product gates
 

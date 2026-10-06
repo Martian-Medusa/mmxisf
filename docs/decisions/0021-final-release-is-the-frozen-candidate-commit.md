@@ -21,9 +21,11 @@ ADR accepted that consequence; the owner reversed it on 2026-10-06).
 ## Decision
 
 1. **Candidate X.** X is the frozen commit of candidate `vX.Y.Z-rc.N`. For
-   0.1.0, X is `d17605686768832226da55090a33b28888bfab35` (candidate
-   `v0.1.0-rc.2`), derived from revision
-   `dc82cadae38669629d548d9e7ed8767b338d08e3`. The annotated `rc.N` ref is
+   0.1.0 the first candidate, `v0.1.0-rc.2` (commit
+   `d17605686768832226da55090a33b28888bfab35`), passed its gates but was
+   superseded before any tag was created, because Expat 2.8.5 (CVE-2026-93990)
+   and OpenSSL 3.6.5 required new dependency pins; X is therefore the commit of
+   `v0.1.0-rc.3` (owner decision 2026-10-06). The annotated `rc.N` ref is
    created once at X and never moved. All candidate gates run on X.
 2. **Final Y.** Y is the commit that receives the final annotated `vX.Y.Z`
    tag. Y is X plus one or more documentation-only evidence commits: the
@@ -65,10 +67,15 @@ ADR accepted that consequence; the owner reversed it on 2026-10-06).
    the qualified candidate X and for properties that are provable before Y
    exists. Identity and integrity of Y's own archive and of published assets
    are verified outside Y (item 4) and are not ledger rows inside Y.
-8. **Dependencies.** A dependency pin is accepted for a release only with a dated
-   disposition. For `v0.1.0` the owner accepts OpenSSL 3.6.4 with an API-scoped
-   disposition (`docs/security-audits/2026-10-06-rc2-advisory-review.json`);
-   an OpenSSL bump is scheduled for the next mmxisf version.
+8. **Dependencies.** A dependency pin is accepted for a release only with a
+   dated disposition. Candidate rc.2 carried an owner-accepted API-scoped
+   disposition of OpenSSL 3.6.4 (digest primitives only); the owner superseded
+   it on 2026-10-06 and moved rc.3 to Expat 2.8.5 and OpenSSL 3.6.5 because
+   Expat parses untrusted XISF headers and every gate reruns for a new
+   candidate anyway, so the cheaper, evidence-free resolution was to take the
+   fixed releases rather than argue unreachability. Moving the pins required
+   moving the vcpkg `builtin-baseline` (see
+   `docs/security-audits/2026-10-06-rc3-dependency-update.json`).
 
 ## Consequences
 

@@ -7,18 +7,18 @@ It supersedes `v0.1.0-rc.1`, which covered only the document-1.00 profile
 
 ## Commit model (ADR 0021)
 
-- **Candidate X** is commit `d17605686768832226da55090a33b28888bfab35`, the
-  frozen candidate `v0.1.0-rc.2`. Its deterministic source archive
-  `mmxisf-0.1.0-source-d17605686768.tar.gz` (399,408 bytes) has SHA-256
-  `11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66`.
+- **Candidate X** is the commit tagged `v0.1.0-rc.3`. An earlier candidate,
+  `v0.1.0-rc.2`, passed its gates but was superseded before tagging because
+  Expat 2.8.5 and OpenSSL 3.6.5 required new dependency pins.
 - **Final Y** is the commit tagged `v0.1.0`. It is X plus documentation-only
   evidence commits; every source, header, build, test, tool, CI, container,
   example, viewer, SBOM and installed-package input is byte-identical to X.
-- All exact-commit gates are re-run on Y before `v0.1.0` is published. A tagged tree cannot contain its own
-  commit identifier or its own re-run evidence, so Y's commit hash, Y's source
-  archive name and SHA-256, and Y's re-run evidence are published as release
-  assets (`SHA256SUMS`, `source-candidate.json`, and the Y gate-evidence bundle)
-  and in these release notes on the GitHub Release page, not in this file.
+- All exact-commit gates are re-run on Y before `v0.1.0` is published. A tagged
+  tree cannot contain its own commit identifier or its own re-run evidence, so
+  the commit hashes of X and Y, the source archive names and SHA-256 values, and
+  Y's re-run evidence are published as release assets (`SHA256SUMS`,
+  `source-candidate.json`, and the Y gate-evidence bundle) and in the GitHub
+  Release notes, not in this file.
 
 ## Library scope
 
@@ -59,21 +59,17 @@ boundary is claimed.
 
 ## Dependencies and security
 
-Pinned vcpkg graph (baseline `a1cae005c39be7b18ba319fced856b68d7276271`):
-Expat 2.8.4, zlib 1.3.2#2, LZ4 1.10.0, Zstandard 1.5.7, OpenSSL 3.6.4. On
-2026-10-06 the owner accepted OpenSSL 3.6.4 for this release with an API-scoped
-disposition: mmxisf uses only OpenSSL message-digest primitives (`EVP_Digest*`
-with SHA-1, SHA-256, SHA-512, SHA3-256, SHA3-512), and the official OpenSSL
-vulnerability list (https://openssl-library.org/news/vulnerabilities/) names no
-3.6.4 or 3.6.5 issue in those primitives. OpenSSL 3.6.5 (2026-09-29) fixes one
-High DTLS issue (CVE-2026-84782) and further Low/Moderate issues in DTLS, QUIC,
-CMP, X.509, EC and SM2 code that mmxisf does not call. An OpenSSL bump is
-scheduled for the next mmxisf version. Expat 2.8.5 (2026-09-22) fixes
-CVE-2026-93990 (UTF-16 decoding) after the pinned Expat 2.8.4; the disposition
-is recorded in `docs/security-audits/2026-10-06-rc2-advisory-review.json`
-and must be final before this release is published.
+Pinned vcpkg graph (baseline `e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7`):
+Expat 2.8.5, zlib 1.3.2#2, LZ4 1.10.0, Zstandard 1.5.7, OpenSSL 3.6.5. Expat
+2.8.5 (2026-09-22) fixes CVE-2026-93990 (UTF-16 surrogate validation) and
+OpenSSL 3.6.5 (2026-09-29) is a security patch release. mmxisf additionally
+rejects every header that does not begin with an ASCII XML declaration, forces
+the parser to UTF-8 and rejects non-UTF-8 declarations; regression tests prove
+that UTF-16 and surrogate-malformed headers are rejected. The earlier rc.2
+candidate pinned Expat 2.8.4 and OpenSSL 3.6.4 and is superseded. See
+`docs/security-audits/2026-10-06-rc3-dependency-update.json`.
 
-## Qualification of candidate X (recorded in this tree)
+## Qualification of candidate X (historical rc.2 records in this tree; rc.3 evidence is published as release assets and recorded after the freeze)
 
 - Linux amd64 (GCC 13 pinned-vcpkg production graph and system graph, Clang
   ASan/UBSan, 20,000-case mutation smoke, TSan, byte-identical repeat builds)

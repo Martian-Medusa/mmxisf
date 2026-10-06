@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "candidate": {
     "state": "FROZEN",
-    "ref": "v0.1.0-rc.2"
+    "ref": "v0.1.0-rc.3"
   },
   "claims": {
     "standaloneBeta": "NOT_READY",
@@ -15,14 +15,14 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/support-profile-0.1.0.json",
-      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.2 candidate ref (owner decision 2026-10-06; candidate X, with the final v0.1.0 tag on a documentation-only evidence commit Y that is re-qualified, per ADR 0021). The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence. Publication remains separately unauthorized."
+      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.3 candidate ref (X3; owner decisions 2026-10-06: the final v0.1.0 tag points to a documentation-only evidence commit Y3 that is re-qualified, per ADR 0021). v0.1.0-rc.1 remains historical document-1.00 evidence; v0.1.0-rc.2 was superseded before tagging. Publication remains separately unauthorized."
     },
     {
       "id": "specification.revision1-qualification",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections, local macOS regression gates, independent-consumer replay (including on candidate X, docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json), exact-candidate Linux/macOS gates, native Windows/MSVC, the 900-second exact-candidate coverage-guided fuzz campaign, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and the current block-Property fixture (bound to unchanged writer sources and fixtures) are complete for candidate X. The multi-subblock fixture remains unreadable by the independent xisf 0.9.7 package (documented LIMITED result); native evidence covers it."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "Revision 1 qualification must be completed on candidate X3 (frozen-candidate Linux/macOS/Windows, long fuzz and replay). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -40,17 +40,17 @@
     },
     {
       "id": "quality.exact-candidate-cross-platform",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-10-06-rc2-cross-platform.json",
-      "note": "Frozen candidate X (v0.1.0-rc.2, commit d17605686768832226da55090a33b28888bfab35) passed exact-source viewer-free gates on Linux amd64 and macOS arm64 locally (pinned-vcpkg static 19/19 and shared 20/20, installed/relocated/embedded consumers, ASan/UBSan 19/19, 20,000-mutation smoke, TSan 19/19, byte-identical repeat builds), on the hosted CI matrix (ubuntu-latest and macos-15 static/shared, fuzz-smoke, source-package, api-reference; run 37461708502), and on native Windows Server 2025 amd64/MSVC (warnings-as-errors static 19/19 and shared 20/20 with no excluded test, direct/relocated/embedded consumers, dependency floors, 39-symbol export surface, binary SBOMs). The MSVC static library was not byte-identical across build directories; this is a recorded non-blocking limitation because the release is source-only. MinGW/Wine was not run (compatibility evidence only). Evidence for the final commit Y is produced by its own re-qualification (ADR 0021)."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "Candidate v0.1.0-rc.3 has not yet passed the exact-source cross-platform matrix (Linux amd64, macOS arm64, hosted CI matrix and native Windows/MSVC). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json",
-      "note": "The exact frozen v0.1.0-rc.2 commit d17605686768832226da55090a33b28888bfab35 (deterministic archive SHA-256 11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66) completed the versioned 900-second Linux amd64 Clang 18 ASan/UBSan/libFuzzer campaign with an available external symbolizer. It executed 2,344,549 inputs in 901 seconds, reached 15,623 covered edges and 42,341 features, and produced no crash artifact, sanitizer error, timeout, or slow input. The full log and evolved corpus remain privately retained and hash-bound. The first launch failed before fuzzing on a container-name conflict and was rerun unchanged; both logs are retained. This is evidence for this exact build, not universal parser safety."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The 900-second coverage-guided campaign must be repeated on the exact v0.1.0-rc.3 commit (new Expat 2.8.5 and OpenSSL 3.6.5 graph). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -64,7 +64,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json",
-      "note": "PyPI xisf 0.9.7 replayed every committed fixture on the frozen v0.1.0-rc.2 commit through its documented public API: nine third-party-produced fixtures matched exact decoded-pixel SHA-256, and the mmxisf-written fixtures matched their file hashes, stated values, Properties and pixel identities, except the Revision 1 multi-subblock fixture, which this package cannot decode (documented LIMITED result; native PixInsight evidence covers it). This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected. The 2026-09-21 record remains as the earlier run."
+      "note": "PyPI xisf 0.9.7 replayed the committed fixtures through its documented public API (rc.2 replay: docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json; the replay is repeated on candidate X3). Third-party-produced fixtures matched exact decoded-pixel SHA-256, and the mmxisf-written fixtures matched their file hashes, stated values, Properties and pixel identities, except the Revision 1 multi-subblock fixture, which this package cannot decode (documented LIMITED result; native PixInsight evidence covers it). This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
     },
     {
       "id": "interop.pixinsight-writer-revision1-subblocks",
@@ -127,7 +127,7 @@
       "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
       "evidence": "docs/performance-runs/2026-10-06-rc2-macos-linux.json",
-      "note": "Candidate X measurements exist for Apple M2 macOS arm64 (writer median 395 MiB/s, host budget >=250 met), Ryzen 5 5500U Linux amd64 (median 89.7 MiB/s) and native Windows Server 2025 amd64/MSVC (median 133.2 MiB/s) in docs/performance-runs/2026-10-06-rc2-macos-linux.json and docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json. The gate stays LIMITED because the low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy (no row-reader timing exists), and Linux and Windows writer throughput is about 27-35% below the v0.1.0-rc.1-era checkpoints without root-cause isolation; no portable SLA or cross-host ranking is claimed. Promotion to PASS needs an explicit owner acceptance of these observations."
+      "note": "Measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64 and native Windows Server 2025 amd64/MSVC on rc.2 (docs/performance-runs/2026-10-06-rc2-macos-linux.json, docs/quality-runs/2026-10-06-rc2-windows-amd64-msvc.json) and are re-recorded for rc.3 where the gates run. The owner accepted LIMITED for v0.1.0 (2026-10-06): the low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy (no row-reader timing exists), and Linux and Windows writer throughput is about 27-35% below the rc.1-era checkpoints without root-cause isolation; the investigation is scheduled for the next mmxisf version (docs/ROADMAP.md). No portable SLA or cross-host ranking is claimed."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -138,17 +138,17 @@
     },
     {
       "id": "security.production-dependency-baseline-control",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-macos-arm64-bec3e79.json",
-      "note": "The pinned vcpkg graph and fail-closed dated floors passed exact extracted-source macOS arm64 and Linux amd64 gates. The retained Linux gate provides independent GCC/container evidence, and Windows-target MinGW/Wine passed as compatibility evidence. Exact frozen candidate v0.1.0-rc.1 additionally passed the same graph and floors on native Windows Server 2025 amd64/MSVC with static/shared tests, consumers, exact exports, and generated binary SBOMs."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The pinned vcpkg graph moved to baseline e182cb4dd2df2ab02f66a1aabd5f35bbdc9522c7 for rc.3 (Expat 2.8.5, OpenSSL 3.6.5) with fail-closed floors raised to Expat 2.8.5 and OpenSSL 3.6.5; the exact production-graph gates must pass on candidate X3. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-10-06-rc2-advisory-review.json",
-      "note": "Partial: the owner accepted OpenSSL 3.6.4 for v0.1.0 on 2026-10-06 with an API-scoped disposition (digest primitives only; official list https://openssl-library.org/news/vulnerabilities/), and the pinned-vcpkg binary SBOMs of candidate X for macOS, Linux and native MSVC all bind the same five reviewed dependencies (docs/security-audits/2026-10-06-rc2-advisory-review.json). The gate stays NOT_TESTED because Expat 2.8.5 (2026-09-22, security release for CVE-2026-93990, UTF-16 decoding) postdates the pinned Expat 2.8.4 and needs an owner disposition: either an API-scoped acceptance (the parser is created with a UTF-8 encoding override and non-UTF-8 declarations are rejected, a source reading not yet backed by a test) or a new candidate with the pin bumped. The review must also be refreshed immediately before publication. The v0.1.0-rc.1 review is historical."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The dated advisory review of the exact rc.3 binary SBOMs (Expat 2.8.5, OpenSSL 3.6.5 pins) must be completed for v0.1.0-rc.3. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "security.private-reporting-channel",
@@ -166,10 +166,10 @@
     },
     {
       "id": "api.exact-candidate-diff-review",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-10-06-rc2-public-api-review.json",
-      "note": "Candidate X has no installed public-header path or byte change from the audited nine-header baseline or from v0.1.0-rc.1. The shared 39-symbol export allowlist passes on macOS arm64, Linux amd64 and native Windows/MSVC; installed and relocated static/shared consumers pass on all three; and the release notes state the pre-1.0 no-ABI-promise policy. Revision 1 behavior changes behind unchanged signatures (low-copy row API rejection of globally shuffled multi-subblock images) are documented in the support profile and release notes."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The public-header and export-surface diff review must be repeated for the exact v0.1.0-rc.3 commit. The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
@@ -183,7 +183,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Candidate X's deterministic archive (mmxisf-0.1.0-source-d17605686768.tar.gz, 399,408 bytes, SHA-256 11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66) was produced twice byte-identically, verified against the Git archive, reproduced on macOS, the Linux host and the Linux CI container, and independently generated by the hosted source-package job with a byte-identical archive and source-candidate.json (run 37461708502). The gate stays NOT_TESTED until the real-repository v0.1.0-rc.2 annotated ref is created locally at X and PrepareSourceCandidate with MMXISF_VERIFY_CANDIDATE_REF=ON passes there (the earlier pass used a disposable clone tag). Identity and integrity of final commit Y and of the published assets are verified outside Y and published as release evidence (ADR 0021 items 4 and 7). The v0.1.0-rc.1 verification is historical."
+      "note": "The deterministic source archive and real-repository v0.1.0-rc.3 ref identity of candidate X3 have not been verified; identity of final commit Y3 and of published assets is verified outside Y3 (ADR 0021). The v0.1.0-rc.2 evidence (docs/quality-runs/2026-10-06-rc2-*.json, docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json) is historical: rc.2 was superseded before any tag because Expat 2.8.5 (CVE-2026-93990) and OpenSSL 3.6.5 required new pins."
     },
     {
       "id": "pfi.native-operator-acceptance",

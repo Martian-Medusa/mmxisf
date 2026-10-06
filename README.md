@@ -7,8 +7,8 @@ PFI, PixInsight, PCL, or Qt.
 
 > Status: `v0.1.0-rc.1` was the first published candidate and remains
 > immutable, historical evidence for the document-1.00 profile. The XISF 1.0
-> Revision 1-conformant source was qualified as candidate `v0.1.0-rc.2` (commit
-> X). The final `v0.1.0` tag points to a documentation-only evidence commit Y
+> Revision 1-conformant source is qualified as candidate `v0.1.0-rc.3` (commit
+> X; `v0.1.0-rc.2` was superseded before tagging by newer Expat and OpenSSL pins). The final `v0.1.0` tag points to a documentation-only evidence commit Y
 > whose source, header and build files are byte-identical to X, and all
 > exact-commit gates are re-run on Y (ADR 0021, `docs/RELEASE_PROCESS.md`).
 > Readiness is derived only by the fail-closed ledger

@@ -291,8 +291,11 @@ resource-safety risks.
 
 ## Scheduled after 0.1.0
 
-- Move the pinned OpenSSL (vcpkg baseline/override) from 3.6.4 to the then-current
-  security patch release (3.6.5 was published 2026-09-29), re-review the
-  advisories, and re-run the candidate gates in the next mmxisf version. 0.1.0
-  keeps 3.6.4 under the API-scoped owner disposition recorded in
-  `docs/security-audits/2026-10-06-rc2-advisory-review.json`.
+- Investigate the Linux and Windows writer-throughput drop (about 35% and 27%
+  against the rc.1-era checkpoints) seen with the Revision 1 whole-block
+  shuffle, and decide on a row-reader strategy (or an explicit benchmark profile)
+  for globally shuffled multi-subblock images, so a row-reader timing exists
+  again. The owner accepted `performance.supported-host-review` as LIMITED for
+  0.1.0 (2026-10-06).
+- Keep the pinned dependency graph current: refresh the vcpkg baseline, the
+  dated production floors and the advisory review for each later version.
