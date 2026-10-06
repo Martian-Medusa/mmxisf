@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "candidate": {
-    "state": "UNFROZEN",
-    "ref": ""
+    "state": "FROZEN",
+    "ref": "v0.1.0-rc.2"
   },
   "claims": {
     "standaloneBeta": "NOT_READY",
@@ -11,11 +11,11 @@
   },
   "gates": [
     {
-      "id": "candidate.support-profile-prepared",
+      "id": "candidate.support-profile-frozen",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/support-profile-0.1.0.json",
-      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Revision 1 work is PREPARED and intentionally has no candidate ref. The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence."
+      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.2 candidate ref (owner decision 2026-10-06; final v0.1.0 equals this exact candidate commit per ADR 0021). The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence. Publication remains separately unauthorized."
     },
     {
       "id": "specification.revision1-qualification",
@@ -40,17 +40,17 @@
     },
     {
       "id": "quality.exact-candidate-cross-platform",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-rc1-cross-platform.json",
-      "note": "Frozen candidate v0.1.0-rc.1 passed exact-source viewer-free pinned-vcpkg static/shared, install, relocation, embedding, export, SBOM, documentation, and reproducibility gates on macOS arm64 and Linux amd64. Exact-source system-graph ASan/UBSan 19/19, 20,000-mutation smoke, and ThreadSanitizer 19/19 also passed on both hosts. Windows-target MinGW/Wine compatibility passed, and native Windows Server 2025 amd64/MSVC passed warnings-as-errors static 18/18 and shared 19/19 plus direct/relocated/embedded consumers, the production dependency floor, SBOMs, and exact exports. The MSVC static library was not byte-identical across build directories; this is recorded as a non-blocking limitation because the release is source-only and makes no portable binary-reproducibility claim."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "Candidate v0.1.0-rc.2 has not yet passed the exact-source cross-platform matrix. Linux amd64, macOS arm64 and native Windows/MSVC evidence must be recorded for the frozen commit; the v0.1.0-rc.1 result (docs/quality-runs/2026-09-14-rc1-cross-platform.json) is historical and does not cover the Revision 1 reader and writer changes."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json",
-      "note": "The exact frozen v0.1.0-rc.1 deterministic source archive completed the versioned 900-second Linux amd64 Clang 18 ASan/UBSan/libFuzzer campaign with an available external symbolizer. It executed 2,387,632 inputs in 901 seconds, reached 15,738 covered edges and 43,760 features, and produced no crash artifact, sanitizer error, timeout, or slow input. The full log and evolved corpus remain privately retained and hash-bound."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The 900-second coverage-guided campaign must be repeated on the exact v0.1.0-rc.2 commit. The v0.1.0-rc.1 campaign (docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json) is historical and predates the Revision 1 parser changes."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -124,10 +124,10 @@
     },
     {
       "id": "performance.supported-host-review",
-      "status": "PASS",
+      "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-15-rc1-windows-amd64-msvc.json",
-      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64, and native Windows Server 2025 amd64/MSVC. The host-specific Apple regression budget passed. Linux and Windows values are dated host checkpoints; no portable SLA or cross-host ranking is claimed. Performance prerequisites are complete within that declared policy."
+      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64, and native Windows Server 2025 amd64/MSVC on v0.1.0-rc.1 code. The Revision 1 reader and writer corrections postdate those measurements, so they are retained as dated checkpoints pending re-measurement on the frozen candidate; no portable SLA or cross-host ranking is claimed. The low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy, so no row-reader timing exists for it."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -145,10 +145,10 @@
     },
     {
       "id": "security.exact-binary-vulnerability-audit",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-09-15-rc1-source-release-security-review.json",
-      "note": "The exact RC1 source-only release scope passed its dated security review. Exact macOS, Linux, MinGW, and native MSVC build SBOMs bind the same five pinned direct dependencies, whose official-upstream advisory review passes. The Windows runner and supported MSVC environment are inventoried; the reviewed DiaSymReader/PDB advisory is outside both the project dependency graph and distributed assets. No binaries, PDBs, build toolchain, viewer, or PFI artifact are distributed, and no universal toolchain-vulnerability claim is made."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The dated advisory review of the exact candidate binary SBOMs and release scope must be refreshed for v0.1.0-rc.2. The v0.1.0-rc.1 review (docs/security-audits/2026-09-15-rc1-source-release-security-review.json) is historical."
     },
     {
       "id": "security.private-reporting-channel",
@@ -166,10 +166,10 @@
     },
     {
       "id": "api.exact-candidate-diff-review",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-14-rc1-public-api-review.json",
-      "note": "The frozen RC1 has no public-header path or byte changes from the audited nine-header baseline. Exact-candidate macOS arm64, Linux amd64, Windows-target MinGW, and native Windows/MSVC shared builds expose exactly the allowlisted 39 mmxisf symbols; installed and relocated static/shared consumers pass, and the candidate release notes explicitly state the pre-1.0 no-ABI-promise policy."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The public-header and export-surface diff review must be repeated for the exact v0.1.0-rc.2 commit. The v0.1.0-rc.1 review (docs/quality-runs/2026-09-14-rc1-public-api-review.json) is historical."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
@@ -180,10 +180,10 @@
     },
     {
       "id": "distribution.release-artifact-identity",
-      "status": "PASS",
+      "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-15-rc1-release-verification.json",
-      "note": "The immutable annotated v0.1.0-rc.1 tag and remote peeled commit are verified. The source-only GitHub prerelease publishes exactly the deterministic source archive, SHA-256 sidecar, candidate manifest, and source-dependency SPDX SBOM. Every asset was downloaded independently and matched both the prepared SHA-256 and GitHub digest; candidate-ref and Git-archive byte identity passed. The downloaded archive then passed a warnings-as-errors macOS arm64 build, 19/19 tests, installation, and 2/2 installed-package consumer tests with the viewer excluded."
+      "evidence": "docs/RELEASE_PROCESS.md",
+      "note": "The deterministic source archive, ref identity and published asset hashes for the final v0.1.0 release (the exact v0.1.0-rc.2 commit, ADR 0021) have not been produced or verified. The v0.1.0-rc.1 verification (docs/quality-runs/2026-09-15-rc1-release-verification.json) is historical."
     },
     {
       "id": "pfi.native-operator-acceptance",

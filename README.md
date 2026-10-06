@@ -5,21 +5,17 @@ writing Extensible Image Serialization Format (XISF) files. Its first product
 consumer will be PSF Field Inspector (PFI), but the library will not depend on
 PFI, PixInsight, PCL, or Qt.
 
-> Status: `v0.1.0-rc.1` is the first frozen standalone-library candidate. Its
-> exact source passes macOS arm64 and Linux amd64 static/shared production
-> graphs, sanitizers, consumers, export checks, reproducibility, and a
-> 15-minute coverage-guided fuzz campaign. Windows-target MinGW/Wine passes as
-> compatibility evidence, and native Windows Server 2025 amd64/MSVC passes the
-> functional, packaging, dependency, SBOM, and export gates. The MSVC static
-> library's cross-directory byte identity remains a documented limitation; no
-> Windows binary or portable binary-reproducibility claim is published. The
-> public repository has private security reporting and hardened Actions
-> controls. The source-only prerelease is published and independently verified;
-> the machine-checked ledger reports standalone beta 17/17 and standalone
-> production 18/18 gates PASS within the frozen profile.
-> The bounded PFI product route and two-source native PixInsight
-> parity evidence pass separately; operator acceptance and rollback remain
-> open. Version `0.1.0` parses bounded
+> Status: `v0.1.0-rc.1` was the first published candidate and remains
+> immutable, historical evidence for the document-1.00 profile. The XISF 1.0
+> Revision 1-conformant source is frozen as candidate `v0.1.0-rc.2` (owner
+> decision 2026-10-06, ADR 0021): the final `v0.1.0` release is that exact
+> commit if and only if every required gate passes on it. Readiness is derived
+> only by the fail-closed ledger `docs/production-readiness.json`; evidence from
+> an earlier candidate is never carried over. The standalone library excludes
+> the optional viewer and the PFI adapter. The bounded PFI product route and
+> native PixInsight parity evidence pass separately; PFI operator acceptance and
+> rollback remain open.
+> Version `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,
 > zlib, LZ4, LZ4HC-compatible, and current PixInsight Zstandard attachment and
@@ -72,7 +68,7 @@ milestone. They remain candidates for later conformance work.
 - [M7 broader image coverage](docs/M7_STATUS.md)
 - [M7 row-delivery memory checkpoint](docs/M7_ROW_PERFORMANCE.md)
 - [M8 hardening and distribution](docs/M8_STATUS.md)
-- [RC1 release notes](docs/RELEASE_NOTES_0.1.0_RC1.md)
+- [RC1 release notes (historical)](docs/RELEASE_NOTES_0.1.0_RC1.md)
 - [Machine-checked production readiness](docs/production-readiness.json)
 - [Writer API](docs/WRITER.md)
 - [Manual PixInsight validation](tests/pixinsight/README.md)

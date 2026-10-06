@@ -1,6 +1,9 @@
 # M8 progress: hardening and distribution
 
-- Status: FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
+- Status (current): CANDIDATE_RC2_FROZEN; EXACT_CANDIDATE_GATES_PENDING;
+  FINAL_V0_1_0_EQUALS_RC2_COMMIT_PER_ADR_0021; PUBLICATION_NOT_AUTHORIZED
+- Historical RC1 status (superseded, immutable evidence only):
+  FIRST_LONG_FUZZ_PASS; CROSS_PLATFORM_MATRIX_PASS;
   ROUTINE_CI_MANUAL_ONLY_RUNNER_BUDGET;
   SOURCE_CANDIDATE_REHEARSAL_PASS;
   SUPPORT_PROFILE_FROZEN_RC1;
@@ -19,16 +22,19 @@
   STANDALONE_BETA_READY;
   STANDALONE_PRODUCTION_READY
 - Started: 2026-09-14
-- Publication status: public repository; immutable `v0.1.0-rc.1` candidate tag;
-  source-only prerelease published and independently verified
+- Publication status: public repository; immutable `v0.1.0-rc.1` historical
+  tag with a published source-only prerelease; `v0.1.0-rc.2` is the frozen
+  candidate identity for the Revision 1 source and has no tag or release until
+  the owner approves each external write
 
-The machine-checked `docs/production-readiness.json` ledger currently derives
-`READY` independently for standalone beta (17/17 gates PASS) and standalone
-production (18/18), while PFI production remains `NOT_READY` (23/25). It
-prevents a documentation-
-only readiness claim while required candidate, interoperability, security,
-distribution, or product gates remain open; it does not turn historical
-evidence into exact-candidate evidence.
+The machine-checked `docs/production-readiness.json` ledger fails closed: with
+the support profile and ledger frozen to `v0.1.0-rc.2`, every exact-candidate
+gate whose only evidence was bound to `v0.1.0-rc.1` was reset to `NOT_TESTED`
+(or `LIMITED` for the dated host performance checkpoints) and standalone beta,
+standalone production, and PFI production derive `NOT_READY` until the frozen
+commit has its own evidence. It prevents a documentation-only readiness claim
+and does not turn historical evidence into exact-candidate evidence. The RC1
+paragraphs below are historical.
 
 ## Implemented distribution gates
 
@@ -789,6 +795,20 @@ evidence into exact-candidate evidence.
   `docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json`. This closes
   `security.exact-candidate-long-fuzz` for RC1 without claiming universal parser
   safety.
+
+- With explicit owner approval on 2026-10-06 (ADR 0021), the Revision 1
+  source revision `dc82cadae38669629d548d9e7ed8767b338d08e3` becomes the
+  candidate `v0.1.0-rc.2`, and the final `v0.1.0` release is defined as that
+  exact frozen commit if every required gate passes on it. The freeze
+  changes only the support profile, readiness ledger, one readiness test
+  contract, the writer-benchmark tool (its Image id was invalid under Revision 1
+  validation), the Windows performance-checkpoint CI step (it treated the
+  documented row-API rejection of globally shuffled multi-subblock images as a
+  failure), and documentation; sources, public headers, `CMakeLists.txt`, and `vcpkg.json` are
+  byte-identical to that revision. This closes only
+  `candidate.support-profile-frozen`; all exact-candidate evidence, native
+  Windows/MSVC, publication, and PFI operator acceptance remain separately
+  open.
 
 ## Publication closure and deferred product gates
 

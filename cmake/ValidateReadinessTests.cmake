@@ -55,7 +55,7 @@ mmxisf_expect_readiness_rejection(invalid-frozen-ref "${_invalid_ref}"
 string(JSON _mismatched_profile SET "${_valid_json}"
   candidate state "\"FROZEN\"")
 string(JSON _mismatched_profile SET "${_mismatched_profile}"
-  candidate ref "\"v0.1.0-rc.2\"")
+  candidate ref "\"v9.9.9-rc.9\"")
 mmxisf_expect_readiness_rejection(mismatched-profile
   "${_mismatched_profile}"
   "candidate identity does not match the support profile")

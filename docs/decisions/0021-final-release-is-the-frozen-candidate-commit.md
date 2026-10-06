@@ -22,10 +22,14 @@ by a source edit.
 
 1. The owner designates source revision
    `dc82cadae38669629d548d9e7ed8767b338d08e3` as the basis for the next
-   candidate, `v0.1.0-rc.2`. The freeze commit changes only the support profile,
-   readiness ledger, one test-contract file and documentation; `src/`,
-   `include/`, `CMakeLists.txt`, `vcpkg.json` and the installed package inputs
-   are byte-identical to that revision.
+   candidate, `v0.1.0-rc.2`. The freeze changes only the support profile,
+   readiness ledger, one readiness test-contract file, two development-harness
+   fixes (the writer benchmark used an Image id that Revision 1 validation
+   rejects, and the Windows performance-checkpoint step treated the documented
+   row-API rejection of globally shuffled multi-subblock images as a failure)
+   and documentation; `src/`, `include/`,
+   `CMakeLists.txt`, `vcpkg.json` and the installed package inputs are
+   byte-identical to that revision.
 2. The annotated `v0.1.0-rc.2` ref is created once at the freeze commit. It is
    the candidate identity bound by the support profile and readiness ledger.
    Candidate gates run on that exact commit.

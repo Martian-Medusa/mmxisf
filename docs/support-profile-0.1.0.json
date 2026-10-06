@@ -2,8 +2,8 @@
   "schema": "mmxisf.support-profile/1.1.0",
   "profileId": "STANDALONE_MONOLITHIC_0_1",
   "profileVersion": "0.1.0",
-  "state": "PREPARED",
-  "candidateRef": "",
+  "state": "FROZEN",
+  "candidateRef": "v0.1.0-rc.2",
   "matrix": {
     "path": "docs/conformance/xisf-1.0-matrix.json",
     "sha256": "c8ee49fd8ad8d07202a247de42348a1f4a0dffd638880f2ef799c973b03e2cc3"
