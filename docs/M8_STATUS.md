@@ -810,6 +810,29 @@ paragraphs below are historical.
   Windows/MSVC, publication, and PFI operator acceptance remain separately
   open.
 
+- Frozen-candidate qualification (2026-10-06). The freeze commit
+  `d17605686768832226da55090a33b28888bfab35` (candidate `v0.1.0-rc.2`; no tag
+  exists yet) produced the deterministic 399,408-byte source archive
+  `mmxisf-0.1.0-source-d17605686768.tar.gz` with SHA-256
+  `11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66`; the
+  candidate-ref (in a disposable clone) and independent Git-archive byte
+  identity checks passed, and the archive hash was reproduced on macOS and in
+  the Linux CI container. Linux amd64 and macOS arm64 passed the pinned-vcpkg
+  and system-graph gates (static 19/19, shared 20/20, consumers, ASan/UBSan,
+  20,000-mutation smoke, TSan, byte-identical repeat builds); the 900-second
+  libFuzzer campaign executed 2,344,549 inputs with no finding; the independent
+  `xisf` 0.9.7 consumer replay passed except the documented multi-subblock
+  limitation. Evidence: `docs/quality-runs/2026-10-06-rc2-linux-macos-d176056.json`,
+  `docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json`,
+  `docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json`,
+  `docs/quality-runs/2026-10-06-rc2-public-api-review.json` (partial),
+  `docs/performance-runs/2026-10-06-rc2-macos-linux.json`. Native
+  Windows/MSVC, the hosted CI matrix, a completed security/advisory review
+  (`docs/security-audits/2026-10-06-rc2-preliminary-advisory-review.json`
+  records a newer OpenSSL 3.6.5 security release needing an owner decision), and
+  release-artifact verification remain open; the ledger therefore stays
+  `NOT_READY`.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

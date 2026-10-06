@@ -1,0 +1,39 @@
+{
+  "schema": "mmxisf.exact-candidate-public-api-review/1.0.0",
+  "reviewedAtUtc": "2026-10-06T10:40:00Z",
+  "result": "LIMITED_PENDING_NATIVE_MSVC_EXPORT_SURFACE",
+  "publicationAuthorized": false,
+  "candidate": {
+    "tag": "v0.1.0-rc.2",
+    "commit": "d17605686768832226da55090a33b28888bfab35"
+  },
+  "baseline": {
+    "schema": "mmxisf.public-api-baseline/1.0.0",
+    "auditedCommit": "85b94f4deb1ec59ac996ce72b2e4b4fc338bcb7f",
+    "sha256": "b1af58f9c4053c55f0fb3cb68af00f0628abe73cdea12056019ba04bd38a2199",
+    "headerCount": 9,
+    "abiPolicy": "NO_ABI_PROMISE_BEFORE_1.0"
+  },
+  "checks": {
+    "publicHeaderNameDiffVsRc1": "PASS_NO_CHANGES (git diff --name-only v0.1.0-rc.1 candidate -- include is empty)",
+    "publicHeaderByteDiffVsRc1": "PASS_NO_CHANGES",
+    "publicHeaderByteDiffVsDerivedRevision": "PASS_NO_CHANGES (src include CMakeLists.txt vcpkg.json identical to dc82cad)",
+    "baselineValidator": "PASS (mmxisf.public-api-baseline and contract in every gate)",
+    "macosArm64Exports": "PASS (mmxisf.shared-export-surface, 39-symbol allowlist, 20/20 shared suite)",
+    "linuxAmd64Exports": "PASS (mmxisf.shared-export-surface, 39-symbol allowlist, 20/20 shared suite)",
+    "windowsMsvcExports": "NOT_RUN",
+    "windowsMinGWExports": "NOT_RUN",
+    "installedAndRelocatedConsumers": "PASS_STATIC_SHARED_MACOS_LINUX",
+    "releaseNoteAbiPolicy": "PENDING (docs/RELEASE_NOTES_0.1.0.md records the pre-1.0 no-ABI-promise policy)"
+  },
+  "behaviorChangesVisibleThroughUnchangedHeaders": [
+    "Revision 1 conformance (1f2a935): the low-copy row API returns unsupported_feature for byte-shuffled images with more than one compression subblock; owning and caller-buffer reads support them. Recorded in docs/ROW_READER.md, the support profile and the conformance matrix.",
+    "Revision 1 Image id syntax validation is enforced by the writer (invalid ids such as hyphenated ones are rejected)."
+  ],
+  "reviewDisposition": "No installed header byte changed from the audited baseline or from v0.1.0-rc.1. Behavioral Revision 1 changes behind the unchanged signatures are documented in the support profile, so consumers of rc.1 must treat them as source-compatible but behavior-changing.",
+  "limitations": [
+    "Native Windows/MSVC export surface not yet evidenced for this commit; the ledger gate stays NOT_TESTED.",
+    "PASS does not create an ABI promise before 1.0.",
+    "The review does not authorize publication."
+  ]
+}

@@ -22,7 +22,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/XISF_1_0_REVISION_1_REQUIREMENTS.md",
-      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay, the unfrozen exact-implementation Linux system-graph gate, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and current block-Property fixture are complete. This gate remains fail-closed until frozen-candidate macOS/Linux, native Windows/MSVC, exact-candidate coverage-guided fuzzing, and frozen candidate evidence are complete."
+      "note": "Revision 1 source corrections, local macOS regression gates, fresh independent-consumer replay (including on the frozen v0.1.0-rc.2 commit, docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json), the exact-implementation Linux and macOS gates and 900-second fuzz campaign on the frozen commit, and native PixInsight 1.9.5 acceptance of both the corrected eight-subblock zstd+shuffle writer path and the current block-Property fixture are complete. This gate remains fail-closed until native Windows/MSVC and the remaining frozen-candidate evidence are complete."
     },
     {
       "id": "quality.local-macos-arm64",
@@ -42,15 +42,15 @@
       "id": "quality.exact-candidate-cross-platform",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "Candidate v0.1.0-rc.2 has not yet passed the exact-source cross-platform matrix. Linux amd64, macOS arm64 and native Windows/MSVC evidence must be recorded for the frozen commit; the v0.1.0-rc.1 result (docs/quality-runs/2026-09-14-rc1-cross-platform.json) is historical and does not cover the Revision 1 reader and writer changes."
+      "evidence": "docs/quality-runs/2026-10-06-rc2-linux-macos-d176056.json",
+      "note": "Partial: the frozen v0.1.0-rc.2 commit d17605686768832226da55090a33b28888bfab35 passed the viewer-free pinned-vcpkg and system-graph gates on Linux amd64 (static 19/19, shared 20/20, consumers, ASan/UBSan 19/19, 20,000 mutations, TSan 19/19, byte-identical repeat builds) and on macOS arm64 (same families). Native Windows/MSVC, the hosted CI matrix and MinGW/Wine have not been run on this commit, so the gate stays NOT_TESTED. The v0.1.0-rc.1 result (docs/quality-runs/2026-09-14-rc1-cross-platform.json) is historical."
     },
     {
       "id": "security.exact-candidate-long-fuzz",
-      "status": "NOT_TESTED",
+      "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The 900-second coverage-guided campaign must be repeated on the exact v0.1.0-rc.2 commit. The v0.1.0-rc.1 campaign (docs/fuzz-campaigns/2026-09-14-linux-amd64-v0.1.0-rc.1.json) is historical and predates the Revision 1 parser changes."
+      "evidence": "docs/fuzz-campaigns/2026-10-06-linux-amd64-v0.1.0-rc.2.json",
+      "note": "The exact frozen v0.1.0-rc.2 commit d17605686768832226da55090a33b28888bfab35 (deterministic archive SHA-256 11a215f24da98ec1cc012fd8b8fefde8f8be6264fc520d80fa7a1c92f2837c66) completed the versioned 900-second Linux amd64 Clang 18 ASan/UBSan/libFuzzer campaign with an available external symbolizer. It executed 2,344,549 inputs in 901 seconds, reached 15,623 covered edges and 42,341 features, and produced no crash artifact, sanitizer error, timeout, or slow input. The full log and evolved corpus remain privately retained and hash-bound. The first launch failed before fuzzing on a container-name conflict and was rerun unchanged; both logs are retained. This is evidence for this exact build, not universal parser safety."
     },
     {
       "id": "interop.independent-producer-reader",
@@ -63,8 +63,8 @@
       "id": "interop.independent-consumer-writer",
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/quality-runs/2026-09-21-revision1-independent-consumer-macos-arm64.json",
-      "note": "PyPI xisf 0.9.7 read the four exact Revision 1 writer fixtures through documented public APIs in an isolated temporary environment and recovered all declared shapes, dtypes, pixels, selected metadata, block Properties, and current image identifiers. This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected."
+      "evidence": "docs/quality-runs/2026-10-06-rc2-independent-consumer-replay-macos-arm64.json",
+      "note": "PyPI xisf 0.9.7 replayed every committed fixture on the frozen v0.1.0-rc.2 commit through its documented public API: nine third-party-produced fixtures matched exact decoded-pixel SHA-256, and the mmxisf-written fixtures matched their file hashes, stated values, Properties and pixel identities, except the Revision 1 multi-subblock fixture, which this package cannot decode (documented LIMITED result; native PixInsight evidence covers it). This is exact-fixture black-box evidence; the package is not a project dependency and no implementation source was inspected. The 2026-09-21 record remains as the earlier run."
     },
     {
       "id": "interop.pixinsight-writer-revision1-subblocks",
@@ -127,7 +127,7 @@
       "status": "LIMITED",
       "requiredFor": ["standaloneProduction", "pfiProduction"],
       "evidence": "docs/quality-runs/2026-09-15-rc1-windows-amd64-msvc.json",
-      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64, and native Windows Server 2025 amd64/MSVC on v0.1.0-rc.1 code. The Revision 1 reader and writer corrections postdate those measurements, so they are retained as dated checkpoints pending re-measurement on the frozen candidate; no portable SLA or cross-host ranking is claimed. The low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy, so no row-reader timing exists for it."
+      "note": "Representative large-RGB writer, owning-reader, and row-reader measurements exist for Apple M2 macOS arm64, Ryzen 5 5500U Linux amd64, and native Windows Server 2025 amd64/MSVC on v0.1.0-rc.1 code. The Revision 1 reader and writer corrections postdate those measurements, so they are retained as dated checkpoints pending re-measurement on the frozen candidate; no portable SLA or cross-host ranking is claimed. The low-copy row reader rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy, so no row-reader timing exists for it. Frozen-candidate macOS arm64 and Linux amd64 checkpoints are recorded in docs/performance-runs/2026-10-06-rc2-macos-linux.json (Linux writer throughput was lower than the rc.1-era checkpoint and was not root-caused); the native Windows checkpoint is pending."
     },
     {
       "id": "supply-chain.source-license-audit",
@@ -147,8 +147,8 @@
       "id": "security.exact-binary-vulnerability-audit",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The dated advisory review of the exact candidate binary SBOMs and release scope must be refreshed for v0.1.0-rc.2. The v0.1.0-rc.1 review (docs/security-audits/2026-09-15-rc1-source-release-security-review.json) is historical."
+      "evidence": "docs/security-audits/2026-10-06-rc2-preliminary-advisory-review.json",
+      "note": "A preliminary 2026-10-06 review exists but is not a pass: it observed that OpenSSL 3.6.5 (2026-09-29, security patch release, most severe High) postdates the pinned OpenSSL 3.6.4 and that the CVE-to-version mapping needs manual verification and an owner decision (API-scoped acceptance of 3.6.4 versus a new candidate with a newer pin); Windows/MSVC binary SBOMs do not exist yet. The v0.1.0-rc.1 review is historical."
     },
     {
       "id": "security.private-reporting-channel",
@@ -168,8 +168,8 @@
       "id": "api.exact-candidate-diff-review",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The public-header and export-surface diff review must be repeated for the exact v0.1.0-rc.2 commit. The v0.1.0-rc.1 review (docs/quality-runs/2026-09-14-rc1-public-api-review.json) is historical."
+      "evidence": "docs/quality-runs/2026-10-06-rc2-public-api-review.json",
+      "note": "Partial: no installed public header byte differs from the audited baseline or from v0.1.0-rc.1, and the 39-symbol shared export allowlist passes on Linux amd64 and macOS arm64 for the frozen v0.1.0-rc.2 commit. The native Windows/MSVC export surface and the candidate release notes are not final, so the gate stays NOT_TESTED. The v0.1.0-rc.1 review is historical."
     },
     {
       "id": "distribution.source-candidate-rehearsal",
