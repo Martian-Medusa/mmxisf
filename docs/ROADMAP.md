@@ -288,3 +288,11 @@ resource-safety risks.
 - **G2:** accept independent pixel/metadata parity before PFI default-on.
 - **G3:** accept writer interoperability before public beta.
 - **G4:** security/API/packaging review before `1.0` or external publication.
+
+## Scheduled after 0.1.0
+
+- Move the pinned OpenSSL (vcpkg baseline/override) from 3.6.4 to the then-current
+  security patch release (3.6.5 was published 2026-09-29), re-review the
+  advisories, and re-run the candidate gates in the next mmxisf version. 0.1.0
+  keeps 3.6.4 under the API-scoped owner disposition recorded in
+  `docs/security-audits/2026-10-06-rc2-advisory-review.json`.

@@ -7,14 +7,15 @@ PFI, PixInsight, PCL, or Qt.
 
 > Status: `v0.1.0-rc.1` was the first published candidate and remains
 > immutable, historical evidence for the document-1.00 profile. The XISF 1.0
-> Revision 1-conformant source is frozen as candidate `v0.1.0-rc.2` (owner
-> decision 2026-10-06, ADR 0021): the final `v0.1.0` release is that exact
-> commit if and only if every required gate passes on it. Readiness is derived
-> only by the fail-closed ledger `docs/production-readiness.json`; evidence from
-> an earlier candidate is never carried over. The standalone library excludes
-> the optional viewer and the PFI adapter. The bounded PFI product route and
-> native PixInsight parity evidence pass separately; PFI operator acceptance and
-> rollback remain open.
+> Revision 1-conformant source was qualified as candidate `v0.1.0-rc.2` (commit
+> X). The final `v0.1.0` tag points to a documentation-only evidence commit Y
+> whose source, header and build files are byte-identical to X, and all
+> exact-commit gates are re-run on Y (ADR 0021, `docs/RELEASE_PROCESS.md`).
+> Readiness is derived only by the fail-closed ledger
+> `docs/production-readiness.json`; evidence from an earlier candidate is never
+> carried over. The standalone library excludes the optional viewer and the PFI
+> adapter. The bounded PFI product route and native PixInsight parity evidence
+> pass separately; PFI operator acceptance and rollback remain open.
 > Version `0.1.0` parses bounded
 > monolithic XISF 1.0 headers and inspects image descriptors, properties, and
 > FITS keywords. The reader handles the PFI scalar profile from uncompressed,

@@ -72,15 +72,36 @@ not a future frozen candidate or final release asset.
 ## Promoting a candidate to the final release
 
 Per `docs/decisions/0021-final-release-is-the-frozen-candidate-commit.md`
-(owner decision, 2026-10-06), the final `vX.Y.Z` release is the exact commit of
-a frozen `vX.Y.Z-rc.N` candidate whose required gates all passed. After owner
-approval, the final annotated tag is created at that commit with no source,
-version, or tagged-tree change in between. The `rc.N` ref remains a
-candidate-identity ref and is not separately published as a prerelease. Release
-verification resolves both refs to the identical commit, reproduces the Git
-archive from the final tag, and compares it with the archive hash recorded for
-the candidate. Any tagged-tree change, gate failure, or moved ref supersedes the
-candidate with the next `rc.N`.
+(owner decisions, 2026-10-06), a release has two commits. **X** is the frozen
+`vX.Y.Z-rc.N` candidate, qualified by the candidate gate above. **Y**, the commit
+that receives the final annotated `vX.Y.Z` tag, is X plus documentation-only
+evidence commits (ledger, evidence records, release notes, process documents).
+
+1. Every source, header, build, test, tool, CI, container, example, viewer,
+   SBOM and installed-package input is byte-identical between X and Y. Only the
+   paths listed in ADR 0021 item 3 (documentation, ledger, evidence records, release notes, and `README.md`) may differ. Verify with
+   `git merge-base --is-ancestor X Y` and
+   `git diff --name-only X Y` (every line must match the allowed list; the
+   support profile, conformance matrix, specification baseline, public API
+   baseline and `docs/PUBLIC_API_AUDIT.md` must not appear).
+2. After Y is final, re-run **all** exact-commit gates on Y: Linux amd64 and
+   macOS arm64 production and system gates, sanitizers, mutation smoke, TSan,
+   byte-identical repeat builds, the long fuzz campaign, the hosted CI matrix
+   with native Windows/MSVC, and deterministic source preparation with
+   `MMXISF_VERIFY_GIT_ARCHIVE=ON` (using `HEAD` as the candidate ref; the
+   profile's `rc.N` ref names X, so `MMXISF_VERIFY_CANDIDATE_REF` applies to X
+   only).
+3. Y's re-run evidence cannot be inside Y. Publish it as release assets and in
+   the release notes, and record it later in a documentation commit that is not
+   tagged. The ledger inside Y records X's qualification and properties provable
+   before Y exists; identity and integrity of Y's archive and published assets
+   are verified outside Y.
+4. `rc.N` resolves to X and is not published as a separate prerelease; `vX.Y.Z`
+   resolves to Y. After publication verify both remote tag targets, download each
+   asset, recompute hashes, reproduce the Git archive of the final tag byte for
+   byte, and run the installed-package consumer.
+5. Any gate failure, any change outside the allowed list, or any moved ref
+   supersedes the candidate with the next `rc.N`.
 
 ## Version and artifact gate
 

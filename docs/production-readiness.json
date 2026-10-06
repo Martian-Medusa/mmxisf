@@ -15,7 +15,7 @@
       "status": "PASS",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/support-profile-0.1.0.json",
-      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.2 candidate ref (owner decision 2026-10-06; final v0.1.0 equals this exact candidate commit per ADR 0021). The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence. Publication remains separately unauthorized."
+      "note": "The standalone reusable-C++-library profile classifies every current conformance row and machine-checks that the optional viewer and PFI adapter remain outside its boundary. Its state is FROZEN and it is bound to the immutable v0.1.0-rc.2 candidate ref (owner decision 2026-10-06; candidate X, with the final v0.1.0 tag on a documentation-only evidence commit Y that is re-qualified, per ADR 0021). The immutable v0.1.0-rc.1 tag remains historical document-1.00 evidence. Publication remains separately unauthorized."
     },
     {
       "id": "specification.revision1-qualification",
@@ -147,8 +147,8 @@
       "id": "security.exact-binary-vulnerability-audit",
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
-      "evidence": "docs/security-audits/2026-10-06-rc2-preliminary-advisory-review.json",
-      "note": "A preliminary 2026-10-06 review exists but is not a pass: it observed that OpenSSL 3.6.5 (2026-09-29, security patch release, most severe High) postdates the pinned OpenSSL 3.6.4 and that the CVE-to-version mapping needs manual verification and an owner decision (API-scoped acceptance of 3.6.4 versus a new candidate with a newer pin); Windows/MSVC binary SBOMs do not exist yet. The v0.1.0-rc.1 review is historical."
+      "evidence": "docs/security-audits/2026-10-06-rc2-advisory-review.json",
+      "note": "The owner accepted OpenSSL 3.6.4 for v0.1.0 on 2026-10-06 with an API-scoped disposition (mmxisf calls only EVP message-digest primitives; the official OpenSSL vulnerability list at https://openssl-library.org/news/vulnerabilities/ names no 3.6.5 or 3.6.4 issue in EVP_Digest*), and the libexpat, zlib, lz4 and zstd advisory pages listed nothing; an OpenSSL bump is scheduled for the next mmxisf version (docs/ROADMAP.md). Linux amd64 and macOS arm64 binary SBOMs of candidate X bind the reviewed graph; the native Windows/MSVC binary SBOMs of X do not exist yet, so the gate stays NOT_TESTED until they are generated and bound. The v0.1.0-rc.1 review is historical."
     },
     {
       "id": "security.private-reporting-channel",
@@ -183,7 +183,7 @@
       "status": "NOT_TESTED",
       "requiredFor": ["standaloneBeta", "standaloneProduction", "pfiProduction"],
       "evidence": "docs/RELEASE_PROCESS.md",
-      "note": "The deterministic source archive, ref identity and published asset hashes for the final v0.1.0 release (the exact v0.1.0-rc.2 commit, ADR 0021) have not been produced or verified. The v0.1.0-rc.1 verification (docs/quality-runs/2026-09-15-rc1-release-verification.json) is historical."
+      "note": "The deterministic source archive, ref identity and published asset hashes for candidate X (v0.1.0-rc.2) are recorded once the real-repository candidate-ref and Git-archive verification of X passes; identity and integrity of final commit Y and of the published assets are verified outside Y and published as release evidence (ADR 0021 items 4 and 7). The v0.1.0-rc.1 verification (docs/quality-runs/2026-09-15-rc1-release-verification.json) is historical."
     },
     {
       "id": "pfi.native-operator-acceptance",

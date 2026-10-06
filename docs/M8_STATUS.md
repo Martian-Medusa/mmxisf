@@ -797,18 +797,14 @@ paragraphs below are historical.
   safety.
 
 - With explicit owner approval on 2026-10-06 (ADR 0021), the Revision 1
-  source revision `dc82cadae38669629d548d9e7ed8767b338d08e3` becomes the
-  candidate `v0.1.0-rc.2`, and the final `v0.1.0` release is defined as that
-  exact frozen commit if every required gate passes on it. The freeze
-  changes only the support profile, readiness ledger, one readiness test
-  contract, the writer-benchmark tool (its Image id was invalid under Revision 1
-  validation), the Windows performance-checkpoint CI step (it treated the
-  documented row-API rejection of globally shuffled multi-subblock images as a
-  failure), and documentation; sources, public headers, `CMakeLists.txt`, and `vcpkg.json` are
-  byte-identical to that revision. This closes only
-  `candidate.support-profile-frozen`; all exact-candidate evidence, native
-  Windows/MSVC, publication, and PFI operator acceptance remain separately
-  open.
+  source revision `dc82cad` was frozen as candidate X = `v0.1.0-rc.2`. The
+  owner then decided that the final `v0.1.0` tag points to a documentation-only
+  evidence commit Y (byte-identical source, header and build files) and that all
+  exact-commit gates are re-run on Y, with Y's evidence published outside Y.
+  The freeze changed only the support profile, readiness ledger, one readiness
+  test contract, the writer-benchmark tool (invalid Image id under Revision 1),
+  the Windows performance-checkpoint CI step (documented row-API rejection) and
+  documentation. This closed only `candidate.support-profile-frozen`.
 
 - Frozen-candidate qualification (2026-10-06). The freeze commit
   `d17605686768832226da55090a33b28888bfab35` (candidate `v0.1.0-rc.2`; no tag
@@ -828,10 +824,9 @@ paragraphs below are historical.
   `docs/quality-runs/2026-10-06-rc2-public-api-review.json` (partial),
   `docs/performance-runs/2026-10-06-rc2-macos-linux.json`. Native
   Windows/MSVC, the hosted CI matrix, a completed security/advisory review
-  (`docs/security-audits/2026-10-06-rc2-preliminary-advisory-review.json`
-  records a newer OpenSSL 3.6.5 security release needing an owner decision), and
-  release-artifact verification remain open; the ledger therefore stays
-  `NOT_READY`.
+  (`docs/security-audits/2026-10-06-rc2-advisory-review.json`
+  records the owner-accepted API-scoped disposition of OpenSSL 3.6.4 against the
+  3.6.5 security release), and Y re-qualification remain open.
 
 ## Publication closure and deferred product gates
 
