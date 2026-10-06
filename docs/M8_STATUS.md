@@ -924,6 +924,22 @@ paragraphs below are historical.
   standaloneBeta READY (19/19); standaloneProduction stays NOT_READY because
   performance is accepted as LIMITED; pfiProduction stays NOT_READY by design.
 
+- Final commit Y and publication of v0.1.0 (2026-10-06). The annotated `v0.1.0`
+  tag points to Y (`2083c3124aacb338b3c635133119f98d0e06eeeb`), a documentation-
+  only descendant of X3 (`v0.1.0-rc.3`, `1e4e831b8248cc68a65d3ce11e5ec9000b91671f`)
+  that passes the byte-identity rule. All exact-commit gates were re-run on Y:
+  Linux and macOS production and system gates, the 900-second fuzz campaign
+  (2,333,684 executions, no finding), the independent replay, and hosted CI with
+  native Windows/MSVC (run `37483327777`, all jobs success). The source-only
+  GitHub Release `v0.1.0` (not a prerelease; no release for rc.3) publishes the
+  deterministic archive `mmxisf-0.1.0-source-2083c3124aac.tar.gz`, SHA-256
+  `d73deea7d212353e8098ab221b580662439f0675bfd05d0ee80647bcb68ba2d8`, its
+  checksum, the candidate manifest, the source SBOM, `SHA256SUMS` and the Y
+  gate-evidence bundle. Post-publication verification (fresh download, hashes,
+  Git-archive byte identity, extracted -Werror build, tests and installed-package
+  consumers) passed. Evidence: `docs/quality-runs/2026-10-06-v0.1.0-y3-requalification.json`
+  and `docs/quality-runs/2026-10-06-v0.1.0-release-verification.json`.
+
 ## Publication closure and deferred product gates
 
 - The owner-approved deterministic source-only prerelease asset set is

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "mmxisf.release-verification/1.0.0",
+  "verifiedAtUtc": "2026-10-06T17:40:00Z",
+  "release": "https://github.com/Martian-Medusa/mmxisf/releases/tag/v0.1.0",
+  "repository": "Martian-Medusa/mmxisf",
+  "release_state": {
+    "draft": false,
+    "prerelease": false
+  },
+  "refs": {
+    "v0.1.0": {
+      "tagObject": "0c17fb2d650eb645f1d837d5afb880693651773f",
+      "peeledCommit": "2083c3124aacb338b3c635133119f98d0e06eeeb",
+      "remotePeeledMatches": true
+    },
+    "v0.1.0-rc.3": {
+      "tagObject": "016cf00b6fd3967b3e4662ec018f32d6f1eb5c7d",
+      "peeledCommit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f",
+      "remotePeeledMatches": true
+    },
+    "releaseForCandidateRef": "none (rc.3 is an identity ref only)"
+  },
+  "byteIdentityRule": "PASS (check-y3-vs-x3.sh v0.1.0-rc.3 v0.1.0)",
+  "assets": {
+    "mmxisf-0.1.0-source-2083c3124aac.tar.gz": "d73deea7d212353e8098ab221b580662439f0675bfd05d0ee80647bcb68ba2d8",
+    "mmxisf-0.1.0-source-2083c3124aac.tar.gz.sha256": "9e5cec3cf196e00be2916587fb2869e42f834d910137e07b96d60eab5c48c68d",
+    "source-candidate.json": "ab0678290b752fd1063114e9c72e3ec363391c47f60bc7d405fbb9acdc748bdb",
+    "source-dependencies.spdx.json": "b4be6bead1e7a465b2c56e931c96e3d4b1de7feb52a42c9ec0df37c4102f7875",
+    "SHA256SUMS": "0e14bd6ea0a7e1abce90cbbd6d33e82d88a5496a364f09d9e57c2b8a5c258437",
+    "mmxisf-0.1.0-y3-gate-evidence.tar.gz": "e022b62e915727c26df26d562401f55e9f3622d8fd473fbf86b236a68c23ea6d"
+  },
+  "checks": {
+    "downloadedIntoFreshDirectory": "PASS (all six assets)",
+    "shasumCheckSHA256SUMS": "PASS 5/5 listed files",
+    "archiveSha256FileCheck": "PASS",
+    "downloadedHashesEqualGitHubDigests": "PASS (all six)",
+    "gitArchiveOfTagEqualsDownloadedArchive": "PASS (byte-identical; git archive --format=tar.gz --prefix=mmxisf-0.1.0/ v0.1.0)",
+    "manifestBinding": "PASS (commit Y, archive sha, FROZEN profile ref v0.1.0-rc.3, publicationAuthorized false in the manifest)",
+    "sourceSbomEqualsTagFile": "PASS",
+    "hostedSourcePackageArchiveEqualsRelease": "PASS (cmp)",
+    "extractedArchiveBuild": {
+      "result": "PASS",
+      "method": "macOS arm64 pinned-vcpkg production gate (tools/run_vcpkg_macos_arm64_gate.sh) run on the archive extracted from the downloaded release asset",
+      "warnings": "-Wall -Wextra -Wpedantic -Werror, 0 warnings",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20"
+      },
+      "installedConsumer": "2/2 each linkage",
+      "relocatedConsumer": "2/2 each linkage",
+      "embeddedConsumer": "1/1 each linkage",
+      "dependencies": "expat 2.8.5, zlib 1.3.2#2, lz4 1.10.0, zstd 1.5.7, openssl 3.6.5",
+      "byteIdenticalRepeatBuilds": "PASS (static ce263666..., shared fc251f8e..., identical to the candidate and Y3 builds)"
+    }
+  },
+  "limitations": [
+    "The installed-package consumer ran through the repository gate script against the pinned vcpkg graph, not a third-party environment.",
+    "The windows and Linux production builds of the downloaded archive were not repeated; they were qualified on Y3 before tagging and hosted CI built the identical source package.",
+    "This record is a post-publication documentation commit; it is not part of the tagged tree."
+  ]
+}

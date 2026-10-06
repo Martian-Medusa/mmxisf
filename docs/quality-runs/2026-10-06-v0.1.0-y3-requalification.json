@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "mmxisf.final-commit-requalification/1.0.0",
+  "recordedAtUtc": "2026-10-06T17:40:00Z",
+  "adr": "docs/decisions/0021-final-release-is-the-frozen-candidate-commit.md",
+  "candidateX": {
+    "ref": "v0.1.0-rc.3",
+    "commit": "1e4e831b8248cc68a65d3ce11e5ec9000b91671f"
+  },
+  "finalY": {
+    "ref": "v0.1.0",
+    "commit": "2083c3124aacb338b3c635133119f98d0e06eeeb"
+  },
+  "byteIdentityRule": "PASS (check-y3-vs-x3.sh against local and remote-peeled refs)",
+  "archive": {
+    "name": "mmxisf-0.1.0-source-2083c3124aac.tar.gz",
+    "sizeBytes": 426772,
+    "sha256": "d73deea7d212353e8098ab221b580662439f0675bfd05d0ee80647bcb68ba2d8",
+    "determinism": "PASS_TWO_BYTE_IDENTICAL_ARCHIVES",
+    "gitArchiveVerification": "PASS",
+    "supportProfileSha256": "d290ea8bd3a3543c9e81d209adf9e654de0f12dcb8ad67e599c7dc95e236e228"
+  },
+  "linuxAmd64": {
+    "host": "mllse (Ryzen 5 5500U, Ubuntu 24.04.4)",
+    "pinnedVcpkgProductionGate": {
+      "result": "PASS",
+      "dependencies": {
+        "expat": "2.8.5",
+        "zlib": "1.3.2#2",
+        "lz4": "1.10.0",
+        "zstd": "1.5.7",
+        "openssl": "3.6.5"
+      },
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "installedConsumer": "2/2 each linkage",
+        "relocatedConsumer": "2/2 each linkage",
+        "embeddedConsumer": "1/1 each linkage"
+      },
+      "byteIdenticalRepeatBuilds": "PASS",
+      "staticLibSha256": "e99eaffbf69256330b6da974c3a7af2a39d01ad295b0478027154deb0f502be3",
+      "sharedLibSha256": "6ae6ed16329085b10606f84ceac76b7f4cbc741cab8783843fefd924c2e6b0ea"
+    },
+    "systemGraphGate": {
+      "result": "PASS",
+      "asanUbsan": "19/19",
+      "mutationSmokeCases": 20000,
+      "threadSanitizer": "19/19"
+    },
+    "longFuzz": {
+      "result": "PASS",
+      "reportedDurationSeconds": 901,
+      "executedUnits": 2333684,
+      "coveredEdges": 15976,
+      "features": 44222,
+      "effectiveCorpusUnits": 861,
+      "peakRssMiB": 487,
+      "crashArtifacts": 0,
+      "sanitizerErrors": 0,
+      "timeouts": 0,
+      "campaignLogSha256": "e6bc824a8185ea3ff39d84a8fb573bd402ea4671db79b8b577a676d5ff765905",
+      "corpusManifestSha256": "7b3a0e580afb2fc3c06ebe9b79224ab42cd138b8fdcbbd92343237df60d37d5f",
+      "fuzzerBinarySha256": "a3fd5276fdf992d0d97cfd5a155d7eaa61627eb838da1d7e6a8074ffa4bb69fd"
+    },
+    "hostRules": "no mmxisf-gate container before or after; live containers untouched; gate image tag removed"
+  },
+  "macosArm64": {
+    "host": "Apple M2, macOS 27.0, AppleClang 21",
+    "pinnedVcpkgProductionGate": {
+      "result": "PASS",
+      "tests": {
+        "static": "19/19",
+        "shared": "20/20",
+        "consumers": "installed/relocated/embedded pass"
+      },
+      "byteIdenticalRepeatBuilds": "PASS",
+      "staticLibSha256": "ce263666664f4d7d86c2a1c76bdb6e2af029568c453ba5eecbf6f2bd8bfff940",
+      "sharedLibSha256": "fc251f8e3b83ff579c3c7c8832b27bee985027002123ff2e405e9eeb6c3d2888",
+      "note": "Libraries are byte-identical to the candidate X3 builds."
+    },
+    "systemGraphGate": {
+      "result": "PASS",
+      "asanUbsan": "19/19",
+      "mutationSmokeCases": 20000,
+      "threadSanitizer": "19/19"
+    }
+  },
+  "independentReplay": {
+    "consumer": "PyPI xisf 0.9.7",
+    "result": "PASS_WITH_DOCUMENTED_LIMITATION",
+    "summary": "10 PASS, 5 READ_OK, the Revision 1 multi-subblock fixture is not decodable by that package (documented LIMITED)"
+  },
+  "hostedCiAndNativeMsvc": {
+    "run": "https://github.com/Martian-Medusa/mmxisf/actions/runs/37483327777",
+    "conclusion": "success",
+    "headSha": "2083c3124aacb338b3c635133119f98d0e06eeeb",
+    "jobs": "all success; viewer-poc skipped",
+    "windowsStatic": "19/19",
+    "windowsShared": "20/20",
+    "windowsClosure": "expat 2.8.5, lz4 1.10.0, openssl 3.6.5, zlib 1.3.2#2, zstd 1.5.7 plus vcpkg-cmake, vcpkg-cmake-config, vcpkg-cmake-get-vars",
+    "windowsReproducibility": "LIMITED_NON_IDENTICAL_ARTIFACTS (static library only; non-blocking, source-only)",
+    "windowsWriterMiBps": [
+      94.23,
+      98.783,
+      100.305,
+      99.692,
+      100.224
+    ],
+    "rowReader": "UNSUPPORTED_GLOBALLY_SHUFFLED_MULTI_SUBBLOCK_PROFILE (documented)",
+    "hostedSourcePackageSha256": "d73deea7d212353e8098ab221b580662439f0675bfd05d0ee80647bcb68ba2d8"
+  },
+  "retainedEvidence": "Release asset mmxisf-0.1.0-y3-gate-evidence.tar.gz (SHA-256 e022b62e915727c26df26d562401f55e9f3622d8fd473fbf86b236a68c23ea6d) and PFI-agent-reports/2026-10-06/mmxisf-rc3/y3/",
+  "limitations": [
+    "macOS Y3 writer throughput observed while the Mac was heavily loaded; performance is accepted as LIMITED for v0.1.0.",
+    "Hosted ubuntu/macOS jobs use system or Homebrew dependency graphs and are compatibility evidence."
+  ]
+}
