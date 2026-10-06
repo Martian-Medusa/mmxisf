@@ -266,20 +266,28 @@ jobs:
 
           $benchmarkFile = $benchmarkFiles[0]
           $owningReaderSeconds = @()
-          $rowReaderSeconds = @()
           foreach ($iteration in 1..5) {
             $timer = [Diagnostics.Stopwatch]::StartNew()
             & $inspector --decode-sha256 $benchmarkFile | Out-Null
             $timer.Stop()
             if ($LASTEXITCODE -ne 0) { throw "Owning reader run $iteration failed" }
             $owningReaderSeconds += $timer.Elapsed.TotalSeconds
-
-            $timer = [Diagnostics.Stopwatch]::StartNew()
-            & $inspector --decode-rows $benchmarkFile | Out-Null
-            $timer.Stop()
-            if ($LASTEXITCODE -ne 0) { throw "Row reader run $iteration failed" }
-            $rowReaderSeconds += $timer.Elapsed.TotalSeconds
           }
+
+          # XISF Revision 1 shuffles the complete logical block before subblock
+          # division, so the low-copy row API intentionally rejects this
+          # benchmark profile (docs/ROW_READER.md). Record that documented
+          # rejection instead of timing a decode that cannot happen.
+          $previousErrorActionPreference = $ErrorActionPreference
+          $ErrorActionPreference = "Continue"
+          $rowReaderOutput = (& $inspector --decode-rows $benchmarkFile 2>&1 | Out-String)
+          $rowReaderExitCode = $LASTEXITCODE
+          $ErrorActionPreference = $previousErrorActionPreference
+          if ($rowReaderExitCode -ne 1 -or
+              $rowReaderOutput -notmatch "Row delivery is unavailable for globally shuffled multi-subblock images") {
+            throw "Unexpected row reader result (exit $rowReaderExitCode): $rowReaderOutput"
+          }
+          $rowReaderStatus = "UNSUPPORTED_GLOBALLY_SHUFFLED_MULTI_SUBBLOCK_PROFILE"
 
           $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
           $visualStudioPath = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath).Trim()
@@ -342,7 +350,8 @@ jobs:
             }
             writerRuns = $writerRuns
             owningReaderElapsedSeconds = $owningReaderSeconds
-            rowReaderElapsedSeconds = $rowReaderSeconds
+            rowReaderStatus = $rowReaderStatus
+            rowReaderExitCode = $rowReaderExitCode
             artifacts = [ordered]@{
               staticLibrarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $strictBuildRoot "static\Release\mmxisf.lib")).Hash.ToLowerInvariant()
               sharedLibrarySha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $strictBuildRoot "shared\Release\mmxisf.lib")).Hash.ToLowerInvariant()
@@ -353,6 +362,7 @@ jobs:
             limitations = @(
               "Hosted-runner measurements are a reproducible checkpoint, not a portable performance SLA.",
               "Warm-cache reader timings include process startup, parsing, checksum verification, and decoding.",
+              "The low-copy row API rejects the globally shuffled multi-subblock benchmark profile by documented Revision 1 policy; no row-reader timing is recorded for it.",
               "Windows artifact byte identity is measured and recorded, but is not a functional gate for this source-only release.",
               "Toolchain inventory requires a separate dated advisory disposition before release promotion."
             )
