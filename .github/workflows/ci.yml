@@ -127,7 +127,7 @@ jobs:
           cmake --build build-subdirectory-consumer --config Release
           ctest --test-dir build-subdirectory-consumer -C Release --output-on-failure
       - name: Retain resolved binary SBOM
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mmxisf-binary-sbom-${{ runner.os }}-${{ runner.arch }}-${{ matrix.shared }}-${{ github.sha }}
           path: build/binary-dependencies.spdx.json
@@ -369,7 +369,7 @@ jobs:
           }
           $evidence | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $evidenceDirectory "native-windows-amd64.json") -Encoding utf8
       - name: Retain resolved static and shared binary SBOMs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mmxisf-binary-sbom-Windows-${{ runner.arch }}-${{ github.sha }}
           path: |
@@ -402,7 +402,7 @@ jobs:
           -DMMXISF_VERIFY_GIT_ARCHIVE=ON
           -P cmake/ValidateSourceCandidate.cmake
       - name: Upload source package, checksum, and identity manifest
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mmxisf-source-${{ github.sha }}
           path: dist/source-candidate/
@@ -429,7 +429,7 @@ jobs:
       - name: Verify generated entry point
         run: test -s build-docs/api/html/index.html
       - name: Upload generated API reference
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mmxisf-api-${{ github.sha }}
           path: build-docs/api/html/
@@ -496,7 +496,7 @@ jobs:
           build-fuzz/corpus
       - name: Retain libFuzzer failure artifact
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: libfuzzer-failure
           path: build-fuzz/artifacts/
